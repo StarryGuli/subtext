@@ -37,8 +37,9 @@ fn embed_icon() {}
 ///    Windows 10 能正常启动；而自包含部署下这两个函数不会被调用。
 #[cfg(windows)]
 fn stage_windows_runtime() {
-    // 宿主是 Windows 但目标不是（交叉编译到别的平台）时不出 Windows 产物，跳过。
-    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("windows") {
+    // 只对 MSVC 目标做：`as_self_contained` 不支持 gnu 目标，`/DELAYLOAD` 与 `delayimp.lib` 也是 MSVC 链接器的；
+    // Windows 宿主交叉编 windows-gnu 只是本机检查用，不发版。
+    if std::env::var("CARGO_CFG_TARGET_ENV").as_deref() != Ok("msvc") {
         return;
     }
     windows_reactor_setup::as_self_contained();

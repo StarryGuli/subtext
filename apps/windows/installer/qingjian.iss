@@ -41,6 +41,8 @@ DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
+; Windows 10 1809 起（Windows App Runtime 的下限，见 docs\notes\windows-win10.md）。
+MinVersion=10.0.17763
 PrivilegesRequired=admin
 ; 别让 Restart Manager 去关所有加载了 DLL 的应用（那是每一个有文本框的应用）。
 CloseApplications=no

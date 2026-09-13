@@ -55,6 +55,7 @@ AppModel API 把框架包加进进程包图，Windows 10 上没有那两个函�
 - 这些文件是运行时必需：少一件（或层级装错）设置窗口就起不来，`build.ps1` 发现缺文件会直接失败。
 - 升级 `windows-reactor` / `windows-reactor-setup` 时，照新版 crate 的 `assets/runtime.txt` 核对 `settings-runtime.txt`。
 - Server 与 TSF DLL 不依赖它；装机体积的大头仍是随包数据。
+- `windows-reactor-setup` 在 `cargo build` 时用系统 `curl.exe` 从 NuGet 下运行时包（无校验，失败只打印），缓存在 `%LOCALAPPDATA%\windows-reactor-setup`；CI 的 runner 每次都会重下一遍。下载失败的后果由 `build.ps1` 的缺项检查兜住。
 
 ## 打包（在编译机上）
 
