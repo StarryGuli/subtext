@@ -7,6 +7,7 @@
 pub mod candidate;
 pub mod composition;
 pub mod correction;
+pub mod custom_phrase;
 pub mod emoji;
 pub mod engine;
 pub mod english;
@@ -19,6 +20,8 @@ pub mod sentence;
 pub mod shortcut;
 pub mod shuangpin;
 pub mod storage;
+
+pub use custom_phrase::CustomPhrase;
 
 pub use candidate::{
     Candidate, CandidateKind, CandidateLayout, CandidateList, Cell, Language, PartOfSpeech, Sense,

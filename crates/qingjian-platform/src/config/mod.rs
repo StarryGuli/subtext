@@ -45,6 +45,10 @@ pub struct Config {
     /// 常规：学习语言、每页候选数、翻页键、外观。
     pub general: GeneralConfig,
 
+    /// 自定义短语；保存和读取均检查位置冲突。
+    #[serde(deserialize_with = "deserialize_phrases")]
+    pub custom_phrases: Vec<qingjian_core::CustomPhrase>,
+
     /// 快捷键：前缀模式键（表达式 / 问字）与上屏译词的修饰键组合。
     pub shortcut: ShortcutConfig,
 
@@ -65,6 +69,14 @@ pub struct Config {
 
     /// 本地整句模型。
     pub model: LocalModelConfig,
+}
+
+fn deserialize_phrases<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Vec<qingjian_core::CustomPhrase>, D::Error> {
+    let phrases = Vec::<qingjian_core::CustomPhrase>::deserialize(deserializer)?;
+    qingjian_core::custom_phrase::validate_phrases(&phrases).map_err(serde::de::Error::custom)?;
+    Ok(phrases)
 }
 
 /// 模板的 `[apps]` 一节（macOS）：应用按 bundle identifier 认。名单要与 [`DEFAULT_ENGLISH_CANDIDATES_OFF`] 一致，
@@ -155,7 +167,7 @@ layout = "vertical"
 preedit = "both"
 # 英文模式（Caps Lock 亮着）是否给英文候选：Tab 或方向键选词，空格、回车、标点仍原样上屏敲的字母；false 就是纯直通
 english_candidates = true
-# 中文模式下（没在组句时）敲的标点转全角：, . ? ! : ; ( ) 等，数字后面的 . 保持半角。Windows 上悬浮状态条的「，。」格可以点着切；macOS 没有这个开关
+# 中文模式下（没在组句时）敲的标点转全角：, . ? ! : ; ( ) 等，数字后面的 . 保持半角。Windows 上悬浮状态条的「，。」格可以点着切；macOS 在偏好设置中选择默认中文标点模式
 full_width_punctuation = true
 # 英文模式下的同一件事，中英各记一份，状态条切的是当前模式那份；只有 Windows 用
 english_full_width_punctuation = false
@@ -167,6 +179,13 @@ log_level = "info"
 # 输入日志：每次上屏记一行到数据目录的 input-log.jsonl（敲的键、看到的候选、选了什么），只写在这台电脑上，不上传；
 # 用来离线评测排序和训练个人模型。false 不记；「高级」页可以清空
 input_log = true
+
+# 自定义短语示例：取消下面各行注释后启用；同码同位置不能重复。
+# [[custom_phrases]]
+# code = "ww"       # 输入码：1–32 个小写英文字母
+# text = "；"       # 原样上屏的文本，可包含空格与换行
+# position = 1      # 固定候选位置：1–9
+# enabled = true    # 是否启用；停用仍保留位置
 
 [shortcut]
 # 前缀模式键，只能是 v / u / i 之一且互不相同（这三个字母不是任何拼音音节的开头）
@@ -239,6 +258,80 @@ enabled = false
 );
 
 impl Config {
+    /// 保存自定义短语列表，冲突时不修改文件。
+    pub fn set_custom_phrases(
+        path: &Path,
+        phrases: &[qingjian_core::CustomPhrase],
+    ) -> Result<(), String> {
+        qingjian_core::custom_phrase::validate_phrases(phrases)?;
+        let source = match std::fs::read_to_string(path) {
+            Ok(s) => s,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => TEMPLATE.to_owned(),
+            Err(e) => return Err(e.to_string()),
+        };
+        let mut document: DocumentMut = source.parse::<DocumentMut>().map_err(|e| e.to_string())?;
+        let old = document
+            .get("custom_phrases")
+            .and_then(toml_edit::Item::as_array_of_tables)
+            .cloned()
+            .unwrap_or_default();
+        let mut used = std::collections::BTreeSet::new();
+        // 先按输入码和位置匹配，重排或删除时注释跟随原规则。
+        let mut matches: Vec<_> = phrases
+            .iter()
+            .map(|p| {
+                let found = old
+                    .iter()
+                    .enumerate()
+                    .find(|(_, t)| {
+                        t.get("code").and_then(toml_edit::Item::as_str) == Some(p.code.as_str())
+                            && t.get("position").and_then(toml_edit::Item::as_integer)
+                                == Some(p.position as i64)
+                    })
+                    .map(|(i, _)| i);
+                if let Some(i) = found {
+                    used.insert(i);
+                }
+                found
+            })
+            .collect();
+        // 等长列表中修改了输入码或位置的条目，沿用其未被占用的原表。
+        if old.len() == phrases.len() {
+            for (i, matched) in matches.iter_mut().enumerate() {
+                if matched.is_none() && used.insert(i) {
+                    *matched = Some(i);
+                }
+            }
+        }
+        let mut tables = toml_edit::ArrayOfTables::new();
+        for (p, matched) in phrases.iter().zip(matches) {
+            let mut t = matched
+                .and_then(|i| old.get(i))
+                .cloned()
+                .unwrap_or_default();
+            for (key, mut value) in [
+                ("code", toml_edit::Value::from(p.code.as_str())),
+                ("text", toml_edit::Value::from(p.text.as_str())),
+                ("position", toml_edit::Value::from(p.position as i64)),
+                ("enabled", toml_edit::Value::from(p.enabled)),
+            ] {
+                if let Some(previous) = t.get(key).and_then(toml_edit::Item::as_value) {
+                    if previous.to_string() == value.to_string() {
+                        continue;
+                    }
+                    *value.decor_mut() = previous.decor().clone();
+                }
+                t[key] = toml_edit::Item::Value(value);
+            }
+            // 序列化按文档位置排序；统一锚点后，同组条目使用本次列表顺序。
+            t.set_position(old.iter().filter_map(toml_edit::Table::position).min());
+            tables.push(t);
+        }
+        document["custom_phrases"] = toml_edit::Item::ArrayOfTables(tables);
+        qingjian_core::storage::write_atomic_str(path, &document.to_string())
+            .map_err(|e| e.to_string())
+    }
+
     /// 读配置。文件不存在按默认值；存在但解析失败报错，不要静默吞掉用户的笔误。
     pub fn load(path: &Path) -> Result<Self, ConfigError> {
         let source = match std::fs::read_to_string(path) {

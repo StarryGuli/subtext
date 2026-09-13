@@ -21,6 +21,9 @@ pub enum InputSource {
     /// 快捷候选（日期 / 算式 / 码点）。
     Shortcut,
 
+    /// 用户配置的自定义短语。
+    Custom,
+
     /// emoji。
     Emoji,
 
@@ -42,6 +45,7 @@ impl From<CandidateKind> for InputSource {
             CandidateKind::Sentence => Self::Sentence,
             CandidateKind::English => Self::English,
             CandidateKind::Shortcut => Self::Shortcut,
+            CandidateKind::Custom(_) => Self::Custom,
             CandidateKind::Emoji => Self::Emoji,
         }
     }

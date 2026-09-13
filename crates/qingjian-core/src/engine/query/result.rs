@@ -52,6 +52,24 @@ pub struct Query {
 }
 
 impl Query {
+    /// 无法解析为拼音但精确匹配自定义短语时，保留原始输入和光标。
+    pub(super) fn custom_only(
+        text: &str,
+        cursor: usize,
+        shuangpin: bool,
+        scope: &str,
+        rest: String,
+    ) -> Self {
+        Self {
+            text: text.to_owned(),
+            cursor,
+            shuangpin,
+            tail: scope.to_owned(),
+            rest,
+            ..Self::default()
+        }
+    }
+
     /// 给 marked text 用的显示形式：最优切分的音节用 `'` 连接，再接未切分尾部，
     /// 光标后的剩余拼音跟在最后。`kaifa` → `kai'fa`，`kf` → `k'f`，`ni|hao` → `ni'hao`。
     pub fn marked_text(&self) -> String {

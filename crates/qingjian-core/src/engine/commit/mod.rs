@@ -18,6 +18,7 @@ impl Engine {
         let mut hits = 0;
         for candidate in &mut list.items {
             candidate.translation = match candidate.kind {
+                CandidateKind::Custom(_) => None,
                 // 英文候选按敲的大小写显示（Company / COMPANY），释义表键是小写
                 CandidateKind::English => self
                     .english_translator
@@ -118,7 +119,7 @@ impl Engine {
                 (consumed, input)
             }
             // 英文词与快捷候选对应整段作用域；选中的英文词记次数并进个人英文词表，下次同样的前缀它靠前
-            CandidateKind::English | CandidateKind::Shortcut => {
+            CandidateKind::English | CandidateKind::Shortcut | CandidateKind::Custom(_) => {
                 if candidate.kind == CandidateKind::English {
                     self.learner.record(candidate);
                     self.learner.learn_english(&candidate.text);
@@ -200,9 +201,10 @@ impl Engine {
                 }
                 None => self.chain.reset(),
             },
-            CandidateKind::English | CandidateKind::Shortcut | CandidateKind::Emoji => {
-                self.chain.reset()
-            }
+            CandidateKind::English
+            | CandidateKind::Shortcut
+            | CandidateKind::Custom(_)
+            | CandidateKind::Emoji => self.chain.reset(),
         }
         // 一次整句上屏里的几个词不算分段选，只有这段拼音经过至少两次上屏才合起来看
         let phrase = if split && !buffer_left {

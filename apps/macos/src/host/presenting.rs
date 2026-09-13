@@ -79,7 +79,14 @@ impl Host {
             .iter()
             .enumerate()
             .map(|(i, cell)| {
-                let candidate = cell.candidate();
+                let Some(candidate) = cell.candidate() else {
+                    return Row {
+                        index: (i + 1).to_string(),
+                        text: String::new(),
+                        annotation: Vec::new(),
+                        cloud: false,
+                    };
+                };
                 let mut row = Row::from_candidate(i, candidate);
                 row.cloud = candidate.kind == CandidateKind::Cloud;
                 row
@@ -88,7 +95,7 @@ impl Host {
         // 页上的译词告诉 Engine：用户上屏那一刻它们在屏幕上，算「见过」（词汇记录）；窗口收起时传空
         let cells = self.session.page_cells();
         self.engine
-            .note_displayed(cells.iter().copied().map(Cell::candidate));
+            .note_displayed(cells.iter().copied().filter_map(Cell::candidate));
         // 配置成只在行内显示时，窗口顶部不画拼音行
         let preedit = self
             .preedit_mode

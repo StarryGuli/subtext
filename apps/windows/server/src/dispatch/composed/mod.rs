@@ -174,7 +174,7 @@ impl Router {
                 let items: Vec<Candidate> = layout
                     .page(page)
                     .into_iter()
-                    .map(|cell| cell.candidate().clone())
+                    .filter_map(|cell| cell.candidate().cloned())
                     .collect();
                 let mut candidates = CandidateList { items };
                 self.engine.annotate(&mut candidates);

@@ -4,6 +4,50 @@ use super::diagnostics::{copy_to_pasteboard, open_with_system};
 use super::*;
 
 impl Host {
+    /// 写短语前读取文件；外部规则有变化时同步列表并请用户重新确认。
+    fn phrases_are_current(&mut self) -> bool {
+        let Some(path) = self.settings.path() else {
+            return false;
+        };
+        match qingjian_platform::Config::load(path) {
+            Ok(latest) if latest.custom_phrases == self.settings.config().custom_phrases => true,
+            Ok(_) => {
+                self.settings.reload();
+                self.apply_config(false);
+                let message = "规则已在其他地方修改，请重新确认后操作。";
+                self.preferences.set_phrase_error(message);
+                self.preferences.set_status(message);
+                false
+            }
+            Err(error) => {
+                self.preferences.set_phrase_error(&error.to_string());
+                self.preferences.set_status(&error.to_string());
+                false
+            }
+        }
+    }
+
+    /// 表格中的启用开关只修改所选规则。
+    pub fn set_phrase_enabled(&mut self, index: usize, enabled: bool) {
+        if !self.phrases_are_current() {
+            return;
+        }
+        let mut phrases = self.settings.config().custom_phrases.clone();
+        let Some(phrase) = phrases.get_mut(index) else {
+            return;
+        };
+        phrase.enabled = enabled;
+        let Some(path) = self.settings.path() else {
+            return;
+        };
+        let result = qingjian_platform::Config::set_custom_phrases(path, &phrases);
+        self.settings.reload();
+        self.apply_config(false);
+        if let Err(error) = result {
+            self.preferences.set_status(&error);
+        }
+    }
+
     /// 菜单动作。开关类先落盘再热加载，菜单勾选状态永远来自文件里的值。
     pub fn perform(&mut self, action: MenuAction) {
         tracing::info!(?action, "菜单");
@@ -43,6 +87,82 @@ impl Host {
         tracing::info!(?setting, "设置");
         let config = self.settings.config().clone();
         match (setting, value) {
+            (Setting::NewPhrase, _) => {
+                self.preferences.edit_phrase(&config, None);
+                return;
+            }
+            (Setting::EditPhrase, _) => {
+                if let Some(index) = self.preferences.selected_phrase() {
+                    self.preferences.edit_phrase(&config, Some(index));
+                }
+                return;
+            }
+            (Setting::CancelPhraseEdit, _) => {
+                self.preferences.close_phrase_editor();
+                return;
+            }
+
+            (Setting::PhraseDraft, _) => return,
+            (Setting::SelectPhrase, SettingValue::Index(index)) => {
+                self.preferences.select_phrase(&config, index);
+                return;
+            }
+            (Setting::SavePhrase | Setting::DeletePhrase, _) => {
+                if !self.phrases_are_current() {
+                    return;
+                }
+                let config = self.settings.config();
+                let mut phrases = config.custom_phrases.clone();
+                let mut saved_index = phrases.len();
+                if setting == Setting::DeletePhrase {
+                    let Some(index) = self.preferences.selected_phrase() else {
+                        return;
+                    };
+                    if index >= phrases.len() {
+                        return;
+                    }
+                    phrases.remove(index);
+                } else {
+                    let (index, draft) = match self.preferences.phrase_draft(config) {
+                        Ok(value) => value,
+                        Err(error) => {
+                            self.preferences.set_phrase_error(&error);
+                            self.preferences.set_status(&error);
+                            return;
+                        }
+                    };
+                    if let Some(index) = index {
+                        let Some(phrase) = phrases.get_mut(index) else {
+                            return;
+                        };
+                        *phrase = draft;
+                        saved_index = index;
+                    } else {
+                        phrases.push(draft);
+                    }
+                }
+                let Some(path) = self.settings.path() else {
+                    return;
+                };
+                if let Err(error) = qingjian_platform::Config::set_custom_phrases(path, &phrases) {
+                    self.preferences.set_phrase_error(&error);
+                    self.preferences.set_status(&error);
+                    return;
+                }
+                self.preferences.close_phrase_editor();
+                self.settings.reload();
+                self.apply_config(false);
+                if setting == Setting::SavePhrase {
+                    self.preferences
+                        .select_phrase(self.settings.config(), saved_index + 1);
+                }
+                self.preferences.set_status("自定义短语已保存");
+                return;
+            }
+            (Setting::FullWidthPunctuation, SettingValue::Index(index)) => {
+                self.settings
+                    .set_bool("general", "full_width_punctuation", index == 0);
+            }
             (Setting::LearningLanguage, SettingValue::Index(index)) => {
                 if let Some(language) = self.languages.get(index) {
                     self.settings
