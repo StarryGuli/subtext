@@ -159,7 +159,7 @@ jobs:
         if: steps.secrets.outputs.website == 'true'
         env:
           QINGJIAN_WEB_TOKEN: ${{ secrets.QINGJIAN_WEB_TOKEN }}
-        run: tools/release/bump-website.sh release
+        run: tools/release/bump-website.sh
 
   windows:
     if: startsWith(github.ref_name, 'windows-v')
@@ -271,4 +271,4 @@ jobs:
         if: steps.secrets.outputs.website == 'true'
         env:
           QINGJIAN_WEB_TOKEN: ${{ secrets.QINGJIAN_WEB_TOKEN }}
-        run: tools/release/bump-website.sh release
+        run: tools/release/bump-website.sh
