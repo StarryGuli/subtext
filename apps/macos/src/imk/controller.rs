@@ -705,21 +705,14 @@ impl QingjianInputController {
         self.render(client);
     }
 
-    /// 缓冲区里只有一个 `?` 而用户按了别的键：把它还原成问号上屏（中文模式全角、英文模式半角）、清空缓冲区。
+    /// 缓冲区里只有一个 `?` 而用户按了别的键：把它还原成问号上屏（中文遵循标点设置、英文半角）、清空缓冲区。
     /// 返回是否发生了还原。
     fn restore_bare_question(&self, client: TextClient<'_>) -> bool {
         let english = modifiers::caps_lock_on();
         let restored = host::with(|h| {
-            if !h.engine.bare_question() {
-                return None;
-            }
-            h.engine.clear();
+            let mark = h.engine.restore_bare_question(english)?;
             h.cancel_prediction();
-            if english {
-                h.engine.note_passthrough(QUESTION_PREFIX);
-                return Some(QUESTION_PREFIX.to_string());
-            }
-            h.engine.punctuate(QUESTION_PREFIX).map(str::to_owned)
+            Some(mark)
         })
         .flatten();
         let Some(mark) = restored else {

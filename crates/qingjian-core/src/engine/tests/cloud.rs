@@ -447,3 +447,39 @@ fn translation_requests_carry_the_text_and_target_language() {
     engine.request_translation("I want to eat.").unwrap();
     assert_eq!(sent.lock().unwrap()[1].target_language, "zh");
 }
+
+#[test]
+fn bare_question_restores_punctuation_once_in_each_mode() {
+    for (english, full_width, expected) in [
+        (false, false, "?"),
+        (false, true, "？"),
+        (true, false, "?"),
+        (true, true, "?"),
+    ] {
+        let mut engine = engine();
+        engine.set_full_width_punctuation(full_width);
+        engine.push('?');
+        assert_eq!(
+            engine.restore_bare_question(english).as_deref(),
+            Some(expected)
+        );
+        assert!(engine.composition().is_empty());
+        assert_eq!(engine.history().text(), expected);
+        assert_eq!(engine.passthrough_pending, expected);
+        assert_eq!(engine.restore_bare_question(english), None);
+        assert_eq!(engine.history().text(), expected);
+        assert_eq!(engine.passthrough_pending, expected);
+    }
+}
+
+#[test]
+fn restoring_question_preserves_other_compositions() {
+    for input in ["", "nihao", "?nihao"] {
+        let mut engine = engine();
+        engine.set_input(input);
+        assert_eq!(engine.restore_bare_question(false), None);
+        assert_eq!(engine.composition().text(), input);
+        assert!(engine.history().text().is_empty());
+        assert!(engine.passthrough_pending.is_empty());
+    }
+}

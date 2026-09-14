@@ -243,9 +243,23 @@ impl Engine {
             && shortcut::could_be_unicode(self.modes().question_body(text))
     }
 
-    /// 缓冲区里只有一个 `?`：还没决定是问字还是中文问号。壳在下一个键不是字母时应把它还原成 `？`。
+    /// 缓冲区里只有一个 `?`：还没决定是问字还是标点。壳在确认标点时调用 [`Self::restore_bare_question`]。
     pub fn bare_question(&self) -> bool {
         self.composition.text() == QUESTION_PREFIX.to_string()
+    }
+
+    /// 确认单独的问号并清空缓冲区；中文遵循标点设置，英文原样输出。
+    /// 不是单独的问号时返回 `None`，不改变组句；壳负责取消联想界面并插入返回的文本。
+    pub fn restore_bare_question(&mut self, english: bool) -> Option<String> {
+        if !self.bare_question() {
+            return None;
+        }
+        self.clear();
+        if !english && let Some(mark) = self.punctuate(QUESTION_PREFIX) {
+            return Some(mark.to_owned());
+        }
+        self.note_passthrough(QUESTION_PREFIX);
+        Some(QUESTION_PREFIX.to_string())
     }
 
     /// 用一段完整拼音替换当前缓冲区，供 CLI 和测试一次性喂入。
