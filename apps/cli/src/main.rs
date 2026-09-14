@@ -3,8 +3,6 @@
 //! 输入拼音，打印候选（词性 + 译文）和各阶段耗时；输入序号上屏并记入用户词频。
 //! 不依赖任何平台 API，是 Core 的第一个「壳」。
 
-#![allow(clippy::result_large_err)]
-
 mod args;
 mod display;
 mod error;

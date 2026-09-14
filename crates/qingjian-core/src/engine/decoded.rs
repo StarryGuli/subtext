@@ -1,3 +1,5 @@
+//! 双拼 / 注音的解码结果：两种方案解出来的东西在引擎里走同一条路，这里把它们收成一个枚举。
+
 pub(super) enum EngineDecoded {
     Shuangpin(crate::shuangpin::Decoded),
     Zhuyin(crate::zhuyin::Decoded),
