@@ -11,7 +11,7 @@ fn shuangpin_decodes_keys_before_lookup_and_shows_full_pinyin() {
     assert_eq!(query.marked_text(), "kai'fa");
     assert_eq!(query.marked_cursor(), 6);
     assert_eq!(query.text, "kdfa");
-    assert!(query.shuangpin);
+    assert!(query.decoded_keys);
     // 末尾落单的键是声母前缀：`kdf` = kai f…
     engine.set_input("kdf");
     let query = engine.query().unwrap();

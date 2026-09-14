@@ -65,21 +65,23 @@ impl Engine {
         };
         let scope = self.composition.scope();
         if self.english_mode
-            || self.modes().is_expression(scope)
-            || is_raw(scope, self.modes(), self.shuangpin)
+            || self.modes().is_expression(scope, self.zhuyin)
+            || is_raw(scope, self.modes(), self.shuangpin, self.zhuyin)
         {
             return None;
         }
         // 问字模式：问题本身就是全部上下文，不带应用文本、不要整句、本地没有候选可提示
-        let question = self.modes().is_question(scope);
-        if question && shortcut::unicode_form(self.modes().question_body(scope)).is_some() {
+        let question = self.modes().is_question(scope, self.zhuyin);
+        if question
+            && shortcut::unicode_form(self.modes().question_body(scope, self.zhuyin)).is_some()
+        {
             // 码点输入本地就能答，不问云端
             return None;
         }
         let (kind, pinyin_source, before, after) = if question {
             (
                 PredictionKind::Question,
-                self.modes().question_body(scope),
+                self.modes().question_body(scope, self.zhuyin),
                 String::new(),
                 String::new(),
             )

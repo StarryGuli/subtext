@@ -5,7 +5,6 @@ use qingjian_neural::NeuralError;
 use qingjian_platform::ConfigError;
 use qingjian_predict::PredictError;
 use qingjian_translate::GlossaryError;
-
 #[derive(Debug, thiserror::Error)]
 pub enum CliError {
     #[error(transparent)]

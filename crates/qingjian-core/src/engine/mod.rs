@@ -8,6 +8,7 @@ mod annotation;
 mod commit;
 mod composing;
 mod correcting;
+mod decoded;
 mod extras;
 mod gloss;
 mod input_log;
@@ -67,7 +68,7 @@ use crate::sentence::{
     self, Conversion, Interpolation, LanguageModel, NoLanguageModel, Personal, SentenceScorer,
 };
 use crate::shortcut;
-use crate::shuangpin::{Decoded, Scheme};
+use crate::shuangpin::Scheme;
 
 use commit::CommitChain;
 
@@ -225,6 +226,9 @@ pub struct Engine {
     /// 双拼方案，`None` 为全拼。开着时缓冲区里是双拼键，查词前先解成全拼（见 [`crate::shuangpin`]）。
     shuangpin: Option<Scheme>,
 
+    /// 注音模式开关，開著時緩衝區裡是注音大千鍵位，查詞前先解成拼音（見 [`crate::zhuyin`]）。
+    zhuyin: bool,
+
     /// emoji 表，没有就不出 emoji 候选。
     emoji: Option<EmojiTable>,
 }
@@ -352,6 +356,7 @@ impl Engine {
             chain: CommitChain::default(),
             fuzzy: FuzzyRules::default(),
             shuangpin: None,
+            zhuyin: false,
             emoji: None,
         }
     }
@@ -359,14 +364,20 @@ impl Engine {
 
 /// 缓冲区是否是英文直输段：含拼音键与 `'` 以外的字符（`no-way`、`a.b`），且不是表达式 / 问字模式。
 /// 微软 / 搜狗双拼下 `;` 也是拼音键。
-fn is_raw(text: &str, modes: ModeKeys, shuangpin: Option<Scheme>) -> bool {
-    let is_key = |c: char| match shuangpin {
-        Some(scheme) => scheme.is_key(c),
-        None => c.is_ascii_lowercase(),
+fn is_raw(text: &str, modes: ModeKeys, shuangpin: Option<Scheme>, zhuyin: bool) -> bool {
+    let is_key = |c: char| {
+        if zhuyin {
+            crate::zhuyin::layout::map_key(c).is_some() || c == ' '
+        } else {
+            match shuangpin {
+                Some(scheme) => scheme.is_key(c),
+                None => c.is_ascii_lowercase(),
+            }
+        }
     };
     !text.is_empty()
-        && !modes.is_expression(text)
-        && !modes.is_question(text)
+        && !modes.is_expression(text, zhuyin)
+        && !modes.is_question(text, zhuyin)
         && text.chars().any(|c| !(is_key(c) || c == '\''))
 }
 

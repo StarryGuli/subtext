@@ -1,6 +1,7 @@
 //! 注入与开关：词库、模糊音、双拼、翻译 / 学习 / 联想等 trait 实现的挂接，以及相应的只读访问。
 
 use super::*;
+use crate::engine::decoded::EngineDecoded;
 
 impl Engine {
     /// 设置中文模式的标点转换。
@@ -25,10 +26,41 @@ impl Engine {
         self.shuangpin
     }
 
+    /// 設置是否啟用注音模式。開啟後鍵盤輸入按大千佈局解析。
+    pub fn set_zhuyin_mode(&mut self, on: bool) {
+        self.zhuyin = on;
+        self.forget_span_cache();
+    }
+
+    /// 目前是否處於注音模式。
+    pub fn is_zhuyin_mode(&self) -> bool {
+        self.zhuyin
+    }
+
+    /// 判斷注音模式下目前是否還需要輸入聲調。
+    /// 供殼（平台層）用來判斷空白鍵是應該進緩衝區作為聲調，還是直接用來選詞。
+    pub fn zhuyin_needs_tone(&self) -> bool {
+        if !self.zhuyin {
+            return false;
+        }
+        let raw = self.composition.text();
+        if raw.is_empty() {
+            return false;
+        }
+        let decoded = crate::zhuyin::decode(raw);
+        if let Some(last) = decoded.units().last() {
+            !last.complete && last.pinyin != "'"
+        } else {
+            false
+        }
+    }
+
     /// 组句中敲 `;` 是否该进缓冲区：微软 / 搜狗双拼里它是 ing 的韵母键，只在末尾有落单的声母时收，
     /// 其他时候仍是标点。问字模式（`?x`）看的是前缀之后的部分。
     pub fn takes_semicolon(&self) -> bool {
-        let body = self.modes().question_body(self.composition.scope());
+        let body = self
+            .modes()
+            .question_body(self.composition.scope(), self.zhuyin);
         self.shuangpin
             .filter(|scheme| scheme.uses_semicolon())
             .is_some_and(|scheme| scheme.decode(body).pending_initial())
@@ -44,8 +76,13 @@ impl Engine {
     }
 
     /// 双拼开着时把一段键解成全拼；全拼下为 `None`，调用方原样用键。
-    pub(super) fn decode(&self, keys: &str) -> Option<Decoded> {
-        self.shuangpin.map(|scheme| scheme.decode(keys))
+    pub(super) fn decode(&self, keys: &str) -> Option<EngineDecoded> {
+        if self.zhuyin {
+            Some(EngineDecoded::Zhuyin(crate::zhuyin::decode(keys)))
+        } else {
+            self.shuangpin
+                .map(|scheme| EngineDecoded::Shuangpin(scheme.decode(keys)))
+        }
     }
 
     /// 光标后剩余拼音的显示形式：双拼先解码；能切就按音节用 `'` 连上，切不动就原样。

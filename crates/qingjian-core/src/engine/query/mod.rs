@@ -31,7 +31,7 @@ impl Engine {
                 Query::custom_only(
                     self.composition.text(),
                     self.composition.cursor(),
-                    self.shuangpin.is_some(),
+                    self.shuangpin.is_some() || self.zhuyin,
                     self.composition.scope(),
                     self.marked_rest(self.composition.rest()),
                 )
@@ -66,13 +66,13 @@ impl Engine {
         if self.english_mode {
             return Ok(self.query_english(keys, rest, start));
         }
-        if self.modes().is_expression(keys) {
+        if self.modes().is_expression(keys, self.zhuyin) {
             return Ok(self.query_expression(keys, rest, start));
         }
-        if self.modes().is_question(keys) {
+        if self.modes().is_question(keys, self.zhuyin) {
             return Ok(self.query_question(keys, rest, start));
         }
-        if is_raw(keys, self.modes(), self.shuangpin) {
+        if is_raw(keys, self.modes(), self.shuangpin, self.zhuyin) {
             return Ok(self.query_raw(keys, rest, start));
         }
         // 双拼先解成全拼（音节间已用 `'` 连好，切分没有歧义），之后与全拼同路；解不动的键当尾巴
@@ -116,7 +116,8 @@ impl Engine {
                     text: self.composition.text().to_owned(),
                     cursor: self.composition.cursor(),
                     rest,
-                    shuangpin: self.shuangpin.is_some(),
+                    decoded_keys: self.shuangpin.is_some() || self.zhuyin,
+                    typed_display: decoded.as_ref().map(|d| d.marked()),
                     correction: None,
                     timings: Timings {
                         parse: start.elapsed(),
@@ -254,6 +255,7 @@ impl Engine {
             .as_ref()
             .filter(|_| head_wins)
             .map_or(tail, |t| &keys[t.head_len..]);
+        let typed_display = decoded.as_ref().map(|d| d.marked());
         Ok(Query {
             segmentations,
             candidates: CandidateList { items },
@@ -261,7 +263,8 @@ impl Engine {
             text: self.composition.text().to_owned(),
             cursor: self.composition.cursor(),
             rest,
-            shuangpin: self.shuangpin.is_some(),
+            decoded_keys: self.shuangpin.is_some() || self.zhuyin,
+            typed_display,
             correction,
             timings: Timings {
                 parse,
@@ -291,7 +294,8 @@ impl Engine {
             text: self.composition.text().to_owned(),
             cursor: self.composition.cursor(),
             rest,
-            shuangpin: self.shuangpin.is_some(),
+            decoded_keys: self.shuangpin.is_some() || self.zhuyin,
+            typed_display: None,
             correction: None,
             timings: Timings {
                 parse: Duration::ZERO,
@@ -317,7 +321,8 @@ impl Engine {
             text: self.composition.text().to_owned(),
             cursor: self.composition.cursor(),
             rest,
-            shuangpin: self.shuangpin.is_some(),
+            decoded_keys: self.shuangpin.is_some() || self.zhuyin,
+            typed_display: None,
             correction: None,
             timings: Timings {
                 parse: Duration::ZERO,
@@ -354,7 +359,8 @@ impl Engine {
             text: self.composition.text().to_owned(),
             cursor: self.composition.cursor(),
             rest,
-            shuangpin: self.shuangpin.is_some(),
+            decoded_keys: self.shuangpin.is_some() || self.zhuyin,
+            typed_display: None,
             correction: None,
             timings: Timings {
                 parse: Duration::ZERO,
@@ -367,7 +373,7 @@ impl Engine {
     /// 问字模式（问字键或 `?` 开头）：拼音问题本地没有候选，preedit 显示前缀加切分好的问题拼音，答案等云端；
     /// 十六进制码点（`u4e00`、`u+1f600`）本地直接给出那个字符。
     pub(super) fn query_question(&self, scope: &str, rest: String, start: Instant) -> Query {
-        let body = self.modes().question_body(scope);
+        let body = self.modes().question_body(scope, self.zhuyin);
         let prefix = &scope[..scope.len() - body.len()];
         let (candidates, tail) = match shortcut::unicode_form(body) {
             Some(text) => (
@@ -394,7 +400,8 @@ impl Engine {
             text: self.composition.text().to_owned(),
             cursor: self.composition.cursor(),
             rest,
-            shuangpin: self.shuangpin.is_some(),
+            decoded_keys: self.shuangpin.is_some() || self.zhuyin,
+            typed_display: None,
             correction: None,
             timings: Timings {
                 parse: start.elapsed(),

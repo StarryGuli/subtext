@@ -9,6 +9,7 @@ mod learning;
 mod lookup;
 mod privacy;
 mod shuangpin;
+mod zhuyin;
 
 use std::collections::HashMap;
 
@@ -18,7 +19,7 @@ use super::*;
 
 use crate::candidate::{PartOfSpeech, Sense, Translation};
 
-const SAMPLE: &str = "开发\tkai fa\t9000\n开发者\tkai fa zhe\t3000\n开饭\tkai fan\t800\n开放\tkai fang\t20000\n西安\txi an\t4000\n先\txian\t10000\n下\txia\t8000\n想\txiang\t9000\n开\tkai\t20000\n咖啡\tka fei\t5000\n";
+const SAMPLE: &str = "开发\tkai fa\t9000\n开发者\tkai fa zhe\t3000\n开饭\tkai fan\t800\n开放\tkai fang\t20000\n西安\txi an\t4000\n先\txian\t10000\n下\txia\t8000\n想\txiang\t9000\n开\tkai\t20000\n咖啡\tka fei\t5000\n不\tbu\t1000\n";
 
 fn engine() -> Engine {
     Engine::new(Dictionary::parse(SAMPLE).unwrap())

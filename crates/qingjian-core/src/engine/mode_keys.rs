@@ -54,20 +54,26 @@ impl ModeKeys {
         }
     }
 
-    pub fn is_expression(&self, input: &str) -> bool {
+    pub fn is_expression(&self, input: &str, zhuyin: bool) -> bool {
         input.starts_with(self.expression)
+            && (!zhuyin || crate::zhuyin::layout::map_key(self.expression).is_none())
     }
 
-    pub fn is_question(&self, input: &str) -> bool {
-        input.starts_with(self.question) || input.starts_with(QUESTION_PREFIX)
+    pub fn is_question(&self, input: &str, zhuyin: bool) -> bool {
+        (input.starts_with(self.question)
+            && (!zhuyin || crate::zhuyin::layout::map_key(self.question).is_none()))
+            || input.starts_with(QUESTION_PREFIX)
     }
 
     /// 问字模式下前缀之后的部分。不在问字模式时原样返回。
-    pub fn question_body<'a>(&self, input: &'a str) -> &'a str {
-        input
-            .strip_prefix(self.question)
-            .or_else(|| input.strip_prefix(QUESTION_PREFIX))
-            .unwrap_or(input)
+    pub fn question_body<'a>(&self, input: &'a str, zhuyin: bool) -> &'a str {
+        if input.starts_with(QUESTION_PREFIX) {
+            &input[QUESTION_PREFIX.len_utf8()..]
+        } else if self.is_question(input, zhuyin) {
+            &input[self.question.len_utf8()..]
+        } else {
+            input
+        }
     }
 }
 
@@ -78,12 +84,12 @@ mod tests {
     #[test]
     fn defaults_are_v_and_u_and_question_mark_is_always_an_alias() {
         let keys = ModeKeys::default();
-        assert!(keys.is_expression("v12"));
-        assert!(keys.is_question("usangemu"));
-        assert!(keys.is_question("?sangemu"));
-        assert_eq!(keys.question_body("usangemu"), "sangemu");
-        assert_eq!(keys.question_body("?sangemu"), "sangemu");
-        assert!(!keys.is_question("nihao"));
+        assert!(keys.is_expression("v12", false));
+        assert!(keys.is_question("usangemu", false));
+        assert!(keys.is_question("?sangemu", false));
+        assert_eq!(keys.question_body("usangemu", false), "sangemu");
+        assert_eq!(keys.question_body("?sangemu", false), "sangemu");
+        assert!(!keys.is_question("nihao", false));
     }
 
     #[test]
@@ -104,7 +110,7 @@ mod tests {
             question: 'v',
         };
         assert!(swapped.is_valid());
-        assert!(swapped.is_question("v4e00"));
+        assert!(swapped.is_question("v4e00", false));
     }
 
     #[test]

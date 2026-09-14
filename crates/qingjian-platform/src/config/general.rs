@@ -49,6 +49,9 @@ pub struct GeneralConfig {
     /// 双拼方案：空串为全拼，否则 `xiaohe` / `ziranma` / `microsoft` / `sogou`（见 [`ShuangpinScheme`]）。
     pub shuangpin: String,
 
+    /// 注音模式开关，大千键盘。
+    pub zhuyin: bool,
+
     /// 日志级别，缺省 info（不含用户敲的内容）。
     pub log_level: LogLevel,
 
@@ -70,6 +73,7 @@ impl Default for GeneralConfig {
             full_width_punctuation: true,
             english_full_width_punctuation: false,
             shuangpin: String::new(),
+            zhuyin: false,
             log_level: LogLevel::default(),
             input_log: true,
         }

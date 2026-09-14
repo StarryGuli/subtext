@@ -47,8 +47,11 @@ pub struct Query {
     /// 生效的拼写纠正：`segmentations` 与候选都来自纠正后的拼音，`text` 仍是用户敲的。
     pub correction: Option<Correction>,
 
-    /// 双拼开着：`segmentations` 是解出来的全拼，`text` 是敲的键，两者长度对不上。
-    pub shuangpin: bool,
+    /// 双拼 / 注音开着：`segmentations` 是解出来的拼音，`text` 是敲的键，两者长度对不上。
+    pub decoded_keys: bool,
+
+    /// 开启双拼或注音时的显示字串（如 "ㄅㄨˋ"）。如果有此值，preedit 就优先显示它，而不是拼音。
+    pub typed_display: Option<String>,
 }
 
 impl Query {
@@ -56,14 +59,14 @@ impl Query {
     pub(super) fn custom_only(
         text: &str,
         cursor: usize,
-        shuangpin: bool,
+        decoded_keys: bool,
         scope: &str,
         rest: String,
     ) -> Self {
         Self {
             text: text.to_owned(),
             cursor,
-            shuangpin,
+            decoded_keys,
             tail: scope.to_owned(),
             rest,
             ..Self::default()
@@ -87,7 +90,11 @@ impl Query {
             None => Vec::with_capacity(2),
         };
         if self.correction.is_none() {
-            let typed = join_marked(&self.segmentations, &self.tail);
+            let typed = if let Some(display) = &self.typed_display {
+                display.clone()
+            } else {
+                join_marked(&self.segmentations, &self.tail)
+            };
             if !typed.is_empty() {
                 segments.push(MarkedSegment::new(typed, MarkedKind::Typed));
             }
@@ -103,15 +110,14 @@ impl Query {
         segments
     }
 
-    /// 光标在 [`Self::marked_text`] 里的字符位置。自动补的 `'` 让显示串比原文长，按「光标前有几个字母」对齐；
-    /// 光标原本在用户自己敲的 `'` 之后时，显示上也放到 `'` 之后。
+    /// 光标在 [`Self::marked_text`] 里的字符下标（给平台层传给应用用的，所以按字符算，不是字节）。
     pub fn marked_cursor(&self) -> usize {
-        // 纠错生效、双拼解码时显示串与敲的不一样长，作用域又总在光标前：光标就在敲的部分末尾
-        // （双拼光标在开头时作用域是整段，光标仍在开头）
-        if self.shuangpin && self.cursor == 0 {
+        // 纠错生效、解码时显示串与敲的不一样长，作用域又总在光标前：光标就在敲的部分末尾
+        // （光标在开头时作用域是整段，光标仍在开头）
+        if self.decoded_keys && self.cursor == 0 {
             return 0;
         }
-        if self.correction.is_some() || self.shuangpin {
+        if self.correction.is_some() || self.decoded_keys {
             return self
                 .marked_segments()
                 .iter()

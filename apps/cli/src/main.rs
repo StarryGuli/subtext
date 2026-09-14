@@ -3,6 +3,8 @@
 //! 输入拼音，打印候选（词性 + 译文）和各阶段耗时；输入序号上屏并记入用户词频。
 //! 不依赖任何平台 API，是 Core 的第一个「壳」。
 
+#![allow(clippy::result_large_err)]
+
 mod args;
 mod display;
 mod error;
@@ -243,7 +245,11 @@ fn build_engine(args: &Args) -> Result<Engine, CliError> {
     if let Some(scheme) = config.general.shuangpin() {
         tracing::info!(%scheme, "双拼已启用");
     }
+    if config.general.zhuyin {
+        tracing::info!("大千注音已启用");
+    }
     engine.set_shuangpin(config.general.shuangpin());
+    engine.set_zhuyin_mode(config.general.zhuyin);
     if config.predict.enabled {
         let predictor = CloudPredictor::new(&config.predict)?;
         engine = engine.with_predictor(Box::new(predictor));
