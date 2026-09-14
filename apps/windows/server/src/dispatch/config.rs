@@ -29,6 +29,9 @@ pub struct RouterConfig {
     /// 英文模式的那一份（`[general] english_full_width_punctuation`）。
     pub english_full_width: bool,
 
+    /// 大千注音（[general] zhuyin）。
+    pub zhuyin: bool,
+
     /// 按应用的设置（`[apps]`），按宿主 exe 名认。
     pub apps: AppsConfig,
 
@@ -69,6 +72,7 @@ impl From<&Config> for RouterConfig {
             english_candidates: config.general.english_candidates,
             full_width: config.general.full_width_punctuation,
             english_full_width: config.general.english_full_width_punctuation,
+            zhuyin: config.general.zhuyin,
             apps: config.apps.clone(),
             translation_keys: {
                 let (first, second) = config.shortcut.translation_keys();
