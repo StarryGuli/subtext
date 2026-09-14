@@ -54,3 +54,18 @@
   但对 CC-CEDICT 做的任何加工（裁剪、合并 gloss）都要以 CC BY-SA 发布。
 - 每新增一个数据源或依赖，同步更新上表和 README 的 License 一节。
 - GPL 项目（水杉、部分 Rime 前端）的代码只能读不能搬。
+
+## 随包数据清单
+
+产品包里带的数据与各自的许可（偏好设置「关于」页列的就是这份）：
+
+| 数据 | 来源与许可 |
+|---|---|
+| 词库 | 通用规范汉字表；现代汉语常用词表（liuxilu 校对版）；THUOCL 领域词（清华大学自然语言处理实验室，MIT）；读音取自 Unihan（Unicode License v3） |
+| 语言模型 | 中文维基百科（CC BY-SA 4.0）与 LCCC（清华大学 CoAI，MIT）语料统计 |
+| 释义表 | 由大语言模型（DeepSeek）离线生成，青简自建 |
+| emoji | Unicode CLDR annotations（Unicode License v3） |
+| 英文词表 | ESDB / SCOWL（© Kevin Atkinson，按其许可保留版权声明）；CSpell 词典（MIT） |
+| 词汇等级 | The CEFR-J Wordlist Version 1.5（Yukio Tono，Tokyo University of Foreign Studies，[cefr-j.org](http://www.cefr-j.org/download.html)）；Octanove Vocabulary Profile C1/C2（CC BY-SA 4.0）；JLPT 词表（[tanos.co.uk](http://www.tanos.co.uk/jlpt/)，CC BY；经 elzup/jlpt-word-list 整理，MIT） |
+
+各许可证原文在 `assets/` 对应目录下。雾凇拼音（GPL）已彻底移除，不要再引入。
