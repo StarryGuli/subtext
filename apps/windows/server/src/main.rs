@@ -5,7 +5,7 @@
 use std::path::{Path, PathBuf};
 
 use qingjian_core::{Engine, Language};
-use qingjian_platform::{Config, LogLevel, resources};
+use qingjian_platform::{Config, ConfigError, LogLevel, resources};
 use qingjian_windows_server::{
     AssemblySpec, LanguageModelFiles, Router, RouterConfig, ServerError, assembly, dispatch,
 };
@@ -17,6 +17,18 @@ fn user_dir() -> Option<PathBuf> {
 
 fn config_path() -> Option<PathBuf> {
     user_dir().map(|dir| dir.join("config.toml"))
+}
+
+/// 首次启动把带说明的配置模板写到 `%APPDATA%\Qingjian\config.toml`（与 macOS 一致）；
+/// 这时日志还没装好，结果交给 `main` 记。已有文件返回 `Ok(false)`。
+fn write_config_template() -> Option<Result<bool, ConfigError>> {
+    let path = config_path()?;
+    if let Some(dir) = path.parent()
+        && let Err(source) = std::fs::create_dir_all(dir)
+    {
+        return Some(Err(ConfigError::Write { path, source }));
+    }
+    Some(Config::write_template_if_missing(&path))
 }
 
 /// 文件不存在按默认值；解析失败记错误退回默认。
@@ -129,9 +141,15 @@ fn init_logging(config: &Config) -> Option<tracing_appender::non_blocking::Worke
 fn main() {
     load_env();
 
-    // 日志级别取自配置，所以先读配置再装日志。
+    // 日志级别取自配置，所以先写模板、读配置，再装日志。
+    let template = write_config_template();
     let config = load_config();
     let _log_guard = init_logging(&config);
+    match template {
+        Some(Ok(true)) => tracing::info!("已写出配置模板"),
+        Some(Err(error)) => tracing::warn!(%error, "写配置模板失败"),
+        _ => {}
+    }
     let language = learning_language(&config);
     // 装机布局与 exe 同级，开发布局是仓库 `ime/`；都找不到回落工作目录。
     let root = resources::bundled_root().unwrap_or_else(|| PathBuf::from("."));
