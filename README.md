@@ -145,7 +145,7 @@ Linux    → IBus / Fcitx
 
 ## 参与开发
 
-技术架构、设计决定、路线图与工程记录见 [`docs/`](docs/)；改代码前先看 [`CLAUDE.md`](CLAUDE.md) 里的架构约束与约定。
+技术架构、设计决定、路线图与工程记录见 [`docs/`](docs/)；改代码前先看 [开发约定](docs/contributing.md)。
 欢迎提 issue 与 PR，PR 模板里有合并前清单。
 
 ---
