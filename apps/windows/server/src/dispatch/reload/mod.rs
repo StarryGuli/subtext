@@ -108,7 +108,12 @@ impl Router {
         self.engine.set_shuangpin(config.general.shuangpin());
         self.engine.set_zhuyin_mode(config.general.zhuyin);
         self.engine.set_mode_keys(config.shortcut.mode);
+        let previous = self.config.render_settings();
         self.config = RouterConfig::from(config);
+        let settings = self.config.render_settings();
+        if settings != previous {
+            self.candidates.configure(settings);
+        }
         self.reconcile_status();
         self.apply_model_config(&config.model);
 
