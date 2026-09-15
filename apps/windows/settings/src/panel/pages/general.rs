@@ -7,7 +7,8 @@ use crate::panel::controls::{field, index_of, page};
 use crate::panel::{Message, Settings};
 
 /// 学习语言：界面名 + 配置写法。
-pub(crate) const LANGUAGES: [(&str, &str); 2] = [("英语", "en"), ("日语", "ja")];
+pub(crate) const LANGUAGES: [(&str, &str); 3] =
+    [("英语", "en"), ("日语", "ja"), ("西班牙语", "es")];
 
 /// 双拼方案：界面名 + 配置写法（空串为全拼）。
 pub(crate) const SHUANGPIN: [(&str, &str); 5] = [
