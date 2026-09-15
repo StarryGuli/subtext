@@ -175,9 +175,7 @@ impl Engine {
             }
             // 输入的前缀也出候选（`kaifazhe` → 开发、开），否则长句没法逐词上屏。
             // 只收音节数正好等于前缀长度的词，更长的词会与输入后面的音节冲突。
-            let patterns = segmentation.patterns();
-            let expanded = self.fuzzy.expand(&patterns);
-            let positions = expanded.positions();
+            // 前缀不含最后一个位置，因此可复用上面的扩展结果。
             for prefix_len in (1..count).rev() {
                 let prefix = &patterns[..prefix_len];
                 let prefix_letters: usize = prefix.iter().map(|p| p.text.len()).sum();
