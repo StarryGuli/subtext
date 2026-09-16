@@ -180,6 +180,7 @@ fn main() {
     engine.set_traditional_mode(config.general.traditional);
     engine.set_mode_keys(config.shortcut.mode);
     engine.set_chinese_first(config.general.chinese_first);
+    engine.set_shift_letter_compose(config.general.shift_letter.compose());
     engine.log_session(env!("CARGO_PKG_VERSION"), "windows");
     dispatch::attach_cloud(&mut engine, &config.predict);
     let router_config = RouterConfig::from(&config);
