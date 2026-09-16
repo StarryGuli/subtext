@@ -80,6 +80,9 @@ pub enum Setting {
     /// 关闭编辑表单。
     CancelPhraseEdit,
 
+    /// `[general] system_text_replacements`，勾选框：系统的文本替换并进自定义短语。
+    SystemTextReplacements,
+
     /// `[predict] base_url`。
     BaseUrl,
 
@@ -213,6 +216,7 @@ impl Setting {
             Self::CancelPhraseEdit => 40,
             Self::Renderer => 43,
             Self::Font => 44,
+            Self::SystemTextReplacements => 46,
             Self::Fuzzy(index) => FUZZY_TAG_BASE + index as NSInteger,
             Self::DictionaryEnabled(index) => DICTIONARY_ENABLED_TAG_BASE + index as NSInteger,
             Self::DictionaryRemove(index) => DICTIONARY_REMOVE_TAG_BASE + index as NSInteger,
@@ -266,6 +270,7 @@ impl Setting {
             38 => Self::NewPhrase,
             39 => Self::EditPhrase,
             40 => Self::CancelPhraseEdit,
+            46 => Self::SystemTextReplacements,
             _ if tag >= DICTIONARY_REMOVE_TAG_BASE => {
                 let index = usize::try_from(tag - DICTIONARY_REMOVE_TAG_BASE).ok()?;
                 (index < MAX_DICTIONARIES).then_some(Self::DictionaryRemove(index))?
