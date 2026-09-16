@@ -44,7 +44,10 @@
 	<key>TISIntendedLanguage</key>
 	<string>zh-Hans</string>
 	<key>tsInputMethodIconFileKey</key>
-	<string>qingjian-menu.tiff</string>
+	<string>qingjian-menu.pdf</string>
+	<!-- 图标是黑色模板图：系统按菜单栏深浅色自动反色，同系统自带输入法 -->
+	<key>TISIconIsTemplate</key>
+	<true/>
 	<key>tsInputMethodCharacterRepertoireKey</key>
 	<array>
 		<string>Hans</string>

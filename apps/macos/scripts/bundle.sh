@@ -127,7 +127,7 @@ if [[ -f data/generated/dict.tsv || -f data/generated/dict.qj ]]; then
 fi
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 
-# 图标：从 assets/icon/logo.png 生成 .icns（应用图标）与多分辨率 tiff（输入法菜单图标）
+# 图标：应用图标从 assets/icon/logo.png 生成 .icns；输入法菜单图标直接用 assets/icon/menu.pdf（矢量，随 Info.plist 的 TISIconIsTemplate 按深浅色反色）
 ICONSET="$ROOT/target/Qingjian.iconset"
 rm -rf "$ICONSET" && mkdir -p "$ICONSET"
 for size in 16 32 128 256 512; do
@@ -136,8 +136,7 @@ for size in 16 32 128 256 512; do
   sips -z $double $double assets/icon/logo.png --out "$ICONSET/icon_${size}x${size}@2x.png" >/dev/null
 done
 iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/Qingjian.icns"
-tiffutil -cathidpicheck "$ICONSET/icon_16x16.png" "$ICONSET/icon_16x16@2x.png" \
-  -out "$APP/Contents/Resources/qingjian-menu.tiff" >/dev/null
+cp assets/icon/menu.pdf "$APP/Contents/Resources/qingjian-menu.pdf"
 # 仓库放在 iCloud 同步的目录（Documents）时新建的 .app 会带上 Finder 扩展属性，codesign 会拒（detritus not allowed）：签名前清掉
 xattr -cr "$APP"
 # Apple Silicon 上未签名的二进制不会被系统加载。有 Developer ID 证书就正式签（开 hardened runtime，公证要求），
