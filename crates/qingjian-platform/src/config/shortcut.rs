@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use super::key_combo::KeyCombo;
 use super::modifiers::Modifiers;
+use super::switch_key::SwitchKey;
 
 /// 配置文件 `[shortcut]` 分节：前缀模式键（Core 的 [`ModeKeys`]）加壳层的修饰键组合。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -11,6 +12,9 @@ pub struct ShortcutConfig {
     /// 表达式 / 问字模式键，键名与以前一样直接在分节下（`expression` / `question`）。
     #[serde(flatten)]
     pub mode: ModeKeys,
+
+    /// 中 / 英切换键（单击，Windows 用）：`shift` / `control` / `none`。详见 [`SwitchKey`]。
+    pub switch_mode: SwitchKey,
 
     /// 数字键配这些修饰键：上屏候选的第一个译词。
     pub translation: Modifiers,
@@ -34,6 +38,7 @@ impl Default for ShortcutConfig {
         let (translation, translation_second) = (Modifiers::OPTION, Modifiers::SHIFT_OPTION);
         Self {
             mode: ModeKeys::default(),
+            switch_mode: SwitchKey::default(),
             translation,
             translation_second,
             translate_selection: KeyCombo::TRANSLATE_DEFAULT,
@@ -76,10 +81,11 @@ mod tests {
 
     #[test]
     fn old_files_without_modifier_keys_still_parse_and_get_defaults() {
-        // 缺省分平台（Windows 是 Ctrl 系，其余 Option 系），断言跟着平台的 Default 走
+        // 缺省值分平台（Windows 用 Ctrl 系、其余用 Option 系），断言跟着平台的 Default 走
         let default = ShortcutConfig::default();
         let parsed: ShortcutConfig = toml::from_str("expression = \"i\"\n").unwrap();
         assert_eq!(parsed.mode.expression, 'i');
+        assert_eq!(parsed.switch_mode, SwitchKey::Shift);
         assert_eq!(
             parsed.translation_keys(),
             (default.translation, default.translation_second)
@@ -100,20 +106,31 @@ mod tests {
     fn delete_keys_fall_back_when_clashing_with_translation_keys() {
         let default = ShortcutConfig::default();
         let parsed: ShortcutConfig = toml::from_str("").unwrap();
-        assert_eq!(parsed.delete_keys(), Modifiers::SHIFT);
-        // 与本平台缺省的译词键撞上才算冲突
+        assert_eq!(parsed.delete_keys(), default.delete_candidate);
+        // 与平台缺省的译词键撞上才算「冲突」，两边平台都成立
         let clash: ShortcutConfig = toml::from_str(&format!(
             "delete_candidate = \"{}\"\n",
             default.translation.key()
         ))
         .unwrap();
-        assert_eq!(clash.delete_keys(), Modifiers::SHIFT);
-        let free = [Modifiers::OPTION, Modifiers::CONTROL]
+        assert_eq!(clash.delete_keys(), default.delete_candidate);
+        // 不与任何一组译词键冲突的修饰键：平台上取一个，断言它原样生效
+        let free = [Modifiers::OPTION, Modifiers::CONTROL, Modifiers::SHIFT]
             .into_iter()
             .find(|m| *m != default.translation && *m != default.translation_second)
             .unwrap();
         let custom: ShortcutConfig =
             toml::from_str(&format!("delete_candidate = \"{}\"\n", free.key())).unwrap();
         assert_eq!(custom.delete_keys(), free);
+    }
+
+    #[test]
+    fn switch_mode_parses_and_defaults_to_shift() {
+        let parsed: ShortcutConfig = toml::from_str("switch_mode = \"ctrl\"\n").unwrap();
+        assert_eq!(parsed.switch_mode, SwitchKey::Control);
+        let off: ShortcutConfig = toml::from_str("switch_mode = \"none\"\n").unwrap();
+        assert_eq!(off.switch_mode, SwitchKey::None);
+        let missing: ShortcutConfig = toml::from_str("").unwrap();
+        assert_eq!(missing.switch_mode, SwitchKey::Shift);
     }
 }

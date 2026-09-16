@@ -54,6 +54,10 @@ pub struct GeneralConfig {
     /// 常在中文模式里打英文词的人不受影响；想要中文永远在前的自己打开。
     pub chinese_first: bool,
 
+    /// 内置英文模式：开着时单击切换键（`[shortcut] switch_mode`）或按 Caps Lock 能进英文模式。
+    /// 关掉后青简保持中文模式，切换键与语言栏按钮都不再切过去；要打英文请用系统快捷键切到别的输入法。
+    pub english_mode: bool,
+
     /// 中文模式下不在组句时敲的标点转成全角（`，。？！` 等，数字后的 `.` 保持半角）。
     /// Windows 悬浮状态条上可点切换；macOS 在偏好设置中选择默认模式。
     pub full_width_punctuation: bool,
@@ -95,6 +99,7 @@ impl Default for GeneralConfig {
             english_candidates: true,
             traditional: false,
             chinese_first: false,
+            english_mode: true,
             full_width_punctuation: true,
             english_full_width_punctuation: false,
             shuangpin: String::new(),
