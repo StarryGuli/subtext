@@ -102,14 +102,21 @@ if [[ -f data/generated/dict.tsv || -f data/generated/dict.qj ]]; then
     chmod 644 "$APP/Contents/Resources/model/model.qjm"
     echo "打包本地整句模型：$model_dir/model.qjm"
   fi
-  # 释义表打成 .qj（TSV 比 .qj 新时重打），英文词表仍是 TSV
-  for lang in en ja zh; do
+  # 释义表打成 .qj（TSV 比 .qj 新时重打），英文词表仍是 TSV。各表来源不同，元数据按表写（见 assets/glossary/README.md）
+  for lang in en ja zh es; do
     src="assets/glossary/glossary-$lang.tsv"
     out="data/generated/glossary-$lang.qj"
     [[ -f "$src" ]] || continue
+    if [[ "$lang" == es ]]; then
+      license="GPL-3.0-or-later"
+      attribution="Azure Translator 机器翻译（Tofuzhu，tools/corpus/glossary_es.py）"
+    else
+      license="MIT"
+      attribution="LLM 生成（DeepSeek），qingjian-gloss-gen"
+    fi
     if [[ ! -f "$out" || "$src" -nt "$out" ]]; then
       cargo run --release -q -p qingjian-dict-convert -- pack glossary --language "$lang" --input "$src" \
-        --name "青简释义表（${lang}）" --license "MIT" --attribution "LLM 生成（DeepSeek），qingjian-gloss-gen"
+        --name "青简释义表（${lang}）" --license "$license" --attribution "$attribution"
     fi
     cp "$out" "$APP/Contents/Resources/"
   done
