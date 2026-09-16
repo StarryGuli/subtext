@@ -92,7 +92,7 @@ $cargoToml = Get-Content (Join-Path $Repo 'apps\windows\server\Cargo.toml')
 $verLine = $cargoToml | Where-Object { $_ -match '^\s*version\s*=\s*"(.+)"' } | Select-Object -First 1
 if (-not ($verLine -match '"(.+)"')) { throw '在 server\Cargo.toml 里没找到 version' }
 $Version = $Matches[1]
-# 开发版接 git 短哈希（0.1.0-alpha.3-dev-1a2b3c4，脏加 +），有 bug 能定位到哪次改动；发版提交去掉 -dev 就不接。
+# 开发版接 git 短哈希（0.1.3-dev-1a2b3c4，脏加 +），有 bug 能定位到哪次改动；发版提交去掉 -dev 就不接。
 if ($Version.EndsWith('-dev')) {
     Push-Location $Repo
     try {
