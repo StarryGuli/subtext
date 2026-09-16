@@ -107,6 +107,7 @@ impl Router {
         self.engine.set_fuzzy(config.fuzzy);
         self.engine.set_shuangpin(config.general.shuangpin());
         self.engine.set_zhuyin_mode(config.general.zhuyin);
+        self.engine.set_learning(config.general.learning);
         self.engine.set_mode_keys(config.shortcut.mode);
         let previous = self.config.render_settings();
         self.config = RouterConfig::from(config);

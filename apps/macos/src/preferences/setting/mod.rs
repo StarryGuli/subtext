@@ -146,6 +146,9 @@ pub enum Setting {
     /// `[general] input_log`，勾选框。
     InputLog,
 
+    /// 学习输入习惯开关。
+    Learning,
+
     /// 「高级」页「清空输入日志」按钮。
     ClearInputLog,
 
@@ -190,6 +193,7 @@ impl Setting {
             Self::EnglishCandidatesOffInApps => 25,
             Self::DeleteCandidateKeys => 26,
             Self::InputLog => 27,
+            Self::Learning => 45,
             Self::ClearInputLog => 28,
             Self::TestCloud => 29,
             Self::OpenWebsite => 30,
@@ -243,6 +247,7 @@ impl Setting {
             25 => Self::EnglishCandidatesOffInApps,
             26 => Self::DeleteCandidateKeys,
             27 => Self::InputLog,
+            45 => Self::Learning,
             28 => Self::ClearInputLog,
             29 => Self::TestCloud,
             30 => Self::OpenWebsite,
