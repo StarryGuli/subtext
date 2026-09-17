@@ -104,5 +104,12 @@ pub(crate) enum Message {
 
     // 关于页
     OpenWebsite,
+
+    // 关于页：检查更新（`UpdateChecked` 的 `None` = 本地开发版没查）
+    UpdateCheck(bool),
+    UpdateChannel(Option<usize>),
+    CheckUpdateNow,
+    UpdateChecked(Option<Result<qingjian_update::UpdateState, String>>),
+    OpenDownload,
     OpenRepository,
 }

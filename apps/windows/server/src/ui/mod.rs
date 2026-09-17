@@ -106,6 +106,16 @@ impl StatusSink for UiHandle {
     fn open_settings(&self) {
         open_settings();
     }
+
+    fn open_download(&self) {
+        let _ = unsafe { AllowSetForegroundWindow(ASFW_ANY) };
+        let opened = std::process::Command::new("explorer")
+            .arg(qingjian_update::DOWNLOAD_URL)
+            .spawn();
+        if let Err(error) = opened {
+            tracing::warn!(%error, "打开下载页失败");
+        }
+    }
 }
 
 /// 起与本 exe 同目录的设置程序。设置程序已开时由新实例把它带到前台，得先把前台权让出去。

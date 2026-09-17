@@ -86,6 +86,7 @@ impl Router {
                 self.reconcile_status();
             }
             IndicatorCommand::OpenSettings => self.status.open_settings(),
+            IndicatorCommand::OpenDownload => self.status.open_download(),
         }
     }
 

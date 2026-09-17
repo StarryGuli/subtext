@@ -16,6 +16,7 @@ pub(crate) struct MenuState {
     pub(crate) english_enabled: bool,
     pub(crate) full_width: bool,
     pub(crate) status_bar: bool,
+    pub(crate) update_available: bool,
 }
 
 /// 点了哪一项：中 / 英 DLL 自己切，其余交给 Server。
@@ -29,6 +30,7 @@ const ID_ENGLISH: u32 = 2;
 const ID_PUNCTUATION: u32 = 3;
 const ID_STATUS_BAR: u32 = 4;
 const ID_SETTINGS: u32 = 5;
+const ID_DOWNLOAD: u32 = 6;
 
 /// 在 `point`（屏幕坐标）弹出菜单，阻塞到用户点了某项或点别处关掉。
 pub(crate) fn track(owner: HWND, point: POINT, state: &MenuState) -> Option<MenuChoice> {
@@ -38,15 +40,22 @@ pub(crate) fn track(owner: HWND, point: POINT, state: &MenuState) -> Option<Menu
     } else {
         MF_GRAYED
     };
-    let items = [
+    let mut items = vec![
         Some((ID_CHINESE, "中文", checked(!state.english))),
         Some((ID_ENGLISH, "英文", english_flags)),
         None,
         Some((ID_PUNCTUATION, "全角标点", checked(state.full_width))),
         Some((ID_STATUS_BAR, "悬浮状态条", checked(state.status_bar))),
         None,
-        Some((ID_SETTINGS, "设置…", MENU_ITEM_FLAGS(0))),
     ];
+    if state.update_available {
+        items.push(Some((
+            ID_DOWNLOAD,
+            "有新版本，前往下载…",
+            MENU_ITEM_FLAGS(0),
+        )));
+    }
+    items.push(Some((ID_SETTINGS, "设置…", MENU_ITEM_FLAGS(0))));
     let menu = unsafe { CreatePopupMenu() }.ok()?;
     for item in items {
         let _ = match item {
@@ -66,6 +75,7 @@ pub(crate) fn track(owner: HWND, point: POINT, state: &MenuState) -> Option<Menu
         ID_PUNCTUATION => Some(MenuChoice::Server(IndicatorCommand::TogglePunctuation)),
         ID_STATUS_BAR => Some(MenuChoice::Server(IndicatorCommand::ToggleStatusBar)),
         ID_SETTINGS => Some(MenuChoice::Server(IndicatorCommand::OpenSettings)),
+        ID_DOWNLOAD => Some(MenuChoice::Server(IndicatorCommand::OpenDownload)),
         _ => None,
     }
 }

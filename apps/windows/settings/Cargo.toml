@@ -30,6 +30,7 @@ qingjian-learning.workspace = true
 qingjian-core.workspace = true
 qingjian-dictionary.workspace = true
 qingjian-translate.workspace = true
+qingjian-update.workspace = true
 jiff.workspace = true
 rfd = "0.17"
 

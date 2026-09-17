@@ -169,6 +169,7 @@ impl Router {
             full_width_punctuation: self.config.full_width,
             english_full_width_punctuation: self.config.english_full_width,
             status_bar: self.config.status_enabled,
+            update_available: self.update_available(),
         }
     }
 

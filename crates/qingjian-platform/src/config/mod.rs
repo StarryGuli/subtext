@@ -15,6 +15,7 @@ mod shortcut;
 mod status_bar;
 mod switch_key;
 mod theme_mode;
+mod update;
 
 use std::path::Path;
 
@@ -47,6 +48,7 @@ pub use shortcut::ShortcutConfig;
 pub use status_bar::StatusBarConfig;
 pub use switch_key::{SwitchKey, SwitchKeys};
 pub use theme_mode::ThemeMode;
+pub use update::{UpdateChannel, UpdateConfig};
 
 /// 用户配置文件（TOML）。所有平台同一份格式，缺省值全部在各分节的 `Default` 里。
 ///
@@ -84,6 +86,9 @@ pub struct Config {
 
     /// 本地整句模型。
     pub model: LocalModelConfig,
+
+    /// 检查更新。
+    pub update: UpdateConfig,
 }
 
 fn deserialize_phrases<'de, D: serde::Deserializer<'de>>(
@@ -338,6 +343,12 @@ enabled = false
 # 记住的屏幕位置（物理像素，拖动后自动写入）；留空则首次出现在屏幕右下角
 # x = 0
 # y = 0
+
+[update]
+# 检查更新：每天向官网（qingjian.app）读一次版本索引，有新版在菜单与设置的「关于」页提示；请求不带任何标识，不自动下载安装
+check = true
+# 渠道：stable 只看正式版；beta 还会提示测试版（alpha / beta / rc）
+channel = "stable"
 "#
 );
 
