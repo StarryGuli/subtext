@@ -50,8 +50,12 @@ impl ITfTextInputProcessor_Impl for TextService_Impl {
         // 连 Server：它随 `OpenSession` 的回包把按键行为设置带下来，就地应用。那两个值在按键到达之前
         // 就要有，而且应用时要登记 Ctrl+Space 保留键，所以这一步必须排在 `thread_mgr` 就绪之后。
         self.connect();
-        // 连不上 Server 时用缺省值把模式状态建起来；连上了的话上面已应用过真实值，这里去重跳过。
-        self.apply_input_settings(InputSettings::default());
+        // 只有**没连上** Server 时才用缺省值把模式状态建起来。连上了的话 `connect` 已经应用过 Server 下发的
+        // 真实值，这里再应用一次缺省值会把它盖掉（要等下一拍 `SyncMode` 才改回来 —— 关掉内置英文模式的人
+        // 每次激活都会先登记上中 / 英按钮，之后也不会撤）。
+        if self.engine.borrow().is_none() {
+            self.apply_input_settings(InputSettings::default());
+        }
         // 只在 Ctrl+Space 这一路开「忽略系统写回」的窗：那个组合常被系统的「输入法/非输入法切换」占着，
         // 系统那条路会把转换模式翻成「非原生」，我们按 compartment 同步时就成了英文模式
         // （表现：Ctrl+Space 好像「不能用」，其实每次激活都被打回英文，见 `sync_from_conversion_mode`）。
