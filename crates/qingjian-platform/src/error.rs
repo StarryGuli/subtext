@@ -31,7 +31,9 @@ pub enum ConfigError {
     #[error("cannot edit config {path} in place: {source}")]
     Edit {
         path: PathBuf,
+
+        /// 同上。
         #[source]
-        source: toml_edit::TomlError,
+        source: Box<toml_edit::TomlError>,
     },
 }
