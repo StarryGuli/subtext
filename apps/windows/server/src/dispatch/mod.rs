@@ -21,7 +21,9 @@ use std::time::{Duration, Instant};
 
 use qingjian_core::Engine;
 use qingjian_platform::LocalModelConfig;
-use qingjian_platform::protocol::{ClientMessage, Frame, ScreenRect, ServerMessage, SessionId};
+use qingjian_platform::protocol::{
+    ClientMessage, Frame, InputSettings, ScreenRect, ServerMessage, SessionId,
+};
 
 pub use self::candidates::{CandidateSink, NoopSink, RenderSettings};
 pub use self::code::find_code_table;
@@ -148,6 +150,15 @@ impl Router {
             model_loader: None,
             applied_model: LocalModelConfig::default(),
             rescore: RescoreState::default(),
+        }
+    }
+
+    /// 下发给 DLL 的按键行为设置：`OpenSession` 的回包带一次，之后每拍 `SyncMode` 也跟着走，
+    /// 所以 DLL 不用自己读配置文件，配置改了也不用重开会话。
+    pub(super) fn input_settings(&self) -> InputSettings {
+        InputSettings {
+            switch_mode: self.config.switch_mode,
+            english_mode: self.config.english_mode,
         }
     }
 

@@ -6,8 +6,8 @@ pub use std::sync::{Arc, Mutex};
 pub use qingjian_core::sentence::SentenceScorer;
 pub use qingjian_core::{Language, ModeKeys, ShuangpinScheme};
 pub use qingjian_platform::protocol::{
-    ClientMessage, Frame, KeyEvent, KeyModifiers, KeyOutcome, PROTOCOL_VERSION, ServerMessage,
-    SessionId,
+    ClientMessage, Frame, InputSettings, KeyEvent, KeyModifiers, KeyOutcome, PROTOCOL_VERSION,
+    ServerMessage, SessionId,
 };
 pub use qingjian_platform::{
     AppsConfig, DEFAULT_ENGLISH_CANDIDATES_OFF_WINDOWS, PreeditMode, Scheme,
@@ -82,15 +82,21 @@ pub fn router_in(config: RouterConfig, app: Option<String>) -> Router {
     // 与 main.rs 一样，双拼方案是启动时直接设给 Engine 的。
     engine.set_shuangpin(config.scheme.shuangpin());
     let mut router = Router::new(engine, config);
-    assert_eq!(
-        router.handle(ClientMessage::OpenSession {
-            session: SESSION,
-            app,
-            protocol: PROTOCOL_VERSION,
-        }),
-        None
-    );
+    // 协议版本与 Server 一致：开会话时把按键行为设置回一次（DLL 不读配置文件，靠它拿切换键）。
+    open_session(&mut router, SESSION, app);
     router
+}
+
+/// 开一个会话并吃掉 Server 回的按键行为设置。
+pub fn open_session(router: &mut Router, session: SessionId, app: Option<String>) {
+    match router.handle(ClientMessage::OpenSession {
+        session,
+        app,
+        protocol: PROTOCOL_VERSION,
+    }) {
+        Some(ServerMessage::SessionOpened { .. }) => {}
+        other => panic!("expected SessionOpened, got {other:?}"),
+    }
 }
 
 pub fn letter(c: char) -> KeyEvent {

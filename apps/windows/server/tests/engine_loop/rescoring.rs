@@ -81,14 +81,7 @@ fn privacy_follows_the_focused_session() {
     let (_, commit, _) = press(&mut router, digit(1));
     assert!(commit.is_some());
     // 另一个会话开进来拿焦点：它不私密
-    assert_eq!(
-        router.handle(ClientMessage::OpenSession {
-            session: SessionId(2),
-            app: None,
-            protocol: PROTOCOL_VERSION,
-        }),
-        None
-    );
+    open_session(&mut router, SessionId(2), None);
     press_in(&mut router, SessionId(2), letter('k'));
     assert!(!router.is_private());
     // 焦点回到第一个会话：仍是私密

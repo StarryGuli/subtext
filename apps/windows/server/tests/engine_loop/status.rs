@@ -24,6 +24,7 @@ fn status_bar_mode_click_is_handed_to_dll_via_sync_mode() {
         Some(ServerMessage::ModeSync {
             session: SESSION,
             english: Some(true),
+            input: InputSettings::default(),
         })
     );
     assert_eq!(
@@ -31,6 +32,39 @@ fn status_bar_mode_click_is_handed_to_dll_via_sync_mode() {
         Some(ServerMessage::ModeSync {
             session: SESSION,
             english: None,
+            input: InputSettings::default(),
+        })
+    );
+}
+
+#[test]
+fn status_bar_mode_click_is_ignored_when_builtin_english_is_off() {
+    let config = RouterConfig {
+        status_enabled: true,
+        english_mode: false,
+        ..RouterConfig::default()
+    };
+    let mut router = router_with(config);
+    let recorder = RecordingStatus::default();
+    router.set_status_sink(Box::new(recorder.clone()));
+    router.handle(ClientMessage::ModeChanged {
+        session: SESSION,
+        english: false,
+    });
+    assert_eq!(recorder.calls().last(), Some(&Some("中".to_owned())));
+
+    // 关掉内置英文模式：点「中」不翻成「英」，也不给 DLL 递目标模式（DLL 那边同样会拦）
+    router.handle_status_event(StatusEvent::ToggleMode);
+    assert_eq!(recorder.calls().last(), Some(&Some("中".to_owned())));
+    assert_eq!(
+        router.handle(ClientMessage::SyncMode { session: SESSION }),
+        Some(ServerMessage::ModeSync {
+            session: SESSION,
+            english: None,
+            input: InputSettings {
+                english_mode: false,
+                ..InputSettings::default()
+            },
         })
     );
 }

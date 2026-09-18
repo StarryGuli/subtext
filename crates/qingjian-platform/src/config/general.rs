@@ -58,6 +58,9 @@ pub struct GeneralConfig {
     /// 中文模式下按住 Shift 敲的字母：交给应用（缺省）还是收进组句缓冲区参与匹配。
     /// 收进组句才能打出「C盘」这类混杂词（`Cpan` 与 `cpan` 一样匹配）。
     pub shift_letter: ShiftLetter,
+    /// 内置英文模式：开着时单击切换键（`[shortcut] switch_mode`）或按 Caps Lock 能进英文模式。
+    /// 关掉后青简保持中文模式，切换键与语言栏按钮都不再切过去；要打英文请用系统快捷键切到别的输入法。
+    pub english_mode: bool,
 
     /// 中文模式下不在组句时敲的标点转成全角（`，。？！` 等，数字后的 `.` 保持半角）。
     /// Windows 悬浮状态条上可点切换；macOS 在偏好设置中选择默认模式。
@@ -110,6 +113,7 @@ impl Default for GeneralConfig {
             traditional: false,
             chinese_first: false,
             shift_letter: ShiftLetter::default(),
+            english_mode: true,
             full_width_punctuation: true,
             english_full_width_punctuation: false,
             scheme: String::new(),
