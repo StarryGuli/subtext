@@ -158,8 +158,8 @@ apps/*                     （组装：Engine::new(dict).with_translator(..).wit
 
 - Core 只依赖 dictionary，不依赖 translate 和 learning。翻译与学习通过 trait 注入（`Translator` / `Learner` / `InputLogger` / `UsageMeter` / `VocabularyTracker`，
   缺省实现都是空操作），这样 Core 的单元测试和 CLI 工具不需要真实词典也能跑。
-- `qingjian-platform` 里的类型必须可序列化（serde）：macOS 和 Linux 上 Core 与壳同进程，
-  Windows 上 Core 在独立 Server 进程，同一套协议类型两边都用。
+- `qingjian-platform` 里的类型必须可序列化（serde）：macOS 上 Core 与壳同进程，
+  Windows 和 Linux 上 Core 在独立 Server 进程，同一套协议类型两边都用。
 - `storage` 只放 Core 自己的持久化原语，用户词频的数据模型归 `qingjian-learning`。
 
 ## 翻译的异步模型
@@ -462,7 +462,11 @@ CC-CEDICT 表（`dict-convert cedict`）保留为备用来源，覆盖面广但�
 - **版本与发布**：各平台壳版本号独立（见 `docs/notes/release.md`）；`apps/windows/server/Cargo.toml` 写死自己的 `version`，
   将来的发布标签用 `windows-v<版本>`，与 macOS 的 `macos-v<版本>` 互不影响（`qingjian-windows-tsf` 是同一 Windows 产品的另一半，各自 `Cargo.toml` 记版本；两个 package 同放 `apps/windows/` 下，是一个产品的两个产物——不合成一个 crate，因为 DLL 不能带 Engine 的依赖树）。
 
-### Linux：IBus / Fcitx
+### Linux：Fcitx5 / IBus（2026-09-15 定，PR #90 在做）
 
-- IBus 走 D-Bus（`zbus`），纯 Rust 即可。
-- Fcitx5 需要一层 C++ shim(Maybe)。
+- 与 Windows 同构：Core 跑在独立的 Rust Server 进程（Unix socket，复用 `qingjian-platform` 的协议），壳只转发按键、上屏与光标位置。
+  词库、语言模型、神经模型、渲染器和字体都在 Server 里，不进 Fcitx5 这个所有输入法共用的进程；Server 崩了不带倒 Fcitx5。
+- Fcitx5 壳是一层薄 C++ 插件（addon ABI 是 C++ 虚类，纯 Rust 做不了），只做转发，判断都在 Server。
+- 候选窗自绘：Server 出位图并自己开窗（X11 / XWayland 先行），插件只报光标矩形与焦点。
+- IBus 壳以后用 zbus 写成纯 Rust，共用同一个 Server；排在 Fcitx5 真机验收之后。
+- 三个平台的按键分流（macOS host / Windows Server / Linux Server）要抽成公共 crate，等 Linux 最小输入链路合入后做。
