@@ -247,6 +247,54 @@ fn shortcuts_follow_the_first_local_candidate() {
 }
 
 #[test]
+fn shift_letters_join_the_buffer_only_when_configured() {
+    let dictionary = Dictionary::parse("C盘\tc pan\t8000\n磁盘\tci pan\t249\n").unwrap();
+    let mut engine = Engine::new(dictionary);
+    let type_cpan = |engine: &mut Engine| {
+        // 中文模式下按住 Shift 敲 C，再打 pan
+        engine.push('C');
+        for c in "pan".chars() {
+            engine.push(c);
+        }
+    };
+
+    // 缺省 `shift_letter = "passthrough"`：壳直接把大写字母交给应用，这一路本来就不会走到；
+    // 万一走到也不该被当成拼音去匹配（所以「C盘」出不来）
+    type_cpan(&mut engine);
+    assert_ne!(engine.query().unwrap().candidates.items[0].text, "C盘");
+    engine.clear();
+
+    // 开了 compose：按小写参与匹配，拼音行按敲的样子显示，回车原样上屏时保留大写
+    engine.set_shift_letter_compose(true);
+    type_cpan(&mut engine);
+    let query = engine.query().unwrap();
+    assert_eq!(query.candidates.items[0].text, "C盘");
+    assert_eq!(query.marked_text(), "C'pan");
+    assert_eq!(engine.take_raw(), "Cpan");
+    assert!(engine.composition().is_empty());
+}
+
+#[test]
+fn media_format_shortcuts_sit_at_third_and_fourth() {
+    let dict = Dictionary::parse(concat!(
+        "门票\tmen piao\t5000\n",
+        "买票\tmai piao\t3000\n",
+        "马匹\tma pi\t2000\n",
+    ))
+    .unwrap();
+    let mut engine = Engine::new(dict);
+    engine.set_input("mp");
+    let all = engine.query().unwrap().candidates.items;
+    assert!(all.len() >= 4, "{all:?}");
+    assert_eq!(all[0].kind, CandidateKind::Chinese);
+    assert_eq!(all[1].kind, CandidateKind::Chinese);
+    assert_eq!(all[2].text, "mp3");
+    assert_eq!(all[2].kind, CandidateKind::Shortcut);
+    assert_eq!(all[3].text, "mp4");
+    assert_eq!(all[3].kind, CandidateKind::Shortcut);
+}
+
+#[test]
 fn expression_mode_skips_pinyin_and_evaluates() {
     let mut engine = self::engine();
     assert!(!engine.expression_mode());
@@ -269,7 +317,7 @@ fn expression_mode_skips_pinyin_and_evaluates() {
     assert_eq!(query.marked_text(), "v");
 
     // v 开头的英文词仍能混输
-    let words = WordList::parse("very\n").unwrap();
+    let words = WordList::parse("very\tvery\t4800\n").unwrap();
     let mut engine = self::engine().with_english(words);
     engine.set_input("very");
     let query = engine.query().unwrap();

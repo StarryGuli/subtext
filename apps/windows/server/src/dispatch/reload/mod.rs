@@ -164,6 +164,8 @@ impl Router {
         self.engine.set_learning(config.general.learning);
         self.engine.set_mode_keys(config.shortcut.mode);
         self.engine.set_chinese_first(config.general.chinese_first);
+        self.engine
+            .set_shift_letter_compose(config.general.shift_letter.compose());
         let previous = self.config.render_settings();
         self.config = RouterConfig::from(config);
         let settings = self.config.render_settings();

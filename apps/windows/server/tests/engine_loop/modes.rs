@@ -323,3 +323,26 @@ fn punctuation_toggle_is_remembered_per_mode() {
     let (_, commit, _) = press(&mut router, english_comma);
     assert_eq!(commit.as_deref(), Some("hello，"));
 }
+
+/// 中文模式下的 Shift 大写：缺省交给应用（与以前一致），配成 compose 才收进组句缓冲区。
+#[test]
+fn shift_letters_follow_the_configuration() {
+    // 缺省 `shift_letter = "passthrough"`：临时打英文，字母归应用
+    let mut router = router();
+    let (outcome, commit, _) = press(&mut router, letter_with('P', SHIFT));
+    assert_eq!(outcome, KeyOutcome::Passthrough);
+    assert_eq!(commit, None);
+
+    // 配成 compose：进组句、按小写参与匹配，拼音行按敲的样子显示，回车原样上屏时还原大写
+    let config = RouterConfig {
+        shift_letter_compose: true,
+        ..RouterConfig::default()
+    };
+    let mut router = router_with(config);
+    type_letters(&mut router, "ni");
+    let (outcome, commit, frame) = press(&mut router, letter_with('A', SHIFT));
+    assert_eq!((outcome, commit.as_deref()), (KeyOutcome::Consumed, None));
+    assert_eq!(preedit(&frame), "niA");
+    let (_, commit, _) = press(&mut router, function_key(0x0D));
+    assert_eq!(commit.as_deref(), Some("niA"));
+}
