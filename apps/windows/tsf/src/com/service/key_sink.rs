@@ -122,11 +122,21 @@ impl TextService_Impl {
     /// 这个键吃不吃，与 Router 的分派对齐；`OnTestKeyDown` 用，无副作用。判定见 [`eats_key`]。
     ///
     /// 带 Ctrl/Alt/Win 只有组句中的「修饰键 + 数字」送 Server（译词 / 删候选），其余归应用（翻译选中文字走保留键）；
-    /// 字母只有「中文模式、没在组句、按住 Shift 的大写」归应用，其中 V / U / I 仍送 Server：双拼下是表达式 / 问字入口；
+    /// 字母只有「中文模式、没在组句、按住 Shift 的大写」归应用（`[general] shift_letter = "compose"` 时也吃，
+    /// 让它起一段组句），其中 V / U / I 仍送 Server：双拼下是表达式 / 问字入口；
     /// 组句中功能键 / 方向键 / 可打印字符都吃；没在组句时数字 / 标点也先「测吃」送去转全角（中英各有一份开关），
     /// Server 不转的回 Passthrough 再放行；`?` 是问字前缀。
     fn would_eat(&self, event: &KeyEvent) -> bool {
-        eats_key(event, self.shared.composing(), self.shared.translating())
+        let shift_letter_compose = self
+            .input_settings
+            .get()
+            .is_some_and(|input| input.shift_letter_compose);
+        eats_key(
+            event,
+            self.shared.composing(),
+            self.shared.translating(),
+            shift_letter_compose,
+        )
     }
 
     /// 不吃的键绝不碰组句（否则光标一移，组句会把拼音重插到别处）。
@@ -272,11 +282,17 @@ fn eats_without_server(event: &KeyEvent) -> bool {
 ///
 /// - 翻译评审中一律吃，交给 Server 定接受 / 取消；
 /// - 带 Ctrl / Alt / Win：只有组句中的「修饰键 + 数字」吃（译词 / 删候选），其余归应用（翻译选中文字走保留键）；
-/// - 字母只有「中文模式、没在组句、按住 Shift 的大写」归应用，其中 V / U / I 仍吃：双拼下是表达式 / 问字入口
-///   （中文模式下 Shift + 字母要不要进组句由 `[general] shift_letter` 决定，那个开关在 Core 那一路，不在这里）；
+/// - 字母只有「中文模式、没在组句、按住 Shift 的大写」归应用，其中 V / U / I 仍吃：双拼下是表达式 / 问字入口。
+///   `[general] shift_letter = "compose"`（Server 经 [`InputSettings`](qingjian_platform::protocol::InputSettings) 下发）时这种大写也吃：送去 Core 起一段组句，
+///   `⇧C` 接 `pan` 才能出「C盘」；组句一开始，后面的 Shift 字母本来就被 `composing` 兜住；
 /// - 组句中功能键 / 方向键 / 可打印字符都吃；
 /// - 没在组句时数字 / 标点也先「测吃」送去转全角（中英各有一份开关），Server 不转的回 Passthrough 再放行；`?` 是问字前缀。
-fn eats_key(event: &KeyEvent, composing: bool, translating: bool) -> bool {
+fn eats_key(
+    event: &KeyEvent,
+    composing: bool,
+    translating: bool,
+    shift_letter_compose: bool,
+) -> bool {
     if translating {
         return true;
     }
@@ -290,6 +306,7 @@ fn eats_key(event: &KeyEvent, composing: bool, translating: bool) -> bool {
             || modifiers.english_mode
             || !modifiers.shift
             || composing
+            || shift_letter_compose
             || is_mode_letter(vk);
     }
     if composing {
@@ -325,20 +342,42 @@ mod tests {
 
     #[test]
     fn shifted_letters_without_composition_go_to_the_app() {
-        // 中文模式、没在组句：Shift 敲的大写**归应用**（原样打出来）。要不要改成进组句由 `[general] shift_letter`
-        // 决定，那个开关在 Core 那一路，不在这里。
+        // 中文模式、没在组句：Shift 敲的大写缺省**归应用**（原样打出来）
         let shifted = KeyModifiers {
             shift: true,
             ..KeyModifiers::default()
         };
-        assert!(!eats_key(&with_modifiers(0x41, 'A', shifted), false, false));
+        assert!(!eats_key(
+            &with_modifiers(0x41, 'A', shifted),
+            false,
+            false,
+            false
+        ));
+        // `[general] shift_letter = "compose"`：没在组句也吃，送去起一段组句（⇧C 接 pan 出 C盘）
+        assert!(eats_key(
+            &with_modifiers(0x41, 'A', shifted),
+            false,
+            false,
+            true
+        ));
         // 组句一开始，后面的 Shift 字母就被 `composing` 兜住，一律吃
-        assert!(eats_key(&with_modifiers(0x41, 'A', shifted), true, false));
+        assert!(eats_key(
+            &with_modifiers(0x41, 'A', shifted),
+            true,
+            false,
+            false
+        ));
         // 双拼下 Shift + V / U / I 是表达式 / 问字入口：没在组句也吃
-        assert!(eats_key(&with_modifiers(0x56, 'V', shifted), false, false));
+        assert!(eats_key(
+            &with_modifiers(0x56, 'V', shifted),
+            false,
+            false,
+            false
+        ));
         // 不带 Shift 的字母本来就吃
         assert!(eats_key(
             &with_modifiers(0x41, 'a', KeyModifiers::default()),
+            false,
             false,
             false
         ));
@@ -347,14 +386,29 @@ mod tests {
             caps: true,
             ..KeyModifiers::default()
         };
-        assert!(eats_key(&with_modifiers(0x41, 'A', caps), false, false));
+        assert!(eats_key(
+            &with_modifiers(0x41, 'A', caps),
+            false,
+            false,
+            false
+        ));
         // 带 Ctrl 的组合键归应用，翻译评审中一律吃
         let ctrl_c = KeyModifiers {
             ctrl: true,
             ..KeyModifiers::default()
         };
-        assert!(!eats_key(&with_modifiers(0x43, 'c', ctrl_c), false, false));
-        assert!(eats_key(&with_modifiers(0x43, 'c', ctrl_c), false, true));
+        assert!(!eats_key(
+            &with_modifiers(0x43, 'c', ctrl_c),
+            false,
+            false,
+            false
+        ));
+        assert!(eats_key(
+            &with_modifiers(0x43, 'c', ctrl_c),
+            false,
+            true,
+            false
+        ));
     }
 
     #[test]

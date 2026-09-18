@@ -18,6 +18,11 @@ pub struct InputSettings {
 
     /// 内置英文模式总开关（`[general] english_mode`）。
     pub english_mode: bool,
+
+    /// 中文模式下 Shift+字母进组句（`[general] shift_letter = "compose"`）。DLL 据此决定没在组句时
+    /// 按住 Shift 敲的字母吃不吃：缺省交给应用，开着时送 Server 起一段组句（`⇧C` 接 `pan` 出「C盘」）。
+    #[serde(default)]
+    pub shift_letter_compose: bool,
 }
 
 impl Default for InputSettings {
@@ -25,6 +30,7 @@ impl Default for InputSettings {
         Self {
             switch_mode: SwitchKey::default(),
             english_mode: true,
+            shift_letter_compose: false,
         }
     }
 }

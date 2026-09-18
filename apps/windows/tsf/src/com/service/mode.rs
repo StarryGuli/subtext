@@ -22,14 +22,34 @@ pub(super) const CONVERSION_RESTORE_GUARD: std::time::Duration =
 
 impl TextService_Impl {
     /// 应用中英模式的两项设置：激活时与配置变更时都走这里。
+    ///
+    /// 内置英文模式开关在运行中翻转时，语言栏的中 / 英按钮与转换模式回调跟着登记 / 撤掉（激活时由 `Activate`
+    /// 自己按开关登记，这里只管激活之后的变化），设置窗口改完不用切走再切回输入法。
     pub(super) fn apply_mode_settings(&self, english_mode: bool, switch_key: SwitchKey) {
+        let was_enabled = self.mode_state.enabled();
         self.mode_state.set_settings(english_mode, switch_key);
         // 关掉内置英文模式时立刻回中文，别停在一个再也切不回去的英文状态。
         if !english_mode && self.mode_state.english() {
             self.mode_state.set_english(false);
             self.refresh_mode_indicator();
         }
+        if was_enabled != english_mode && self.is_active() {
+            if english_mode {
+                log("打开了内置英文模式：登记中 / 英按钮");
+                self.add_lang_bar_item();
+                self.advise_conversion_sink();
+            } else {
+                log("关掉了内置英文模式：撤掉中 / 英按钮");
+                self.unadvise_conversion_sink();
+                self.remove_lang_bar_item();
+            }
+        }
         self.sync_switch_preserved_key(switch_key);
+    }
+
+    /// `Activate` 是否已经走完（[`super::ACTIVE`] 在它末尾才设）。
+    fn is_active(&self) -> bool {
+        super::ACTIVE.with(|active| active.borrow().is_some())
     }
 
     /// 应用 Server 下发的按键行为设置：`OpenSession` 的回包给一次，之后每一拍 `SyncMode` 也都带着。
@@ -40,9 +60,10 @@ impl TextService_Impl {
         }
         self.input_settings.set(Some(input));
         log(&format!(
-            "按键行为设置：中英切换键 {}，内置英文模式 {}",
+            "按键行为设置：中英切换键 {}，内置英文模式 {}，Shift 字母进组句 {}",
             input.switch_mode.key(),
-            input.english_mode
+            input.english_mode,
+            input.shift_letter_compose
         ));
         self.apply_mode_settings(input.english_mode, input.switch_mode);
     }
