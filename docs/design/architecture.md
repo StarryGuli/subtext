@@ -411,8 +411,9 @@ CC-CEDICT 表（`dict-convert cedict`）保留为备用来源，覆盖面广但�
   单击判定在**击键 sink** 里（`com/key/tap.rs`，喂 `OnTestKeyDown` / `OnTestKeyUp`：按下切换键到抬起之间没有别的键插进来就是一次单击；
   微软 SampleIME 的 `OnTestKeyDown` 同样处理 VK_SHIFT，sink 收得到独立修饰键）。之前用线程级 `WH_KEYBOARD` 钩子判定，但钩子**看不到被 TSF 吃掉的键**
   （msctf 在队列层把它们改成 WM_NULL），Shift + 数字（删候选 / 第二译词）会被误判成单击而切换模式，2026-09-11 真机确认 sink 收得到 Shift 后钩子已删。
-  切换键、英文模式开关与翻译快捷键一样，由 DLL 自己读 `com/settings.rs`（`%APPDATA%\Qingjian\config.toml`）：激活时读一次，
-  之后由轮询定时器按 mtime 热加载（每 ~320 ms 看一次，见 `com/poll/`），**设置窗口改完立刻生效**，不必切走再切回输入法。
+  切换键、英文模式开关与「Shift 字母进组句」由 **Server 读配置、经协议下发**（`protocol::InputSettings`：`OpenSession` 的回包
+  `SessionOpened` 带一次，之后每拍 `SyncMode` 跟着走，值变了就地应用，**设置窗口改完约 320 ms 内生效**，不必切走再切回输入法）；
+  DLL 不读配置文件——它跑在每个应用进程里，AppContainer 里的商店应用连 `%APPDATA%` 都读不到。
   切换键选 `ctrl+space` 时它是组合键、属系统键不经击键 sink，与翻译快捷键一样登记成 TSF 保留键
   （`com/key/preserved.rs` 的 `GUID_SWITCH_MODE`）；但 Windows 缺省把「输入法/非输入法切换」
   （`IME_CHOTKEY_IME_NONIME_TOGGLE`，注册表 `Hot Keys\00000010`）也绑在它上面，系统会先截走，而且系统那条路
