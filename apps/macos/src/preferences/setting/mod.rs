@@ -107,6 +107,9 @@ pub enum Setting {
     /// `[general] chinese_first`，勾选框：中英混输时中文候选排在英文词前。
     ChineseFirst,
 
+    /// `[general] shift_letter`，勾选框：中文模式下 Shift+字母进组句（勾上是 compose，否则 passthrough）。
+    ShiftLetter,
+
     /// `[shortcut] translation`，快捷键录制按钮（只记修饰键）。
     TranslationKeys,
 
@@ -196,6 +199,7 @@ impl Setting {
             Self::Preedit => 13,
             Self::EnglishCandidates => 14,
             Self::ChineseFirst => 42,
+            Self::ShiftLetter => 50,
             Self::TranslationKeys => 15,
             Self::TranslationSecondKeys => 16,
             Self::TranslateSelectionKeys => 17,
@@ -255,6 +259,7 @@ impl Setting {
             13 => Self::Preedit,
             14 => Self::EnglishCandidates,
             42 => Self::ChineseFirst,
+            50 => Self::ShiftLetter,
             15 => Self::TranslationKeys,
             16 => Self::TranslationSecondKeys,
             17 => Self::TranslateSelectionKeys,
@@ -343,6 +348,7 @@ mod tests {
             Setting::DeleteCandidateKeys,
             Setting::InputLog,
             Setting::SystemTextReplacements,
+            Setting::ShiftLetter,
             Setting::ClearInputLog,
             Setting::TestCloud,
             Setting::OpenWebsite,

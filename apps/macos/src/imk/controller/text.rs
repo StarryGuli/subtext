@@ -159,8 +159,14 @@ impl QingjianInputController {
             }
             return self.handle_text(text, client);
         }
-        // 按住 Shift 打的大写字母：临时打英文，先把拼音原样上屏，再把字母交给应用
+        // 按住 Shift 打的大写字母：缺省是临时打英文，先把拼音原样上屏，再把字母交给应用；
+        // `[general] shift_letter = "compose"` 时进缓冲区（Core 按小写匹配、原样上屏时还原大写）
         if c.is_ascii_uppercase() {
+            if host::with(|h| h.engine.shift_letter_compose()).unwrap_or(false) {
+                host::with(|h| h.engine.push(c));
+                self.refresh(client);
+                return true;
+            }
             if composing {
                 self.commit_raw(client);
             }

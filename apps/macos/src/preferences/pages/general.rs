@@ -38,6 +38,9 @@ pub struct GeneralPage {
     /// 中英混输时中文候选排在英文词前。
     chinese_first: Retained<NSButton>,
 
+    /// 中文模式下 Shift+字母进组句。
+    shift_letter: Retained<NSButton>,
+
     /// 学习语言弹出菜单里各项对应的语言。
     languages: Vec<Language>,
 
@@ -153,6 +156,18 @@ impl GeneralPage {
             mtm,
             "勾上后整段输入是英文词时（hello、key）英文词排第二，空格上屏的仍是中文；不勾（缺省）拼音不成立的输入英文词排第一。",
         );
+        let shift_letter = checkbox(
+            mtm,
+            "输入拼音时按住 Shift 的字母也进组句",
+            Setting::ShiftLetter,
+            target,
+        );
+        row_checkbox(layout, &shift_letter);
+        note(
+            layout,
+            mtm,
+            "不勾（缺省）是临时打英文：拼音先上屏，这个大写字母原样交给应用。勾上后它进拼音缓冲区、按小写参与匹配，Cpan 与 cpan 一样能出「C盘」；回车原样上屏时保留大写。",
+        );
         Self {
             learning_language,
             page_size,
@@ -162,6 +177,7 @@ impl GeneralPage {
             english,
             english_off_in_apps,
             chinese_first,
+            shift_letter,
             languages: languages.to_vec(),
             punctuation,
         }
@@ -203,5 +219,6 @@ impl GeneralPage {
         self.english_off_in_apps
             .setEnabled(general.english_candidates);
         set_checked(&self.chinese_first, general.chinese_first);
+        set_checked(&self.shift_letter, general.shift_letter.compose());
     }
 }

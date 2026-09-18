@@ -3,6 +3,7 @@
 use super::diagnostics::{copy_to_pasteboard, open_with_system};
 use super::*;
 use crate::preferences::DEFAULT_FONT_LABEL;
+use qingjian_platform::ShiftLetter;
 
 impl Host {
     /// 写短语前读取文件；外部规则有变化时同步列表并请用户重新确认。
@@ -344,6 +345,15 @@ impl Host {
             }
             (Setting::ChineseFirst, SettingValue::Bool(on)) => {
                 self.settings.set_bool("general", "chinese_first", on);
+            }
+            (Setting::ShiftLetter, SettingValue::Bool(on)) => {
+                let mode = if on {
+                    ShiftLetter::Compose
+                } else {
+                    ShiftLetter::Passthrough
+                };
+                self.settings
+                    .set_value("general", "shift_letter", mode.key());
             }
             // 勾上写缺省的终端 / 编辑器列表，去掉写空表；手改过的列表勾一下就回缺省
             (Setting::EnglishCandidatesOffInApps, SettingValue::Bool(on)) => {
