@@ -119,13 +119,20 @@ impl Router {
                     Effect::Changed(Some(self.engine.take_raw()))
                 }
             }
+            codes::TAB if event.modifiers.shift => {
+                self.page(-1);
+                Effect::Navigated
+            }
             codes::TAB if self.engine.english_mode() => {
                 Effect::Changed(Some(self.commit_highlighted()))
             }
-            // 中文模式 Tab：有整句补全就接受，否则交还应用（缩进 / 跳焦点）。
+            // 中文模式 Tab：有整句补全就接受，否则下一页。
             codes::TAB => match self.sentence.take() {
                 Some(sentence) => Effect::Changed(Some(self.engine.accept_prediction(&sentence))),
-                None => Effect::Passthrough,
+                None => {
+                    self.page(1);
+                    Effect::Navigated
+                }
             },
             codes::DOWN => {
                 self.move_highlight(1);
