@@ -130,8 +130,9 @@ impl Settings {
             tracing::warn!(%error, path = %env_file.display(), "写 .env 失败");
             return false;
         }
-        if let Err(error) = dotenvy::from_path_override(&env_file) {
-            tracing::warn!(%error, ".env 写入后重新加载失败");
+        // 解析错误的原文里带着出错的那一行（含密钥），不进日志
+        if dotenvy::from_path_override(&env_file).is_err() {
+            tracing::warn!(path = %env_file.display(), ".env 写入后重新加载失败");
             return false;
         }
         tracing::info!(name, path = %env_file.display(), "密钥已写入 .env");
@@ -166,7 +167,14 @@ fn load_dotenv(config_path: &Path) {
     match dotenvy::from_path(&env_file) {
         Ok(()) => tracing::info!(path = %env_file.display(), "已加载 .env"),
         Err(dotenvy::Error::Io(error)) if error.kind() == std::io::ErrorKind::NotFound => {}
-        Err(error) => tracing::warn!(path = %env_file.display(), %error, ".env 读取失败"),
+        // 解析错误的原文里带着出错的那一行（含密钥），只记是哪一类错
+        Err(dotenvy::Error::LineParse(_, position)) => {
+            tracing::warn!(path = %env_file.display(), position, ".env 有一行格式不对，整个文件没读进来");
+        }
+        Err(dotenvy::Error::Io(error)) => {
+            tracing::warn!(path = %env_file.display(), %error, ".env 读取失败");
+        }
+        Err(_) => tracing::warn!(path = %env_file.display(), ".env 读取失败"),
     }
 }
 
