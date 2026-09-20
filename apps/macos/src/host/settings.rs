@@ -204,6 +204,9 @@ impl Host {
                     self.settings.set_value("general", "layout", layout.key());
                 }
             }
+            (Setting::HorizontalGrid, SettingValue::Bool(on)) => {
+                self.settings.set_bool("general", "horizontal_grid", on);
+            }
             (Setting::Preedit, SettingValue::Index(index)) => {
                 if let Some(mode) = PreeditMode::ALL.get(index) {
                     self.settings.set_value("general", "preedit", mode.key());
