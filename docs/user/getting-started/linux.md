@@ -4,12 +4,21 @@ order: 6
 description: 在 Linux 上安装青简，使用 Fcitx5 默认候选面板。
 ---
 
-青简 Linux 目前提供源码安装，使用 Fcitx5 默认候选面板。已验证 Ubuntu 26.04 上 Fcitx5 5.1.19、GTK4 和 Qt6 应用的 X11 输入；
-其他桌面、旧版应用和原生 Wayland 尚未完成验证。当前支持本地候选和学习，暂不提供云联想、神经模型、设置窗口或自动启动。
+青简 Linux 目前提供源码安装，使用 Fcitx5 默认候选面板。已验证 Ubuntu 26.04 的 GNOME 桌面（Wayland）上 Fcitx5 5.1.19 的 GTK4、Qt6 应用与 Firefox；
+其他桌面、其他发行版和旧版应用尚未完成验证。当前支持本地候选和学习，暂不提供云联想、神经模型、设置窗口或自动启动。
 
 ## 安装和首次输入
 
-先安装 Rust 1.96、CMake、C++20 编译器、Fcitx5、其 GTK / Qt 输入支持，以及 Fcitx5 Core/Config/Utils 与 nlohmann-json 开发包。
+先安装 Rust 1.96、CMake、C++20 编译器、pkg-config、Fcitx5、其 GTK / Qt 输入支持，以及 OpenSSL、Fcitx5 Core/Config/Utils 与 nlohmann-json 的开发包。
+Debian / Ubuntu 上是：
+
+```sh
+sudo apt install cmake g++ pkg-config python3 libssl-dev \
+  libfcitx5core-dev libfcitx5utils-dev libfcitx5config-dev nlohmann-json3-dev \
+  fcitx5 fcitx5-frontend-gtk3 fcitx5-frontend-gtk4 fcitx5-frontend-qt6 fcitx5-config-qt
+```
+
+缺了哪一项，安装脚本开头会直接列出来。
 按发行版指引启用 Fcitx5；X11 应用通常需要 `GTK_IM_MODULE=fcitx`、`QT_IM_MODULE=fcitx`、`XMODIFIERS=@im=fcitx`，环境变化后重新登录。
 
 在源码目录执行：

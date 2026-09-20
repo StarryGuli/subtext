@@ -16,6 +16,21 @@ while (($#)); do
   esac
 done
 [[ "$install_prefix" = /* && "$install_prefix" != / ]] || { echo '需要非根绝对安装路径' >&2; exit 2; }
+# 缺依赖先说清楚，别等编译到一半才报一长串错。
+missing=()
+for tool in cargo cmake c++ pkg-config python3; do
+  command -v "$tool" >/dev/null 2>&1 || missing+=("$tool")
+done
+if command -v pkg-config >/dev/null 2>&1; then
+  for module in openssl Fcitx5Core Fcitx5Utils Fcitx5Config nlohmann_json; do
+    pkg-config --exists "$module" || missing+=("$module")
+  done
+fi
+if ((${#missing[@]})); then
+  echo "缺少依赖：${missing[*]}" >&2
+  echo 'Debian / Ubuntu：sudo apt install cmake g++ pkg-config python3 libssl-dev libfcitx5core-dev libfcitx5utils-dev libfcitx5config-dev nlohmann-json3-dev；Rust 见 https://rustup.rs' >&2
+  exit 1
+fi
 install_prefix=$(realpath -m -- "$install_prefix")
 cargo_output=$(realpath -m -- "${CARGO_TARGET_DIR:-$repo_root/target}")
 cargo_args=(build --manifest-path "$repo_root/Cargo.toml" --target-dir "$cargo_output" -p qingjian-linux-server --locked)

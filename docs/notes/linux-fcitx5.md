@@ -5,7 +5,7 @@
 
 ## 构建与测试
 
-需要 Rust 1.96、CMake 3.16、C++20 编译器、Fcitx5 Core/Config/Utils 开发包和 nlohmann-json。
+需要 Rust 1.96、CMake 3.16、C++20 编译器、pkg-config，以及 OpenSSL（`libssl-dev`，云服务依赖的 TLS 绑定要它）、Fcitx5 Core/Config/Utils 和 nlohmann-json 的开发包；`install.sh` 开头会检查并列出缺的。
 构建最低 API 为 Fcitx5 5.1.8，CI 使用 Ubuntu 26.04 的 Fcitx5 5.1.19；Ubuntu 24.04 自带的 5.1.7 不满足要求。
 桌面运行已验证的范围见下文，构建版本门槛不代表全部桌面已验收。
 
@@ -61,6 +61,8 @@ FocusOut 的行内预编辑由框架或声明 ClientUnfocusCommit 的客户端�
 
 ## 验证环境
 
-- Ubuntu 26.04，未打补丁的 Fcitx5 5.1.19-1 / Core7 / modules。
-- 隔离 X11（Xvfb）、私有 D-Bus，GTK4 4.22.4、Qt6 6.10.2。
-- 未验证：原生 Wayland、其他 GTK / Qt 版本和桌面组合。
+- Ubuntu 26.04，未打补丁的 Fcitx5 5.1.19-1 / Core7 / modules，GTK4 4.22.4、Qt6 6.10.2。
+- 隔离 X11（Xvfb）、私有 D-Bus：GTK4、Qt6。
+- 真实桌面（2026-09-20）：GNOME 50 原生 Wayland，文本编辑器（GTK4）、FeatherPad（Qt6）、Firefox（snap）。Ubuntu 26.04 的 GNOME 已没有 X11 登录项。
+  默认面板的外观与位置由 Fcitx5 决定：GTK4 应用里是输入模块自己画的黑白面板，Firefox 里是 Fcitx5 的橙色面板且与光标同一行，Fcitx5 自带拼音表现相同。
+- 未验证：KDE 与其他桌面、其他发行版、GTK3 / Qt5 应用、真实 X11 桌面会话。
