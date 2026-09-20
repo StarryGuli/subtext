@@ -38,13 +38,13 @@ pub fn caps(
     router: &mut Router,
     id: u64,
     sensitive: bool,
-    password: bool,
+    password_field: bool,
     disabled: bool,
 ) -> Value {
     event(
         router,
         id,
-        json!({"Capabilities": {"sensitive": sensitive, "password": password, "disabled": disabled}}),
+        json!({"Capabilities": {"sensitive": sensitive, "password": password_field, "disabled": disabled}}),
     )
 }
 pub fn key(
