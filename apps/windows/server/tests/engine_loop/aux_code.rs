@@ -256,7 +256,7 @@ fn deleting_the_whole_code_brings_every_candidate_back() {
     assert_eq!(candidate_texts(&frame).len(), before);
 }
 
-/// 边界 14：辅码态里再敲一次触发键是幂等的——留在辅码态，既不上屏候选也不当标点。
+/// 辅码态里再敲一次触发键是幂等的——留在辅码态，既不上屏候选也不当标点。
 #[test]
 fn pressing_the_trigger_again_in_aux_mode_is_a_no_op() {
     let mut router = aux_router();

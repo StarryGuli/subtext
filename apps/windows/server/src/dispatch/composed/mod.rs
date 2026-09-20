@@ -149,16 +149,12 @@ impl Router {
         frame
     }
 
-    /// 自绘候选窗用的帧：不做老 DLL 降级——降级只作用于**发给 DLL** 的那份
-    /// （见 `Self::current_frame`），Server 自己的窗口要照常画码段的淡色 + 下划线。
+    /// 自绘候选窗用的帧：不做老 DLL 降级，码段照常画。
     pub(super) fn self_drawn_frame(&self) -> Frame {
         self.raw_frame()
     }
 
-    /// 老 DLL（协议 < 5）的 `PreeditKind` 只有 Typed / Rest / Corrected 三个变体，收到
-    /// `AuxCode` 段会**整条消息反序列化失败**：DLL 侧把它当转发失败——那个键放行给应用
-    /// （码字母会原样打进文档）、结束组句并断开重连。所以给老会话把码段降级成普通拼音段：
-    /// 辅码筛选照常，只是码段不做淡色 + 下划线的区分。应用重启加载新 DLL 后自动恢复。
+    /// 协议比 Server 老的 DLL 不认识 `AuxCode` 段，收到会整条消息解析失败；给它的码段降级成普通拼音段。
     fn downgrade_for_old_dll(&self, frame: &mut Frame) {
         if self.focused_dll_protocol() >= PROTOCOL_VERSION {
             return;

@@ -1,4 +1,4 @@
-//! 辅码态：触发消歧、逐键即筛、删码回退、上屏收尾与 preedit 分段（spec 卷 I 第 2 章边界表 14 行）。
+//! 辅码态：触发消歧、逐键即筛、删码回退、上屏收尾与 preedit 分段。
 
 use qingjian_dictionary::AuxCodeTable;
 
@@ -35,7 +35,7 @@ fn candidates(engine: &Engine) -> Vec<String> {
         .collect()
 }
 
-/// 边界 1：全拼能完整切分、光标在段尾 → 进辅码态，码段空、候选不变，preedit 多一个 `;`。
+/// 全拼能完整切分、光标在段尾 → 进辅码态，码段空、候选不变，preedit 多一个 `;`。
 #[test]
 fn trigger_enters_aux_without_filtering() {
     let mut engine = aux_engine();
@@ -66,7 +66,7 @@ fn trigger_enters_aux_without_filtering() {
     assert!(after.contains(&"开发者".to_owned()));
 }
 
-/// 边界 2：微软 / 搜狗双拼里能当韵母的 `;` 优先当韵母（`x;` = xing），不进辅码态。
+/// 微软 / 搜狗双拼里能当韵母的 `;` 优先当韵母（`x;` = xing），不进辅码态。
 #[test]
 fn semicolon_as_a_final_beats_the_trigger() {
     let mut engine = aux_engine();
@@ -82,7 +82,7 @@ fn semicolon_as_a_final_beats_the_trigger() {
     assert!(engine.aux_trigger(';'));
 }
 
-/// 边界 3 / 4：简拼、残缺音节、光标停在拼音段中间都不触发。
+/// 简拼、残缺音节、光标停在拼音段中间都不触发。
 #[test]
 fn incomplete_or_mid_cursor_pinyin_does_not_trigger() {
     let mut engine = aux_engine();
@@ -99,7 +99,7 @@ fn incomplete_or_mid_cursor_pinyin_does_not_trigger() {
     assert!(!engine.aux_trigger(','));
 }
 
-/// 边界 5：码段每多一个字母就重筛一次（无码词直接隐藏，不是降权）。
+/// 码段每多一个字母就重筛一次（无码词直接隐藏，不是降权）。
 /// 码长不同的一批：`k` 三条都在，`kf` 里完全匹配的 开发 排第一，`kfh` 筛空。
 #[test]
 fn each_code_letter_narrows_the_candidates() {
@@ -176,7 +176,7 @@ fn pure_pinyin_skips_first_code_unless_shown() {
 }
 
 /// 辅码态空码段（刚触发 / 删空停住）不看显示开关：还是挂首条码——进辅码态看码有引导意义，
-/// 按下触发键注记不消失；筛码时仍是命中码（边界 5 已覆盖）。
+/// 按下触发键注记不消失；筛码时仍是命中码。
 #[test]
 fn empty_code_segment_keeps_the_first_code_regardless_of_show() {
     let mut engine = aux_engine();
@@ -196,7 +196,7 @@ fn empty_code_segment_keeps_the_first_code_regardless_of_show() {
     );
 }
 
-/// 边界 6：退格删码段、逐键放宽；删空停在辅码态（`aux_code_keep_empty` 缺省开）——
+/// 退格删码段、逐键放宽；删空停在辅码态（`aux_code_keep_empty` 缺省开）——
 /// `;` 仍在、无码词全部回来，空码段再按一次退格才退出、拼音一字不动。
 #[test]
 fn backspace_widens_then_stays_in_aux_mode() {
@@ -233,7 +233,7 @@ fn backspace_widens_then_stays_in_aux_mode() {
     assert_eq!(engine.composition().text(), "kaifa");
 }
 
-/// 边界 6b：`aux_code_keep_empty = false` 删空即回拼音态（开关关掉的旧行为）。
+/// `aux_code_keep_empty = false` 删空即回拼音态（开关关掉的旧行为）。
 #[test]
 fn backspace_leaves_aux_mode_when_keep_empty_is_off() {
     let mut engine = aux_engine();
@@ -253,7 +253,7 @@ fn backspace_leaves_aux_mode_when_keep_empty_is_off() {
     assert_eq!(engine.composition().text(), "kaifa");
 }
 
-/// 边界 7：刚触发（码段空）就退格 = 退出辅码态、拼音一个字符都不动。
+/// 刚触发（码段空）就退格 = 退出辅码态、拼音一个字符都不动。
 #[test]
 fn backspace_on_an_empty_code_leaves_the_pinyin_alone() {
     let mut engine = aux_engine();
@@ -266,7 +266,7 @@ fn backspace_on_an_empty_code_leaves_the_pinyin_alone() {
     assert_eq!(candidates(&engine), full);
 }
 
-/// 边界 7b：拼音态退格删拼音段末字符。
+/// 拼音态退格删拼音段末字符。
 #[test]
 fn backspace_in_pinyin_state_deletes_a_letter() {
     let mut engine = aux_engine();
@@ -275,7 +275,7 @@ fn backspace_in_pinyin_state_deletes_a_letter() {
     assert_eq!(engine.composition().text(), "kaif");
 }
 
-/// 边界 8 / 9：Esc 在辅码态清码段（拼音与候选保持），在拼音态清拼音。
+/// Esc 在辅码态清码段（拼音与候选保持），在拼音态清拼音。
 #[test]
 fn escape_clears_the_code_then_the_pinyin() {
     let mut engine = aux_engine();
@@ -291,7 +291,7 @@ fn escape_clears_the_code_then_the_pinyin() {
     assert!(engine.composition().is_empty());
 }
 
-/// 边界 10：辅码态选词上屏，码段清空回初始态；学习按拼音段的全拼记，码段与触发键不在键里。
+/// 辅码态选词上屏，码段清空回初始态；学习按拼音段的全拼记，码段与触发键不在键里。
 #[test]
 fn committing_from_aux_records_the_choice_under_the_pinyin() {
     let mut engine = aux_engine();
@@ -309,7 +309,7 @@ fn committing_from_aux_records_the_choice_under_the_pinyin() {
     assert_eq!(last.text, "开发");
 }
 
-/// 边界 11：标点先上屏高亮候选（壳做），再走组句外标点语义；码段随之清空。
+/// 标点先上屏高亮候选（壳做），再走组句外标点语义；码段随之清空。
 #[test]
 fn punctuation_ends_the_aux_state() {
     let mut engine = aux_engine();
@@ -320,7 +320,7 @@ fn punctuation_ends_the_aux_state() {
     assert!(!engine.in_aux());
 }
 
-/// 边界 12：回车原样上屏拼音段，码段与触发键都不跟着上屏。
+/// 回车原样上屏拼音段，码段与触发键都不跟着上屏。
 #[test]
 fn take_raw_keeps_the_code_out_of_the_text() {
     let mut engine = aux_engine();
@@ -333,7 +333,7 @@ fn take_raw_keeps_the_code_out_of_the_text() {
     assert!(engine.composition().is_empty());
 }
 
-/// 边界 13：翻页键与 `'` 不进码段，壳按原语义处理。
+/// 翻页键与 `'` 不进码段，壳按原语义处理。
 #[test]
 fn paging_keys_and_apostrophes_do_not_enter_the_code() {
     let mut engine = aux_engine();
@@ -345,7 +345,7 @@ fn paging_keys_and_apostrophes_do_not_enter_the_code() {
     assert_eq!(engine.aux_code(), "");
 }
 
-/// 边界 14：辅码态里再敲触发键是幂等的。
+/// 辅码态里再敲触发键是幂等的。
 #[test]
 fn triggering_again_is_idempotent() {
     let mut engine = aux_engine();

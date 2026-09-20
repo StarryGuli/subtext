@@ -274,9 +274,7 @@ impl Engine {
         let aux_code = self.aux_filter();
         let mut items: Vec<Candidate> = Vec::with_capacity(scored.len());
         match aux_code {
-            // 没在筛码（纯拼音态，或辅码态空码段）：首条码只在显示开关开着（`set_aux_show`，配置
-            // `[general] aux_code_show`）或已在辅码态时挂——辅码态空码段也挂（进辅码态看码有引导意义）；
-            // 纯拼音态且开关关着时不逐候查码（单次查询上限 500 条 × 表数的二分只为一个不显示的字段）
+            // 没在筛码：首条码只在显示开关开着或已在辅码态时挂，否则不逐候选查码
             None => items.extend(scored.into_iter().map(|item| {
                 let first = if self.aux_show || self.aux_code.is_some() {
                     self.matching_code(item.hit.text, "")

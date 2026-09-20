@@ -40,8 +40,7 @@ pub struct Report {
     /// 上一条是联想、还没等到接下来的上屏。
     pub prediction_pending: bool,
 
-    /// 辅码态选词的条数，以及其中「同样的拼音、纯拼音输入下已排在首选」的条数
-    /// （issue #8 的学习闭环尺子：辅码只解决第一次少翻页，之后靠学习）。
+    /// 辅码态选词的条数，以及其中「同样的拼音、纯拼音输入下已排在首选」的条数。
     pub aux_total: usize,
     pub aux_top1: usize,
 

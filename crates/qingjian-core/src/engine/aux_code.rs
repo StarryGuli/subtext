@@ -35,7 +35,7 @@ impl Engine {
     /// 进辅码态：码段清空（候选先不过滤），preedit 多出触发键那一段。
     /// 触发键不进缓冲区，壳在 `;` 特判旁调这里。
     pub fn enter_aux(&mut self) {
-        // 已经在辅码态里再调一次没有效果（边界 14 的幂等）：码段原样留着
+        // 已经在辅码态里再调一次没有效果：码段原样留着
         if self.aux_code.is_none() {
             self.aux_code = Some(String::new());
         }

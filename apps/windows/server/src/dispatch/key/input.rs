@@ -295,7 +295,7 @@ impl Router {
             self.engine.enter_aux();
             return Effect::Changed(None);
         }
-        // 边界 14：已经在辅码态里再敲触发键是幂等的，既不上屏候选也不当标点
+        // 已经在辅码态里再敲触发键是幂等的，既不上屏候选也不当标点
         if self.engine.in_aux() && c == self.config.aux_code_key {
             return Effect::Changed(None);
         }
