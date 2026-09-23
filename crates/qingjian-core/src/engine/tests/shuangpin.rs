@@ -58,6 +58,18 @@ fn shuangpin_shows_raw_keys_in_preedit_and_decoded_pinyin_in_segments() {
         .collect();
     assert_eq!(segments_text, "kai'fa");
     assert_eq!(query.segments_cursor(), 3);
+
+    // k|dfa：光标后的剩余段保留原始按键，和敲的对得上（双拼光标插进音节中间，单独解码会错开）
+    engine.move_cursor_left();
+    let query = engine.query().unwrap();
+    assert_eq!(query.marked_text(), "kdfa");
+    assert_eq!(query.marked_cursor(), 1);
+    let segments_text: String = query
+        .marked_segments()
+        .iter()
+        .map(|s| s.text.as_str())
+        .collect();
+    assert_eq!(segments_text, "k'dfa");
 }
 
 #[test]

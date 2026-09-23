@@ -121,7 +121,7 @@ impl Query {
     }
 
     /// [`Self::marked_text`] 的分段形式：敲的拼音一段（`Typed`），光标后剩下的拼音连同前面的 `'` 一段（`Rest`）。
-    /// 壳按段画样式；[`Self::marked_cursor`] 的位置按各段拼接后的字符数算。
+    /// 壳按段画样式；[`Self::segments_cursor`] 的位置按各段拼接后的字符数算。
     pub fn marked_segments(&self) -> Vec<MarkedSegment> {
         let mut segments = match &self.correction {
             Some(correction) => correction.marked_segments(),
