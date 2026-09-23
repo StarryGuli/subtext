@@ -2769,6 +2769,7 @@ dependencies = [
  "qingjian-translate",
  "rfd",
  "toml_edit",
+ "windows",
  "windows-reactor",
  "windows-reactor-setup",
  "winresource",

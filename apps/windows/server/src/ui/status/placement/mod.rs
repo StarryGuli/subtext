@@ -5,7 +5,7 @@ mod action;
 use std::cell::{Cell, RefCell};
 
 use windows::Win32::Foundation::{HWND, RECT};
-use windows::Win32::UI::WindowsAndMessaging::GetWindowRect;
+use windows::Win32::UI::WindowsAndMessaging::{ASFW_ANY, AllowSetForegroundWindow, GetWindowRect};
 
 pub(super) use self::action::StatusAction;
 use crate::dispatch::StatusEvent;
@@ -74,6 +74,8 @@ impl Placement {
 
 /// 起与本 exe 同目录的设置程序。
 fn open_settings() {
+    // 设置程序已开时由新实例把它带到前台，得先把前台权让出去（点悬浮条的是 Server）。
+    let _ = unsafe { AllowSetForegroundWindow(ASFW_ANY) };
     let exe = std::env::current_exe().map(|exe| exe.with_file_name("qingjian-settings.exe"));
     let spawned = exe.and_then(|exe| std::process::Command::new(exe).spawn());
     if let Err(error) = spawned {
