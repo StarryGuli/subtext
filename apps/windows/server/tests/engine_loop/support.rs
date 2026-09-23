@@ -6,8 +6,8 @@ pub use std::sync::{Arc, Mutex};
 pub use qingjian_core::sentence::SentenceScorer;
 pub use qingjian_core::{Language, ModeKeys, ShuangpinScheme};
 pub use qingjian_platform::protocol::{
-    ClientMessage, Frame, InputSettings, KeyEvent, KeyModifiers, KeyOutcome, PROTOCOL_VERSION,
-    ScreenRect, ServerMessage, SessionId,
+    ClientMessage, Frame, KeyEvent, KeyModifiers, KeyOutcome, PROTOCOL_VERSION, ScreenRect,
+    ServerMessage, SessionId,
 };
 pub use qingjian_platform::{
     AppsConfig, DEFAULT_ENGLISH_CANDIDATES_OFF_WINDOWS, PreeditMode, Scheme,

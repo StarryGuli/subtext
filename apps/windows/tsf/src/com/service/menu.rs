@@ -18,8 +18,8 @@ impl TextService_Impl {
             log("右键菜单：找不到本线程的窗口，不弹");
             return;
         };
-        // 悬浮条显示的是最后上报模式的那个应用；先报一次，让它与这份菜单说的是同一个应用
-        self.refresh_mode_indicator();
+        // 先跟上全局模式，菜单上的勾与悬浮状态条一致（悬浮条上刚点过、还没到轮询那一拍时）
+        self.sync_mode_from_server();
         let english = self.mode_state.english();
         let indicator = self.indicator_state.get();
         let state = MenuState {

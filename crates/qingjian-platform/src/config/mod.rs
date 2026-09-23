@@ -45,7 +45,7 @@ pub use scheme::{Scheme, scheme_label};
 pub use shift_letter::ShiftLetter;
 pub use shortcut::ShortcutConfig;
 pub use status_bar::StatusBarConfig;
-pub use switch_key::SwitchKey;
+pub use switch_key::{SwitchKey, SwitchKeys};
 pub use theme_mode::ThemeMode;
 
 /// 用户配置文件（TOML）。所有平台同一份格式，缺省值全部在各分节的 `Default` 里。
@@ -150,9 +150,9 @@ english_candidates_off = [
 #[cfg(not(windows))]
 macro_rules! template_shortcut_keys {
     () => {
-        r#"# 中 / 英模式切换键：单击这个修饰键在中英之间翻转。shift 单击 (缺省, 与微软拼音一致) / control 单击 / none 不切换。
+        r#"# 中 / 英模式切换键（Windows 用），可多选：shift 单击（缺省）/ control 单击 / ctrl+alt+space 组合键；[] 不用键切换。
 # macOS 的切换键是 Caps Lock（系统级），本项不生效
-switch_mode = "shift"
+switch_mode = ["shift"]
 # 数字键配这些修饰键上屏候选的译词：translation 第一个译词，translation_second 第二个（候选右侧有两个译词时）
 # 任意修饰键组合（option / shift / control / command 用 + 连），偏好设置里点按钮录制；别用 control+数字（系统切桌面）和 command+数字（应用切标签页）
 translation = "option"
@@ -170,10 +170,9 @@ delete_candidate = "shift"
 #[cfg(windows)]
 macro_rules! template_shortcut_keys {
     () => {
-        r#"# 中 / 英模式切换键：单击这个修饰键在中英之间翻转，不用组合。
-# shift 单击（缺省，与微软拼音一致；打字时容易误触 Shift 的话改成 control 单击或 none 不切换）
-# ctrl+space 是组合键；若系统把「输入法/非输入法切换」也绑在它上面会抢先，需先在 Windows 语言设置里关掉
-switch_mode = "shift"
+        r#"# 中 / 英模式切换键，可多选：shift 单击（缺省，与微软拼音一致）/ control 单击 / ctrl+alt+space 组合键；[] 不用键切换，只剩按钮。
+# 不提供 Ctrl + Space：中文 Windows 把它绑成系统的「输入法/非输入法切换」，系统先截走
+switch_mode = ["shift"]
 # 数字键配这些修饰键上屏候选的译词：translation 第一个译词，translation_second 第二个（候选右侧有两个译词时）
 # 任意修饰键组合（alt / shift / ctrl / win 用 + 连）。Alt+数字会被 Windows 当菜单快捷键截走，缺省用 Ctrl；组句时才拦，不打字时照常放行给应用
 translation = "ctrl"
@@ -585,7 +584,7 @@ mod tests {
             config.shortcut.translation,
             Config::default().shortcut.translation
         );
-        assert_eq!(config.shortcut.switch_mode, SwitchKey::Shift);
+        assert_eq!(config.shortcut.switch_mode, SwitchKeys::default());
         assert!(config.general.english_mode);
     }
 

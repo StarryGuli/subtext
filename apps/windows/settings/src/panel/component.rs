@@ -77,8 +77,11 @@ impl Component for Settings {
                 };
                 self.save_array("apps", "english_candidates_off", &list);
             }
-            Message::SwitchMode(Some(i)) if i < general::SWITCH_KEYS.len() => {
-                self.save("shortcut", "switch_mode", general::SWITCH_KEYS[i].1);
+            Message::SwitchKey(key, on) => {
+                let keys = self.config.shortcut.switch_mode.with(key, on);
+                let values: Vec<String> =
+                    keys.config_values().into_iter().map(String::from).collect();
+                self.save_array("shortcut", "switch_mode", &values);
             }
             Message::EnglishMode(on) => self.save("general", "english_mode", on),
 

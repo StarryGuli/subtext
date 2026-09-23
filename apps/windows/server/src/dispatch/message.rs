@@ -89,12 +89,15 @@ impl Router {
                 self.handle_mode_changed(english);
                 None
             }
-            ClientMessage::SyncMode { session } => Some(ServerMessage::ModeSync {
-                session,
-                english: self.take_pending_mode(),
-                input: self.input_settings(),
-                indicator: self.indicator_state(),
-            }),
+            ClientMessage::SyncMode { session } => {
+                self.handle_ime_active();
+                Some(ServerMessage::ModeSync {
+                    session,
+                    english: Some(self.english),
+                    input: self.input_settings(),
+                    indicator: self.indicator_state(),
+                })
+            }
             ClientMessage::ImeSwitched { session } => {
                 tracing::debug!(?session, "切成了别的输入法");
                 self.handle_ime_switched();
