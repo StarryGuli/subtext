@@ -138,11 +138,17 @@ impl StatusBar {
         let _ = unsafe { ShowWindow(self.hwnd, SW_HIDE) };
     }
 
-    /// DPI 或深浅变了就重建主题。
+    /// DPI 或深浅变了就重建主题。DPI 优先取所在位置显示器的，理由同候选窗口（#146）。
     fn sync_theme(&self) {
-        let dpi = match unsafe { GetDpiForWindow(self.hwnd) } {
-            0 => self.dpi.get(),
-            dpi => dpi,
+        let monitor_dpi = self
+            .placement
+            .pos
+            .get()
+            .and_then(|(x, y)| monitor::dpi_near(POINT { x, y }));
+        let dpi = match (monitor_dpi, unsafe { GetDpiForWindow(self.hwnd) }) {
+            (Some(dpi), _) => dpi,
+            (None, 0) => self.dpi.get(),
+            (None, dpi) => dpi,
         };
         let mode = self
             .data
