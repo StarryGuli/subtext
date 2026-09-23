@@ -6,7 +6,7 @@ use std::rc::Rc;
 use windows::Win32::Foundation::{E_NOINTERFACE, POINT, RECT};
 use windows::Win32::UI::TextServices::{
     GUID_LBI_INPUTMODE, ITfLangBarItem_Impl, ITfLangBarItemButton, ITfLangBarItemButton_Impl,
-    ITfLangBarItemSink, ITfMenu, ITfSource, ITfSource_Impl, TF_LANGBARITEMINFO,
+    ITfLangBarItemSink, ITfMenu, ITfSource, ITfSource_Impl, TF_LANGBARITEMINFO, TF_LBI_CLK_RIGHT,
     TF_LBI_STYLE_BTN_BUTTON, TfLBIClick,
 };
 use windows::Win32::UI::WindowsAndMessaging::HICON;
@@ -68,8 +68,13 @@ impl ITfLangBarItem_Impl for ModeButton_Impl {
 }
 
 impl ITfLangBarItemButton_Impl for ModeButton_Impl {
-    fn OnClick(&self, _click: TfLBIClick, _pt: &POINT, _prcarea: *const RECT) -> Result<()> {
-        crate::com::service::toggle_mode();
+    /// 左键切中英，右键弹菜单（中 / 英、全角标点、悬浮状态条、设置）。
+    fn OnClick(&self, click: TfLBIClick, pt: &POINT, _prcarea: *const RECT) -> Result<()> {
+        if click == TF_LBI_CLK_RIGHT {
+            crate::com::service::show_indicator_menu(*pt);
+        } else {
+            crate::com::service::toggle_mode();
+        }
         Ok(())
     }
 

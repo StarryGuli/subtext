@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::frame::Frame;
+use super::indicator::IndicatorState;
 use super::key::KeyOutcome;
 use super::session::SessionId;
 use crate::config::SwitchKey;
@@ -97,6 +98,10 @@ pub enum ServerMessage {
         /// 按键行为设置；老 DLL 不认识这个字段，读到时忽略（serde 默认忽略多余字段）。
         #[serde(default)]
         input: InputSettings,
+
+        /// 右键菜单打勾用的开关状态（v7 起）。
+        #[serde(default)]
+        indicator: IndicatorState,
     },
 
     /// 收到「翻译选中文字」快捷键：请 DLL 在读编辑会话里取当前选区，用

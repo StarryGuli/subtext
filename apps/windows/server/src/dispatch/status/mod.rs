@@ -7,6 +7,7 @@ mod event;
 mod sink;
 mod view;
 
+use qingjian_platform::protocol::IndicatorCommand;
 use qingjian_platform::{Config, Scheme, scheme_label};
 
 pub use self::event::StatusEvent;
@@ -68,6 +69,21 @@ impl Router {
             }
         }
         self.reconcile_status();
+    }
+
+    /// 任务栏图标右键菜单：标点与悬浮条的开关写回配置文件（热加载会再读回来），设置程序交给 UI 起。
+    pub(super) fn handle_indicator(&mut self, command: IndicatorCommand) {
+        match command {
+            IndicatorCommand::TogglePunctuation => {
+                self.handle_status_event(StatusEvent::TogglePunctuation);
+            }
+            IndicatorCommand::ToggleStatusBar => {
+                self.config.status_enabled = !self.config.status_enabled;
+                self.persist("status_bar", "enabled", self.config.status_enabled);
+                self.reconcile_status();
+            }
+            IndicatorCommand::OpenSettings => self.status.open_settings(),
+        }
     }
 
     /// 写回配置文件一个键；没有配置路径（测试）就只改内存。

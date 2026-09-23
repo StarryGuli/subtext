@@ -7,6 +7,7 @@ mod display;
 mod document;
 mod key_sink;
 mod launch;
+mod menu;
 mod mode;
 mod next;
 mod processor;
@@ -15,6 +16,7 @@ use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 
+use windows::Win32::Foundation::POINT;
 use windows::Win32::UI::TextServices::{
     ITfDisplayAttributeProvider, ITfKeyEventSink, ITfLangBarItemButton, ITfSource,
     ITfTextInputProcessor, ITfThreadMgr,
@@ -22,7 +24,7 @@ use windows::Win32::UI::TextServices::{
 use windows::core::{ComObject, implement};
 
 use qingjian_platform::KeyCombo;
-use qingjian_platform::protocol::InputSettings;
+use qingjian_platform::protocol::{IndicatorState, InputSettings};
 
 use super::composition::Shared;
 use super::key::KeyTap;
@@ -83,6 +85,9 @@ pub struct TextService {
     /// （每一拍 `SyncMode` 都带着它，见 [`TextService_Impl::apply_input_settings`]）。
     input_settings: Cell<Option<InputSettings>>,
 
+    /// 右键菜单打勾用的开关状态，Server 随 `SyncMode` 每一拍带下来。
+    indicator_state: Cell<IndicatorState>,
+
     /// 激活后一小段时间内忽略转换模式 compartment 的变化，见 [`TextService_Impl::sync_from_conversion_mode`]。
     conversion_guard_until: Cell<Option<Instant>>,
 }
@@ -104,6 +109,11 @@ pub(super) fn toggle_mode() {
     with_active(|service| service.set_english_mode(!service.mode_state.english()));
 }
 
+/// 右键点了语言栏的中 / 英按钮：在 `point`（屏幕坐标）弹菜单。
+pub(super) fn show_indicator_menu(point: POINT) {
+    with_active(|service| service.show_indicator_menu(point));
+}
+
 /// 「转换模式」compartment 变了（见 [`conversion`](crate::com::mode::conversion)）。
 pub(super) fn on_conversion_mode_changed() {
     with_active(TextService_Impl::sync_from_conversion_mode);
@@ -121,6 +131,11 @@ pub(super) fn on_mode_sync(english: bool) {
 /// 轮询取回了 Server 下发的按键行为设置（见 [`super::poll`]）：切换键 / 内置英文模式改了就地应用。
 pub(super) fn on_input_settings(input: InputSettings) {
     with_active(|service| service.apply_input_settings(input));
+}
+
+/// 轮询取回了右键菜单打勾用的开关状态。
+pub(super) fn on_indicator_state(state: IndicatorState) {
+    with_active(|service| service.indicator_state.set(state));
 }
 
 impl TextService {
@@ -143,6 +158,7 @@ impl TextService {
             translate_combo: Cell::new(None),
             switch_preserved: Cell::new(false),
             input_settings: Cell::new(None),
+            indicator_state: Cell::new(IndicatorState::default()),
             conversion_guard_until: Cell::new(None),
         }
     }

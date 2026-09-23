@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use super::indicator::IndicatorCommand;
 use super::key::KeyEvent;
 use super::screen_rect::ScreenRect;
 use super::session::SessionId;
@@ -125,6 +126,15 @@ pub enum ClientMessage {
     ImeSwitched {
         /// 会话标识。
         session: SessionId,
+    },
+
+    /// 任务栏「中 / 英」图标右键菜单里点了一项（v7 起）。不等回话。
+    Indicator {
+        /// 会话标识。
+        session: SessionId,
+
+        /// 点的是哪一项。
+        command: IndicatorCommand,
     },
 
     /// 关闭会话，释放 Server 侧状态。

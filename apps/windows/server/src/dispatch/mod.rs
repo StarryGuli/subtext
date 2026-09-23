@@ -22,7 +22,7 @@ use std::time::{Duration, Instant};
 use qingjian_core::Engine;
 use qingjian_platform::LocalModelConfig;
 use qingjian_platform::protocol::{
-    ClientMessage, Frame, InputSettings, ScreenRect, ServerMessage, SessionId,
+    ClientMessage, Frame, IndicatorState, InputSettings, ScreenRect, ServerMessage, SessionId,
 };
 
 pub use self::candidates::{CandidateSink, NoopSink, RenderSettings};
@@ -160,6 +160,15 @@ impl Router {
             switch_mode: self.config.switch_mode,
             english_mode: self.config.english_mode,
             shift_letter_compose: self.config.shift_letter_compose,
+        }
+    }
+
+    /// 任务栏图标右键菜单打勾用的开关状态，随 `ModeSync` 每一拍下发。
+    pub(super) fn indicator_state(&self) -> IndicatorState {
+        IndicatorState {
+            full_width_punctuation: self.config.full_width,
+            english_full_width_punctuation: self.config.english_full_width,
+            status_bar: self.config.status_enabled,
         }
     }
 

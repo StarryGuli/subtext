@@ -1,5 +1,7 @@
 //! 悬浮状态条随模式、双拼方案与开关变化。
 
+use qingjian_platform::protocol::IndicatorState;
+
 use crate::support::*;
 
 #[test]
@@ -25,6 +27,11 @@ fn status_bar_mode_click_is_handed_to_dll_via_sync_mode() {
             session: SESSION,
             english: Some(true),
             input: InputSettings::default(),
+            indicator: IndicatorState {
+                full_width_punctuation: true,
+                english_full_width_punctuation: false,
+                status_bar: true,
+            },
         })
     );
     assert_eq!(
@@ -33,6 +40,11 @@ fn status_bar_mode_click_is_handed_to_dll_via_sync_mode() {
             session: SESSION,
             english: None,
             input: InputSettings::default(),
+            indicator: IndicatorState {
+                full_width_punctuation: true,
+                english_full_width_punctuation: false,
+                status_bar: true,
+            },
         })
     );
 }
@@ -64,6 +76,11 @@ fn status_bar_mode_click_is_ignored_when_builtin_english_is_off() {
             input: InputSettings {
                 english_mode: false,
                 ..InputSettings::default()
+            },
+            indicator: IndicatorState {
+                full_width_punctuation: true,
+                english_full_width_punctuation: false,
+                status_bar: true,
             },
         })
     );
@@ -129,4 +146,27 @@ fn status_bar_stays_hidden_when_disabled() {
     });
 
     assert_eq!(recorder.calls(), vec![None]);
+}
+
+#[test]
+fn indicator_menu_toggles_status_bar() {
+    use qingjian_platform::protocol::IndicatorCommand;
+
+    let mut router = router();
+    let recorder = RecordingStatus::default();
+    router.set_status_sink(Box::new(recorder.clone()));
+    router.handle(ClientMessage::ModeChanged {
+        session: SESSION,
+        english: false,
+    });
+
+    // 任务栏图标菜单里点「悬浮状态条」：关着的打开，再点收起。
+    let toggle = ClientMessage::Indicator {
+        session: SESSION,
+        command: IndicatorCommand::ToggleStatusBar,
+    };
+    router.handle(toggle.clone());
+    assert_eq!(recorder.calls().last(), Some(&Some("中".to_owned())));
+    router.handle(toggle);
+    assert_eq!(recorder.calls().last(), Some(&None));
 }

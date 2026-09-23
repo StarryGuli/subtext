@@ -5,6 +5,9 @@ pub trait StatusSink: Send {
     fn show_status(&self, view: StatusView);
 
     fn hide_status(&self);
+
+    /// 起设置程序（任务栏图标右键菜单用；悬浮条上的齿轮在 UI 线程直接起）。
+    fn open_settings(&self) {}
 }
 
 /// 不画状态条的空实现。

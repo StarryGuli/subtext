@@ -5,6 +5,7 @@
 mod button;
 pub(crate) mod conversion;
 mod icon;
+pub(crate) mod menu;
 mod state;
 
 use windows::Win32::System::Variant::VARIANT;
