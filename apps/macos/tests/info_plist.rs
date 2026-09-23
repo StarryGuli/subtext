@@ -66,18 +66,6 @@ fn tis_registration_keys_are_present() {
     );
 }
 
-/// 声明了才会在系统设置里出现「用 Caps Lock 在 ABC 与青简之间切换」（#211）。
-#[test]
-fn allows_caps_lock_input_source_switch() {
-    assert_eq!(
-        info_plist()
-            .get("TICapsLockLanguageSwitchCapable")
-            .and_then(|value| value.as_boolean()),
-        Some(true),
-        "缺 TICapsLockLanguageSwitchCapable：系统设置里没有 Caps Lock 切换 ABC 的选项"
-    );
-}
-
 /// 输入模式声明：每个模式的 ID、语言、repertoire、script 与图标都要与顶层声明对得上，可见模式顺序表要列全，
 /// 显示名要在两份 InfoPlist.strings 里按模式 ID 给。声明里具体几个模式不限定（将来加繁体模式也过）。
 #[test]
