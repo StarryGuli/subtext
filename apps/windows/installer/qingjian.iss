@@ -86,6 +86,7 @@ Source: "{#Repo}\data\generated\dicts\*.qj";     DestDir: "{app}\data\generated\
 ; —— 随包辅码码表（笔画，开箱可用）：Server 按随包根 codes\ 扫；CNS11643 筆順資料派生，署名见「关于」页 ——
 ;    缺表时不阻塞打包（skipifsourcedoesntexist），但发布前应先跑 dict-convert pack codes 生成它
 Source: "{#Repo}\data\generated\codes\*.qj";   DestDir: "{app}\codes";                Flags: ignoreversion skipifsourcedoesntexist
+Source: "{#Repo}\assets\stroke\LICENSE-CNS11643.txt"; DestDir: "{app}\codes";     Flags: ignoreversion
 ; —— 本地整句模型（tools/release/pack-model.sh 打成的单文件 data\model\model.qjm；没有就不装，Server 不重排）——
 Source: "{#Repo}\data\model\model.qjm"; DestDir: "{app}\data\model"; Flags: ignoreversion skipifsourcedoesntexist
 ; —— 随 git 的资源 ——
