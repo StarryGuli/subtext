@@ -182,7 +182,11 @@ fn digit_key(key_code: u16) -> Option<usize> {
 }
 
 impl QingjianInputController {
-    /// 登录 / 锁屏窗口：输入源菜单里没有青简，loginwindow 却照样激活它（#190），按键一律交还系统。
+    /// 登录 / 锁屏窗口：输入源菜单里没有青简，loginwindow 却照样激活它，按键一律交还系统。
+    ///
+    /// TODO(#190): 临时防护。现象是开机登录界面打不进模式键（u / i），推断为按键进了青简的组句；
+    /// 日志只证实 loginwindow 会激活青简，按键是否真的送来没有复现（开 FileVault 的机器进不到这个界面）。
+    /// 找到按键送进来的条件后改成针对它的判断，并确认别的系统界面有没有同样的情况。
     fn in_login_window(&self) -> bool {
         host::with(|h| h.engine.application() == Some(LOGIN_WINDOW)).unwrap_or(false)
     }
