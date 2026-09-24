@@ -56,7 +56,7 @@ apps/linux/scripts/install.sh
 默认安装到 `~/.local`；`--prefix /绝对用户目录` 可更改安装位置。请用相同用户安装、运行，不要使用 sudo。
 
 重启 Fcitx5，打开 Fcitx5 配置工具，取消「仅显示当前语言」，添加「青简」。切换到青简后输入 `nihao`，空格选中「你好」。
-单击 `Shift` 切换中英；按键规则见 [按键与快捷键](keys.md#linuxfcitx5)。关闭手动启动的终端会结束青简服务；下次登录后需再次启动。
+单击 `Shift` 切换中英；按键规则见 [按键与快捷键](keys.md#Linux（Fcitx5）)。关闭手动启动的终端会结束青简服务；下次登录后需再次启动。
 
 ## 配置、隐私和数据
 
@@ -68,7 +68,7 @@ apps/linux/scripts/install.sh
 `[general] shift_letter = "compose"` 让 Shift 大写字母参与中文组句，默认 `"passthrough"` 保持临时英文输入。
 `scheme = "zhuyin"` 启用大千注音；双拼下 `Shift + V` / `Shift + U` 可进入表达式 / 码点输入。
 数字没有对应候选时继续输入，英文直输内容以空格结束时保留空格；英文候选开启后可用数字、翻页键、空格或 Tab 选词。
-具体规则见 [按键与快捷键](keys.md#linuxfcitx5)。
+具体规则见 [按键与快捷键](keys.md#Linux（Fcitx5）)。
 
 Fcitx5 识别为敏感输入时，可以组句但不会保存输入文本或学习；识别为密码框或禁用输入法的输入框时直接交还应用。
 保护依赖应用和其输入支持正确传递标记；本机已验证 Qt6 的敏感标记，GTK4 的动态 PRIVATE 提示尚未传递为敏感输入标记。
