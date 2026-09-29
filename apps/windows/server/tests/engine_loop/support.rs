@@ -264,7 +264,7 @@ pub fn function_key(virtual_key: u32) -> KeyEvent {
 pub struct Prefers(pub &'static str);
 
 impl SentenceScorer for Prefers {
-    fn score(&self, _context: &str, texts: &[&str]) -> Vec<f64> {
+    fn score(&self, _context: &str, _keys: &str, texts: &[&str]) -> Vec<f64> {
         texts
             .iter()
             .map(|t| if *t == self.0 { -1.0 } else { -20.0 })

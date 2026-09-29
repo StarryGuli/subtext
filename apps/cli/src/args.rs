@@ -144,6 +144,30 @@ pub struct Args {
     #[arg(long)]
     pub eval_save: Option<PathBuf>,
 
+    /// 实验专用：P2C 按完整拼音给整句路径打分；仅用于 --eval-text，不看上文
+    #[arg(long, requires = "eval_text", conflicts_with_all = ["neural", "neural_async", "neural_context"])]
+    pub eval_p2c: Option<PathBuf>,
+
+    /// 实验专用：在同一份句子集上让 P2C 直接生成整句（不经词图、不经重排），量重排架构的上限代价
+    #[arg(long, requires = "eval_text")]
+    pub eval_generate: Option<PathBuf>,
+
+    /// 将整句评测逐条结果写成 JSONL（含句子、候选和延迟）
+    #[arg(long, requires = "eval_text")]
+    pub eval_details: Option<PathBuf>,
+
+    /// 冷启动字词评测：读取 JSONL，不加载个人配置或个人学习文件
+    #[arg(long, requires = "cold_output", conflicts_with_all = ["user_dict", "config", "predict", "replay", "eval_text", "english_mode", "shuangpin", "wubi", "aux_table", "tune", "fuzzy", "inputs", "neural_async"])]
+    pub eval_cold: Option<PathBuf>,
+
+    /// 冷启动逐词结果 JSONL（拒绝覆盖）
+    #[arg(long, requires = "eval_cold")]
+    pub cold_output: Option<PathBuf>,
+
+    /// 同时评测 P2C 生成及联合候选；不改变引擎原候选
+    #[arg(long, requires = "eval_cold")]
+    pub cold_model: Option<PathBuf>,
+
     /// 直接查询这些拼音后退出；不给则进入交互模式
     pub inputs: Vec<String>,
 }

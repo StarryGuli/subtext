@@ -93,17 +93,27 @@ if [[ -f data/generated/dict.tsv || -f data/generated/dict.qj ]]; then
     cp data/generated/dicts/*.qj "$APP/Contents/Resources/dicts/"
   fi
   [[ -f data/generated/lm.qj ]] && cp data/generated/lm.qj "$APP/Contents/Resources/"
-  # 本地整句模型（字级 Transformer）：训练仓库 ../train 导出三件套到 data/model/，tools/release/pack-model.sh 打成 model.qjm，
-  # 随包只带这一个文件放 Resources/model/（三件套比 .qjm 新就重打）；什么都没有就不重排
-  model_dir="${QINGJIAN_MODEL_DIR:-data/model}"
+  # 含章·知微（字级 Transformer）：三件套与单文件放 data/models/hanzhang-zhiwei/。
+  model_dir="${QINGJIAN_MODEL_DIR:-data/models/hanzhang-zhiwei}"
   if [[ -f "$model_dir/model.safetensors" ]]; then
     QINGJIAN_MODEL_DIR="$model_dir" tools/release/pack-model.sh
   fi
   if [[ -f "$model_dir/model.qjm" ]]; then
-    mkdir -p "$APP/Contents/Resources/model"
-    cp "$model_dir/model.qjm" "$APP/Contents/Resources/model/"
-    chmod 644 "$APP/Contents/Resources/model/model.qjm"
-    echo "打包本地整句模型：$model_dir/model.qjm"
+    mkdir -p "$APP/Contents/Resources/models/hanzhang-zhiwei"
+    cp "$model_dir/model.qjm" "$APP/Contents/Resources/models/hanzhang-zhiwei/"
+    chmod 644 "$APP/Contents/Resources/models/hanzhang-zhiwei/model.qjm"
+    echo "打包含章·知微：$model_dir/model.qjm"
+  fi
+  # 含章·通变（P2C，带噪拼音 → 汉字）：放 Resources/models/hanzhang-tongbian/。
+  p2c_dir="${QINGJIAN_P2C_MODEL_DIR:-data/models/hanzhang-tongbian}"
+  if [[ -f "$p2c_dir/model.safetensors" ]]; then
+    QINGJIAN_MODEL_DIR="$p2c_dir" tools/release/pack-model.sh
+  fi
+  if [[ -f "$p2c_dir/model.qjm" ]]; then
+    mkdir -p "$APP/Contents/Resources/models/hanzhang-tongbian"
+    cp "$p2c_dir/model.qjm" "$APP/Contents/Resources/models/hanzhang-tongbian/"
+    chmod 644 "$APP/Contents/Resources/models/hanzhang-tongbian/model.qjm"
+    echo "打包含章·通变：$p2c_dir/model.qjm"
   fi
   # 释义表打成 .qj（TSV 比 .qj 新时重打），英文词表仍是 TSV。各表来源不同，元数据按表写（见 assets/glossary/README.md）
   for lang in en ja zh es; do

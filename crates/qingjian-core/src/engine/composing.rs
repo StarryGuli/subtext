@@ -357,9 +357,12 @@ impl Engine {
         }
         self.log_commit(&raw, &raw, InputSource::Raw);
         // 原样上屏的是个英文词（`gist`）：记进个人英文词表，下次直接出候选。
-        // 双拼下全部键都能解成完整音节的（`nihc`）不是英文，是用户要原样打出双拼键
+        // 双拼下全部键都能解成完整音节的（`nihc`）不是英文，是用户要原样打出双拼键。
+        // 整段能读成「拼音头 + 英文尾」的（`woxiangxuexirust`）不学：那是我们没给对候选、用户放弃了，
+        // 把整串学成英文词会反过来堵掉混输那条路
         let english_word = looks_like_english_word(&raw, self.english_mode)
-            && (self.english_mode || self.decode(&raw).is_none_or(|d| !d.is_complete()));
+            && (self.english_mode || self.decode(&raw).is_none_or(|d| !d.is_complete()))
+            && (self.english_mode || self.split_english_tail(&raw).is_none());
         if english_word {
             self.learner.learn_english(&raw);
         }

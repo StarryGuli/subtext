@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 按 tools/release/data.lock 下载产品数据并校验：qingjian-data.tar.gz 解到 data/generated/，model.qjm 放到 data/model/。
+# 按 tools/release/data.lock 下载产品数据并校验：词库解到 data/generated/，两款含章模型各进自己的目录。
 #
 #   tools/release/data-fetch.sh            # 下载 + 校验 + 解开
 #   tools/release/data-fetch.sh --verify   # 只校验 target/release-data/ 里已下载的文件
@@ -18,6 +18,7 @@ sha256() { if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1"; else sh
 
 TAG="$(lock_value tag)"
 [[ -n "$TAG" ]] || { echo "$LOCK 里没有 tag" >&2; exit 1; }
+[[ -n "$(lock_value model-p2c.qjm)" ]] && ASSETS+=(model-p2c.qjm)
 mkdir -p "$OUT"
 
 if [[ "${1:-}" != "--verify" ]]; then
@@ -39,11 +40,16 @@ for f in "${ASSETS[@]}"; do
 done
 [[ "${1:-}" == "--verify" ]] && exit 0
 
-mkdir -p data/generated data/model
+mkdir -p data/generated data/models/hanzhang-zhiwei
 tar -xzf "$OUT/qingjian-data.tar.gz" -C data/generated
-cp "$OUT/model.qjm" data/model/model.qjm
+cp "$OUT/model.qjm" data/models/hanzhang-zhiwei/model.qjm
+if [[ -n "$(lock_value model-p2c.qjm)" ]]; then
+  mkdir -p data/models/hanzhang-tongbian
+  cp "$OUT/model-p2c.qjm" data/models/hanzhang-tongbian/model.qjm
+fi
 # 解出来的 mtime 比 checkout 出来的 TSV 旧，bundle.sh 会以为要重打
-find data/generated data/model -type f -exec touch {} +
+find data/generated data/models/hanzhang-zhiwei -type f -exec touch {} +
+[[ -n "$(lock_value model-p2c.qjm)" ]] && touch data/models/hanzhang-tongbian/model.qjm
 echo "产品数据 $TAG 已就位"
 
 if [[ -n "${GITHUB_ENV:-}" ]]; then
@@ -51,5 +57,6 @@ if [[ -n "${GITHUB_ENV:-}" ]]; then
     echo "DATA_TAG=$TAG"
     echo "DATA_SHA256=$(lock_value qingjian-data.tar.gz)"
     echo "MODEL_SHA256=$(lock_value model.qjm)"
+    echo "P2C_MODEL_SHA256=$(lock_value model-p2c.qjm)"
   } >> "$GITHUB_ENV"
 fi

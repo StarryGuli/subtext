@@ -127,6 +127,16 @@ impl Engine {
     }
 
     /// 给英文候选用的词表，个人的在前、随包的在后；一张都没有就是空。
+    /// 整段作用域本身就是个英文词（`database`、`agent`）：用户多半在打那个词。
+    pub(in crate::engine) fn scope_is_english_word(&self) -> bool {
+        let scope = self.composition.scope();
+        !scope.is_empty()
+            && self
+                .english_lists()
+                .iter()
+                .any(|words| words.get(scope).is_some())
+    }
+
     pub(super) fn english_lists(&self) -> Vec<&WordList> {
         self.learner
             .user_english()
