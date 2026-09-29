@@ -79,4 +79,4 @@ qingjian-data.tar.gz = $(sha_of qingjian-data.tar.gz)
 model.qjm = $(sha_of model.qjm)
 model-p2c.qjm = $(sha_of model-p2c.qjm)
 EOF
-echo "已发 $TAG，锁文件已更新（记得提交）"
+echo "已发 ${TAG}，锁文件已更新（记得提交）"

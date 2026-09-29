@@ -19,7 +19,7 @@ use self::loader::Loaded;
 pub(crate) use self::loader::ModelLoader;
 pub(crate) use self::state::RescoreState;
 use super::Router;
-use super::composed::Composed;
+use super::composed::{Composed, marked_parts};
 
 /// P2C 优先，同类模型里用户目录优先；没有 P2C 才回退字级模型。
 pub fn find_model(user_dir: Option<&Path>, bundled_root: &Path) -> Option<PathBuf> {
@@ -192,6 +192,7 @@ impl Router {
         let Some(Composed::Candidates {
             preedit,
             cursor,
+            typed_keys,
             layout,
         }) = self.composed.as_mut()
         else {
@@ -207,8 +208,7 @@ impl Router {
             rebuilt.set_cloud(cloud);
         }
         *layout = rebuilt;
-        *preedit = query.marked_segments().iter().map(Into::into).collect();
-        *cursor = query.marked_cursor();
+        (*preedit, *cursor, *typed_keys) = marked_parts(&query);
         let frame = self.self_drawn_frame();
         self.reconcile_candidates(&frame);
         // 前文在结果回来之前换过（Surrounding 晚到）：这次查询又记下了一批要打分的，再来一轮

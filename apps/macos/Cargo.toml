@@ -1,7 +1,7 @@
 [package]
 name = "qingjian-macos"
 description = "macOS 输入法：Input Method Kit 外壳、候选窗口、菜单与偏好设置"
-version = "0.1.4-dev"
+version = "0.1.5-beta.1"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -22,6 +22,7 @@ qingjian-render.workspace = true
 qingjian-lm.workspace = true
 qingjian-neural = { workspace = true, features = ["metal"] }
 qingjian-translate.workspace = true
+qingjian-update.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
 tracing-appender.workspace = true

@@ -15,6 +15,7 @@ mod shortcut;
 mod status_bar;
 mod switch_key;
 mod theme_mode;
+mod update;
 
 use std::path::Path;
 
@@ -45,8 +46,9 @@ pub use scheme::{Scheme, scheme_label};
 pub use shift_letter::ShiftLetter;
 pub use shortcut::ShortcutConfig;
 pub use status_bar::StatusBarConfig;
-pub use switch_key::SwitchKey;
+pub use switch_key::{SwitchKey, SwitchKeys};
 pub use theme_mode::ThemeMode;
+pub use update::{UpdateChannel, UpdateConfig};
 
 /// 用户配置文件（TOML）。所有平台同一份格式，缺省值全部在各分节的 `Default` 里。
 ///
@@ -84,6 +86,9 @@ pub struct Config {
 
     /// 本地整句模型。
     pub model: LocalModelConfig,
+
+    /// 检查更新。
+    pub update: UpdateConfig,
 }
 
 fn deserialize_phrases<'de, D: serde::Deserializer<'de>>(
@@ -150,9 +155,9 @@ english_candidates_off = [
 #[cfg(not(windows))]
 macro_rules! template_shortcut_keys {
     () => {
-        r#"# 中 / 英模式切换键：单击这个修饰键在中英之间翻转。shift 单击 (缺省, 与微软拼音一致) / control 单击 / none 不切换。
+        r#"# 中 / 英模式切换键（Windows 用），可多选：shift 单击（缺省）/ control 单击 / ctrl+alt+space 组合键；[] 不用键切换。
 # macOS 的切换键是 Caps Lock（系统级），本项不生效
-switch_mode = "shift"
+switch_mode = ["shift"]
 # 数字键配这些修饰键上屏候选的译词：translation 第一个译词，translation_second 第二个（候选右侧有两个译词时）
 # 任意修饰键组合（option / shift / control / command 用 + 连），偏好设置里点按钮录制；别用 control+数字（系统切桌面）和 command+数字（应用切标签页）
 translation = "option"
@@ -170,10 +175,9 @@ delete_candidate = "shift"
 #[cfg(windows)]
 macro_rules! template_shortcut_keys {
     () => {
-        r#"# 中 / 英模式切换键：单击这个修饰键在中英之间翻转，不用组合。
-# shift 单击（缺省，与微软拼音一致；打字时容易误触 Shift 的话改成 control 单击或 none 不切换）
-# ctrl+space 是组合键；若系统把「输入法/非输入法切换」也绑在它上面会抢先，需先在 Windows 语言设置里关掉
-switch_mode = "shift"
+        r#"# 中 / 英模式切换键，可多选：shift 单击（缺省，与微软拼音一致）/ control 单击 / ctrl+alt+space 组合键；[] 不用键切换，只剩按钮。
+# 不提供 Ctrl + Space：中文 Windows 把它绑成系统的「输入法/非输入法切换」，系统先截走
+switch_mode = ["shift"]
 # 数字键配这些修饰键上屏候选的译词：translation 第一个译词，translation_second 第二个（候选右侧有两个译词时）
 # 任意修饰键组合（alt / shift / ctrl / win 用 + 连）。Alt+数字会被 Windows 当菜单快捷键截走，缺省用 Ctrl；组句时才拦，不打字时照常放行给应用
 translation = "ctrl"
@@ -239,6 +243,8 @@ aux_code_keep_empty = true
 # zhuyin 大千注音 / none 关（只用形码，见下面的 wubi）。
 # 双拼与注音下 v / u / i 都是按键，表达式模式没有入口，问字只能靠 question_mark 打开后用 ? 进；微软、搜狗方案的 ; 键是 ing
 scheme = ""
+# 双拼方案下 preedit 显示原始按键（如 ljse）还是展开成全拼（lan'se）；缺省 false（展开成全拼）
+shuangpin_raw_preedit = false
 # 五笔（86 版形码）：留空为关，wubi86 为开。**与上面的拼音方案同时开着就是混输**——
 # 两边都出候选，编码打全的五笔词在前、其次拼音（打不出的字直接打拼音）；候选旁的译文、生词记录与学习照常。
 # 只用五笔的话把 scheme 写成 none；第 5 个字母起五笔已经查不到东西，自动只剩拼音。
@@ -337,6 +343,12 @@ enabled = false
 # 记住的屏幕位置（物理像素，拖动后自动写入）；留空则首次出现在屏幕右下角
 # x = 0
 # y = 0
+
+[update]
+# 检查更新：每天向官网（qingjian.app）读一次版本索引，有新版在菜单与设置的「关于」页提示；请求不带任何标识，不自动下载安装
+check = true
+# 渠道：stable 只看正式版；beta 还会提示测试版（alpha / beta / rc）
+channel = "stable"
 "#
 );
 
@@ -583,7 +595,7 @@ mod tests {
             config.shortcut.translation,
             Config::default().shortcut.translation
         );
-        assert_eq!(config.shortcut.switch_mode, SwitchKey::Shift);
+        assert_eq!(config.shortcut.switch_mode, SwitchKeys::default());
         assert!(config.general.english_mode);
     }
 

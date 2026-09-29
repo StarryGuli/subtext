@@ -37,6 +37,7 @@ def main():
     if not data.is_absolute():
         raise SystemExit('XDG_DATA_HOME 必须是绝对路径')
     files = {prefix / 'share/licenses/qingjian/LICENSE': root / 'LICENSE',
+             prefix / 'share/licenses/qingjian/LICENSE-CNS11643.txt': root / 'assets/stroke/LICENSE-CNS11643.txt',
              data / 'icons/hicolor/128x128/apps/qingjian.png': root / 'assets/icon/logo.png',
              prefix / 'bin/qingjian-linux-server': Path(server),
              prefix / 'lib/fcitx5/qingjian.so': Path(plugin)}
@@ -70,7 +71,7 @@ def main():
                 verified[source] = checksum
         wanted = ('dict.qj', 'lm.qj', 'lm-unigram.tsv', 'lm-bigram.tsv', 'english.tsv')
         for source in generated.rglob('*'):
-            if source.is_file() and (source.name in wanted or source.name.startswith('glossary-') or source.parent.name == 'dicts'):
+            if source.is_file() and not source.name.startswith('._') and (source.name in wanted or source.name.startswith('glossary-') or source.parent.name in ('dicts', 'codes')):
                 if source.resolve() not in verified:
                     raise SystemExit(f'产品数据没有校验记录：{source}')
                 files[resources / source.relative_to(root)] = source

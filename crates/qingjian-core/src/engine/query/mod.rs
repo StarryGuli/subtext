@@ -36,9 +36,10 @@ impl Engine {
                     return Err(error);
                 }
                 Query::custom_only(
-                    self.composition.text(),
+                    &self.composition.typed_text(),
                     self.composition.cursor(),
                     self.shuangpin.is_some() || self.zhuyin,
+                    self.shuangpin.is_some() && self.shuangpin_raw_preedit,
                     self.composition.scope(),
                     self.marked_rest(self.composition.rest()),
                 )
