@@ -99,7 +99,10 @@ pub fn pack(
                 .first()
                 .cloned()
                 .unwrap_or_else(|| PathBuf::from("data/models/hanzhang-zhiwei"));
-            let out = out_dir.join("model.qjm");
+            let out = paths
+                .output
+                .map(Path::to_path_buf)
+                .unwrap_or_else(|| out_dir.join("model.qjm"));
             let parameters = qingjian_neural::qjm::pack(&input, &out, &metadata)?;
             report(
                 &out,

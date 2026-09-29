@@ -98,22 +98,22 @@ if [[ -f data/generated/dict.tsv || -f data/generated/dict.qj ]]; then
   if [[ -f "$model_dir/model.safetensors" ]]; then
     QINGJIAN_MODEL_DIR="$model_dir" tools/release/pack-model.sh
   fi
-  if [[ -f "$model_dir/model.qjm" ]]; then
+  if [[ -f "$model_dir/hanzhang-zhiwei-small.qjm" ]]; then
     mkdir -p "$APP/Contents/Resources/models/hanzhang-zhiwei"
-    cp "$model_dir/model.qjm" "$APP/Contents/Resources/models/hanzhang-zhiwei/"
-    chmod 644 "$APP/Contents/Resources/models/hanzhang-zhiwei/model.qjm"
-    echo "打包含章·知微：$model_dir/model.qjm"
+    cp "$model_dir/hanzhang-zhiwei-small.qjm" "$APP/Contents/Resources/models/hanzhang-zhiwei/"
+    chmod 644 "$APP/Contents/Resources/models/hanzhang-zhiwei/hanzhang-zhiwei-small.qjm"
+    echo "打包含章·知微：$model_dir/hanzhang-zhiwei-small.qjm"
   fi
   # 含章·通变（P2C，带噪拼音 → 汉字）：放 Resources/models/hanzhang-tongbian/。
   p2c_dir="${QINGJIAN_P2C_MODEL_DIR:-data/models/hanzhang-tongbian}"
   if [[ -f "$p2c_dir/model.safetensors" ]]; then
     QINGJIAN_MODEL_DIR="$p2c_dir" tools/release/pack-model.sh
   fi
-  if [[ -f "$p2c_dir/model.qjm" ]]; then
+  if [[ -f "$p2c_dir/hanzhang-tongbian-small.qjm" ]]; then
     mkdir -p "$APP/Contents/Resources/models/hanzhang-tongbian"
-    cp "$p2c_dir/model.qjm" "$APP/Contents/Resources/models/hanzhang-tongbian/"
-    chmod 644 "$APP/Contents/Resources/models/hanzhang-tongbian/model.qjm"
-    echo "打包含章·通变：$p2c_dir/model.qjm"
+    cp "$p2c_dir/hanzhang-tongbian-small.qjm" "$APP/Contents/Resources/models/hanzhang-tongbian/"
+    chmod 644 "$APP/Contents/Resources/models/hanzhang-tongbian/hanzhang-tongbian-small.qjm"
+    echo "打包含章·通变：$p2c_dir/hanzhang-tongbian-small.qjm"
   fi
   # 释义表打成 .qj（TSV 比 .qj 新时重打），英文词表仍是 TSV。各表来源不同，元数据按表写（见 assets/glossary/README.md）
   for lang in en ja zh es; do

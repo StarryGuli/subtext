@@ -190,7 +190,7 @@ pub enum Command {
 
     /// 把 TSV 打包成 `.qj` 容器（mmap 直接用，启动近零耗时）：`dict` 读 dict.tsv 写 dict.qj，`lm` 读 lm-unigram/bigram.tsv 写 lm.qj，
     /// `glossary --language en` 读 glossary-en.tsv 写 glossary-en.qj；`model` 把导出的三件套目录（缺省 data/models/hanzhang-zhiwei）
-    /// 打成一个 model.qjm（`--out-dir data/models/hanzhang-zhiwei` 就写回原目录，随包只带这一个文件）；
+    /// 打成一个 .qjm（`--out-dir data/models/hanzhang-zhiwei` 就写回原目录，随包只带这一个文件）；
     /// `codes` 是唯一不「原样落盘」的一种：读笔画表与词库，按取码规则算成本地码表 codes/stroke.qj（见 codes 模块）
     Pack {
         /// 打包哪种数据
@@ -208,7 +208,7 @@ pub enum Command {
         #[arg(long)]
         dict: Option<PathBuf>,
 
-        /// `codes` 用：码表产物；缺省 <输出目录>/codes/stroke.qj
+        /// `codes` 或 `model` 用：输出文件；模型缺省 <输出目录>/model.qjm
         #[arg(long)]
         output: Option<PathBuf>,
 
@@ -250,7 +250,7 @@ pub enum PackKind {
     /// 释义表（glossary-<语言>.tsv → glossary-<语言>.qj）
     Glossary,
 
-    /// 本地整句模型（三件套目录 → model.qjm）
+    /// 本地整句模型（三件套目录 → .qjm）
     Model,
 
     /// 笔画码表（笔画表 + 词库 → codes/stroke.qj，随包原生码表）

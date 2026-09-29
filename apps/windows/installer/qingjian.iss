@@ -90,8 +90,8 @@ Source: "{#Repo}\data\generated\dicts\*.qj";     DestDir: "{app}\data\generated\
 Source: "{#Repo}\data\generated\codes\*.qj";   DestDir: "{app}\data\generated\codes"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "{#Repo}\assets\stroke\LICENSE-CNS11643.txt"; DestDir: "{app}\data\generated\codes"; Flags: ignoreversion
 ; —— 含章·知微与含章·通变模型 ——
-Source: "{#Repo}\data\models\hanzhang-zhiwei\model.qjm"; DestDir: "{app}\data\models\hanzhang-zhiwei"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "{#Repo}\data\models\hanzhang-tongbian\model.qjm"; DestDir: "{app}\data\models\hanzhang-tongbian"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "{#Repo}\data\models\hanzhang-zhiwei\hanzhang-zhiwei-small.qjm"; DestDir: "{app}\data\models\hanzhang-zhiwei"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "{#Repo}\data\models\hanzhang-tongbian\hanzhang-tongbian-small.qjm"; DestDir: "{app}\data\models\hanzhang-tongbian"; Flags: ignoreversion skipifsourcedoesntexist
 ; —— 随 git 的资源 ——
 Source: "{#Repo}\assets\emoji\emoji-zh.tsv";     DestDir: "{app}\assets\emoji";  Flags: ignoreversion
 Source: "{#Repo}\assets\emoji\emoji-en.tsv";     DestDir: "{app}\assets\emoji";  Flags: ignoreversion
@@ -145,7 +145,7 @@ Filename: "{syswow64}\regsvr32.exe"; Parameters: "/u /s ""{app}\{#TsfDll32}"""; 
 [InstallDelete]
 ; 更早版本装在当前用户「启动」文件夹里的自启快捷方式：与机器级那份并存会起两个 Server（两条状态条）。
 Type: files; Name: "{userstartup}\Qingjian Server.lnk"
-; 更早版本装的模型三件套（现在只带 model.qjm）：留着白占 56 MB。
+; 更早版本装的模型三件套（现在只带正式命名的 .qjm）：留着白占 56 MB。
 Type: files; Name: "{app}\data\model\model.safetensors"
 Type: files; Name: "{app}\data\model\config.json"
 Type: files; Name: "{app}\data\model\vocab.json"

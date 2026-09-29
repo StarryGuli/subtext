@@ -81,11 +81,10 @@ cargo 命令全 `--locked`（含 `bundle.sh` 与 `build.ps1`）。普通 CI 只�
 （预发布不会成为 GitHub 的 latest，官网取 latest 时不会拿到它）。仓库里 `tools/release/data.lock` 钉住当前要用的标签与资产的 SHA-256，
 跟用到新数据的代码同一个提交进去：checkout 哪个提交就拿到它对应的那版数据，离线自编译的人不会因为我们改了数据而编出坏包。
 
-- `tools/release/data-bundle.sh`：把 `data/generated/` 打成 `qingjian-data.tar.gz`，含章·知微 `data/models/hanzhang-zhiwei/model.qjm` 与含章·通变 `data/models/hanzhang-tongbian/model.qjm`
-  （导出的三件套放各自的模型目录，`tools/release/pack-model.sh` 打成 `.qj` 容器，元数据也写在那个脚本里）原样上传，
-  连同 LLM 续跑中间产物 `qingjian-llm-intermediates.tar.gz` 发到下一个 `data-vN`（`--tag` 可指定，已存在就拒绝），然后改写 `data.lock`。
-- `tools/release/data-fetch.sh`：按 `data.lock` 下载（有 gh 用 gh，没有就 curl 直连）、按锁文件里的哈希校验（不信 Release 自己那份 `SHA256SUMS`），
-  数据包解到 `data/generated/`，两份模型分别放到 `data/models/hanzhang-zhiwei/` 与 `data/models/hanzhang-tongbian/`。旧锁没有通变资产项时仍可只取知微。`release.yml` 三个平台的 job 和离线自编译走同一个脚本；
+- `tools/release/data-bundle.sh`：把 `data/generated/`、含章·知微 `hanzhang-zhiwei-small.qjm` 与含章·通变 `hanzhang-tongbian-small.qjm` 装进唯一附件 `qingjian-data.tar.gz`
+  （导出的三件套放各自模型目录，`tools/release/pack-model.sh` 打成 `.qjm` 容器）。训练中间产物不进入公开包；发到下一个 `data-vN`（`--tag` 可指定，已存在就拒绝），然后改写 `data.lock`。
+- `tools/release/data-fetch.sh`：按 `data.lock` 下载（有 gh 用 gh，没有就 curl 直连）、按锁文件里的哈希校验，
+  数据包解到 `data/generated/` 与两份模型各自的 `data/models/<标识>/`。旧锁仍可读取分离附件。`release.yml` 三个平台的 job 和离线自编译走同一个脚本；
   `bundle.sh`、`qingjian.iss` 与 Linux 打包脚本将两份模型分别装入对应目录，产品端优先使用通变。
   标签与各资产哈希记进 `build-info.json`（`data_tag` / `data_sha256` / `model_sha256` / `p2c_model_sha256`）。
 

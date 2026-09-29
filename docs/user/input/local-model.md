@@ -25,7 +25,7 @@ description: 随包的小模型在本机给整句候选重新排序：怎么生�
 
 ## 自己的模型
 
-把含章·通变的 `.qjm` 放进用户数据目录的 `models/hanzhang-tongbian/`，重启输入法后优先使用。含章·知微放在 `models/hanzhang-zhiwei/`，仅在没有通变时使用。旧用户目录 `model-p2c/` 与 `model/` 仍可读取；同一模型的新目录优先。直接导出的 `model.safetensors`、`config.json`、`vocab.json` 三个文件也能识别；同目录里两种格式都有时优先用 `.qjm`：
+把 `hanzhang-tongbian-small.qjm` 放进用户数据目录的 `models/hanzhang-tongbian/`，重启输入法后优先使用。含章·知微使用 `hanzhang-zhiwei-small.qjm`，放在 `models/hanzhang-zhiwei/`，仅在没有通变时使用。旧用户目录 `model-p2c/` 与 `model/` 仍可读取；同一模型的新目录优先。直接导出的 `model.safetensors`、`config.json`、`vocab.json` 三个文件也能识别；同目录里两种格式都有时优先用 `.qjm`：
 
 - **macOS**：`~/Library/Application Support/Qingjian/models/hanzhang-tongbian/`
 - **Windows**：`%APPDATA%\Qingjian\models\hanzhang-tongbian\`

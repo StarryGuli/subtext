@@ -157,4 +157,4 @@ P2C 打的是 `log P(汉字 | 拼音)`，字级模型打的是 `log P(汉字)`�
 代价是延迟：生成是 `O(生成字数)` 次串行前向（同一份集合上平均 130～200 ms、最慢 2.4 s），
 重排是一次批量前向（平均 62 ms）。这是结构差异不是调参旋钮，要进产品得先解决。
 
-实验入口：`--eval-text <集> --eval-generate data/models/hanzhang-tongbian/model.qjm [--eval-details out.jsonl]`。
+实验入口：`--eval-text <集> --eval-generate data/models/hanzhang-tongbian/hanzhang-tongbian-small.qjm [--eval-details out.jsonl]`。

@@ -62,8 +62,8 @@ def main():
             for member in bundle.getmembers():
                 if not member.isfile():
                     continue
-                source = (generated / member.name).resolve()
-                if not source.is_relative_to(generated.resolve()):
+                source = (root / member.name).resolve()
+                if not source.is_relative_to((root / 'data').resolve()):
                     raise SystemExit('数据包路径越界')
                 checksum = hashlib.file_digest(bundle.extractfile(member), 'sha256').hexdigest()
                 if not source.is_file() or digest(source) != checksum:
@@ -75,17 +75,16 @@ def main():
                 if source.resolve() not in verified:
                     raise SystemExit(f'产品数据没有校验记录：{source}')
                 files[resources / source.relative_to(root)] = source
-        model = root / 'data/models/hanzhang-zhiwei/model.qjm'
+        model = root / 'data/models/hanzhang-zhiwei/hanzhang-zhiwei-small.qjm'
         if not model.is_file():
-            raise SystemExit('缺少含章·知微 data/models/hanzhang-zhiwei/model.qjm，请先运行 tools/release/data-fetch.sh，或用 --sample 体验样例词库')
-        if digest(model) != lock.get('model.qjm'):
-            raise SystemExit('含章·知微与 tools/release/data.lock 校验值不符')
-        files[resources / 'data/models/hanzhang-zhiwei/model.qjm'] = model
-        if 'model-p2c.qjm' in lock:
-            p2c_model = root / 'data/models/hanzhang-tongbian/model.qjm'
-            if not p2c_model.is_file() or digest(p2c_model) != lock['model-p2c.qjm']:
-                raise SystemExit('含章·通变缺失或与 tools/release/data.lock 校验值不符')
-            files[resources / 'data/models/hanzhang-tongbian/model.qjm'] = p2c_model
+            raise SystemExit('缺少含章·知微 hanzhang-zhiwei-small.qjm，请先运行 tools/release/data-fetch.sh，或用 --sample 体验样例词库')
+        if verified.get(model.resolve()) != digest(model):
+            raise SystemExit('含章·知微不在已校验的数据包中')
+        files[resources / model.relative_to(root)] = model
+        p2c_model = root / 'data/models/hanzhang-tongbian/hanzhang-tongbian-small.qjm'
+        if not p2c_model.is_file() or verified.get(p2c_model.resolve()) != digest(p2c_model):
+            raise SystemExit('含章·通变缺失或不在已校验的数据包中')
+        files[resources / p2c_model.relative_to(root)] = p2c_model
     # 安装前先检查所有目标，避免覆盖其他来源的同名文件。
     for target in files:
         if target.is_symlink() or (target.exists() and (str(target) not in old or digest(target) != old[str(target)])):
