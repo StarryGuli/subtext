@@ -1,4 +1,4 @@
-use qingjian_core::MarkedSegment;
+use subtext_core::MarkedSegment;
 
 use super::style::PreeditStyle;
 

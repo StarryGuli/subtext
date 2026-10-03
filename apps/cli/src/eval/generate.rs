@@ -7,8 +7,8 @@ use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
-use qingjian_core::Engine;
-use qingjian_neural::{CharScorer, P2c};
+use subtext_core::Engine;
+use subtext_neural::{CharScorer, P2c};
 
 use super::{EvalError, collect};
 
@@ -82,7 +82,7 @@ pub fn run(
     let pairs = collect(engine, paths, &mut report)?;
     let scorer = CharScorer::load(model)?;
     let decoder = P2c::new(scorer.model(), scorer.vocab())
-        .ok_or(qingjian_neural::NeuralError::Corrupt("模型不是 P2C"))?;
+        .ok_or(subtext_neural::NeuralError::Corrupt("模型不是 P2C"))?;
     let mut writer = details
         .map(|path| {
             std::fs::OpenOptions::new()

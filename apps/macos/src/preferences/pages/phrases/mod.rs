@@ -14,8 +14,8 @@ use objc2_app_kit::{
     NSWindowStyleMask,
 };
 use objc2_foundation::{NSIndexSet, NSPoint, NSRect, NSSize, NSString};
-use qingjian_core::CustomPhrase;
-use qingjian_platform::Config;
+use subtext_core::CustomPhrase;
+use subtext_platform::Config;
 use std::cell::{Cell, RefCell};
 use table::PhraseTableSource;
 

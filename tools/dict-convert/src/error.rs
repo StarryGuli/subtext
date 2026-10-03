@@ -9,16 +9,16 @@ pub enum ConvertError {
     Json(#[from] serde_json::Error),
 
     #[error(transparent)]
-    Dictionary(#[from] qingjian_dictionary::DictionaryError),
+    Dictionary(#[from] subtext_dictionary::DictionaryError),
 
     #[error(transparent)]
-    LanguageModel(#[from] qingjian_lm::LmError),
+    LanguageModel(#[from] subtext_lm::LmError),
 
     #[error(transparent)]
-    Glossary(#[from] qingjian_translate::GlossaryError),
+    Glossary(#[from] subtext_translate::GlossaryError),
 
     #[error(transparent)]
-    Neural(#[from] qingjian_neural::NeuralError),
+    Neural(#[from] subtext_neural::NeuralError),
 
     /// `pack` 少了必填的元数据（只有 `codes` 有缺省值）。
     #[error("pack {kind} needs --name")]

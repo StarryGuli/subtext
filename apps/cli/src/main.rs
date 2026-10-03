@@ -1,4 +1,4 @@
-//! 青简 CLI：Phase 1 的测试工具。
+//! 言外 CLI：Phase 1 的测试工具。
 //!
 //! 输入拼音，打印候选（词性 + 译文）和各阶段耗时；输入序号上屏并记入用户词频。
 //! 不依赖任何平台 API，是 Core 的第一个「壳」。
@@ -18,13 +18,13 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use clap::Parser;
-use qingjian_core::{EmojiTable, Engine, FuzzyRules, Language};
-use qingjian_dictionary::{AuxCodeLookup, AuxCodeTable, CodeTable, Dictionary, WordList};
-use qingjian_learning::FrequencyLearner;
-use qingjian_lm::BigramModel;
-use qingjian_platform::{Config, Scheme};
-use qingjian_predict::CloudPredictor;
-use qingjian_translate::Glossary;
+use subtext_core::{EmojiTable, Engine, FuzzyRules, Language};
+use subtext_dictionary::{AuxCodeLookup, AuxCodeTable, CodeTable, Dictionary, WordList};
+use subtext_learning::FrequencyLearner;
+use subtext_lm::BigramModel;
+use subtext_platform::{Config, Scheme};
+use subtext_predict::CloudPredictor;
+use subtext_translate::Glossary;
 
 use crate::args::Args;
 use crate::error::CliError;
@@ -229,17 +229,17 @@ fn build_engine(args: &Args) -> Result<Engine, CliError> {
     }
     if let Some(dir) = &args.neural {
         let started = Instant::now();
-        let scorer = qingjian_neural::CharScorer::load(dir)?;
+        let scorer = subtext_neural::CharScorer::load(dir)?;
         // 与产品端一致：字表里有 <sep> 的是 P2C 模型，按按键打分；没有的是字级模型，按前文打分
         let p2c = scorer.vocab().sep().is_some();
-        let scorer: Box<dyn qingjian_core::sentence::SentenceScorer> = if p2c {
-            Box::new(qingjian_neural::P2cScorer(scorer))
+        let scorer: Box<dyn subtext_core::sentence::SentenceScorer> = if p2c {
+            Box::new(subtext_neural::P2cScorer(scorer))
         } else {
             Box::new(scorer)
         };
         tracing::info!(
             load_ms = started.elapsed().as_millis(),
-            weight = args.neural_weight.unwrap_or(qingjian_core::NEURAL_WEIGHT),
+            weight = args.neural_weight.unwrap_or(subtext_core::NEURAL_WEIGHT),
             kind = if p2c { "P2C" } else { "字级" },
             "神经重打分已启用"
         );
@@ -260,9 +260,9 @@ fn build_engine(args: &Args) -> Result<Engine, CliError> {
         };
     }
     if let Some(path) = &args.eval_p2c {
-        let scorer = qingjian_neural::CharScorer::load(path)?;
+        let scorer = subtext_neural::CharScorer::load(path)?;
         if scorer.vocab().sep().is_none() {
-            return Err(qingjian_neural::NeuralError::Corrupt(
+            return Err(subtext_neural::NeuralError::Corrupt(
                 "Hanzhang Tongbian model requires a <sep> token in its vocabulary",
             )
             .into());

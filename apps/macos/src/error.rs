@@ -1,10 +1,10 @@
 use std::path::PathBuf;
 
-use qingjian_dictionary::DictionaryError;
-use qingjian_learning::LearningError;
-use qingjian_lm::LmError;
-use qingjian_platform::ConfigError;
-use qingjian_translate::GlossaryError;
+use subtext_dictionary::DictionaryError;
+use subtext_learning::LearningError;
+use subtext_lm::LmError;
+use subtext_platform::ConfigError;
+use subtext_translate::GlossaryError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum HostError {

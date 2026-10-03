@@ -2,7 +2,7 @@
 
 use std::time::{Duration, Instant};
 
-use qingjian_core::{Candidate, Engine, Query};
+use subtext_core::{Candidate, Engine, Query};
 
 /// 等联想结果的轮询间隔与上限。CLI 是同步工具，等一等无妨；输入法里是定时器轮询、不等。
 const PREDICTION_POLL: Duration = Duration::from_millis(20);
@@ -226,14 +226,14 @@ fn format_candidate(candidate: &Candidate, width: usize) -> String {
         .map(|code| format!("[{code}] "))
         .unwrap_or_default();
     let marker = match candidate.kind {
-        qingjian_core::CandidateKind::Chinese | qingjian_core::CandidateKind::Code => "",
-        qingjian_core::CandidateKind::English => "[en] ",
-        qingjian_core::CandidateKind::Cloud => "☁ ",
-        qingjian_core::CandidateKind::Shortcut => "[v] ",
-        qingjian_core::CandidateKind::Custom(_) => "[custom] ",
-        qingjian_core::CandidateKind::Sentence => "[句] ",
-        qingjian_core::CandidateKind::Generated => "[生成] ",
-        qingjian_core::CandidateKind::Emoji => "",
+        subtext_core::CandidateKind::Chinese | subtext_core::CandidateKind::Code => "",
+        subtext_core::CandidateKind::English => "[en] ",
+        subtext_core::CandidateKind::Cloud => "☁ ",
+        subtext_core::CandidateKind::Shortcut => "[v] ",
+        subtext_core::CandidateKind::Custom(_) => "[custom] ",
+        subtext_core::CandidateKind::Sentence => "[句] ",
+        subtext_core::CandidateKind::Generated => "[生成] ",
+        subtext_core::CandidateKind::Emoji => "",
     };
     format!(
         "{}{padding}{marker}{reading}{aux}{annotation}",

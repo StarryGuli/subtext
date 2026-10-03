@@ -1,5 +1,5 @@
 [package]
-name = "qingjian-macos"
+name = "subtext-macos"
 description = "macOS 输入法：Input Method Kit 外壳、候选窗口、菜单与偏好设置"
 version = "0.1.5-dev"
 edition.workspace = true
@@ -13,16 +13,16 @@ objc2-foundation.workspace = true
 objc2-input-method-kit.workspace = true
 objc2-core-foundation.workspace = true
 objc2-core-text.workspace = true
-qingjian-core.workspace = true
-qingjian-dictionary.workspace = true
-qingjian-learning.workspace = true
-qingjian-platform.workspace = true
-qingjian-predict.workspace = true
-qingjian-render.workspace = true
-qingjian-lm.workspace = true
-qingjian-neural = { workspace = true, features = ["metal"] }
-qingjian-translate.workspace = true
-qingjian-update.workspace = true
+subtext-core.workspace = true
+subtext-dictionary.workspace = true
+subtext-learning.workspace = true
+subtext-platform.workspace = true
+subtext-predict.workspace = true
+subtext-render.workspace = true
+subtext-lm.workspace = true
+subtext-neural = { workspace = true, features = ["metal"] }
+subtext-translate.workspace = true
+subtext-update.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
 tracing-appender.workspace = true

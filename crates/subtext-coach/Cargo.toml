@@ -1,0 +1,22 @@
+[package]
+name = "subtext-coach"
+description = "双语教练：解码收到的英文、把中文组成地道英文、修改英文草稿；后端可接本机 Claude Code / Codex 或 API"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+reqwest = { workspace = true, features = ["blocking", "json", "native-tls", "system-proxy"] }
+clap.workspace = true
+
+[[bin]]
+name = "subtext-coach"
+path = "src/bin/subtext-coach.rs"

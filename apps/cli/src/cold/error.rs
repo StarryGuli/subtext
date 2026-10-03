@@ -9,7 +9,7 @@ pub enum ColdError {
     Json(#[from] serde_json::Error),
 
     #[error(transparent)]
-    Neural(#[from] qingjian_neural::NeuralError),
+    Neural(#[from] subtext_neural::NeuralError),
 
     #[error("invalid cold evaluation row: {0}")]
     Invalid(String),

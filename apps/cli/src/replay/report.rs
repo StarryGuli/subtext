@@ -1,6 +1,6 @@
 use std::fmt;
 
-use qingjian_core::InputSource;
+use subtext_core::InputSource;
 
 use super::tally::Tally;
 

@@ -1,5 +1,5 @@
 /* Name shown in the input source list and the input method menu */
-CFBundleName = "Qingjian";
-CFBundleDisplayName = "Qingjian";
+CFBundleName = "Subtext";
+CFBundleDisplayName = "Subtext";
 /* Input mode display name, keyed by the mode ID in Info.plist */
-"app.qingjian.inputmethod.Hans" = "Qingjian";
+"app.subtext.inputmethod.Hans" = "Subtext";

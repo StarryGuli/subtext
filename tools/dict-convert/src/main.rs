@@ -1,7 +1,7 @@
-//! 把数据源转换成青简的 TSV 格式，或打包成 `.qj`。
+//! 把数据源转换成言外的 TSV 格式，或打包成 `.qj`。
 //!
-//! - `lexicon`：青简基础词库，「输入法字词库_分类整理版」数据包（规范字 / 常用词 / THUOCL 领域词）+ Unihan 读音 + LLM 多音字标注 → `dict.tsv`
-//! - `wubi`：Rime 形码码表（极点 86 五笔，Apache-2.0）→ `wubi86.tsv`（`词\t编码\t词频`，词频由青简词库按词面回填）
+//! - `lexicon`：言外基础词库，「输入法字词库_分类整理版」数据包（规范字 / 常用词 / THUOCL 领域词）+ Unihan 读音 + LLM 多音字标注 → `dict.tsv`
+//! - `wubi`：Rime 形码码表（极点 86 五笔，Apache-2.0）→ `wubi86.tsv`（`词\t编码\t词频`，词频由言外词库按词面回填）
 //! - `cedict`：CC-CEDICT（CC BY-SA 4.0）→ `glossary-en.tsv`（释义表的备用来源，现在用 gloss-gen 的 LLM 表）
 //! - `english`：`词\t编码` 英文词表（数据包的 `05_english`，ESDB / CSpell，MIT）→ `english.tsv`
 //! - `emoji`：Unicode CLDR annotations（Unicode License v3，`--language zh|en`）→ `emoji-<语言>.tsv`（可发布，放 `assets/emoji/`）
@@ -176,13 +176,13 @@ fn run() -> Result<(), ConvertError> {
                 output: output.as_deref(),
             },
             &language,
-            qingjian_format::Metadata {
+            subtext_format::Metadata {
                 name,
                 license,
                 attribution,
                 source,
                 version: data_version,
-                ..qingjian_format::Metadata::default()
+                ..subtext_format::Metadata::default()
             },
             &args.out_dir,
         ),

@@ -31,11 +31,11 @@
 CoachBackend (trait)
 ├── ClaudeCli     本机 `claude -p`，走订阅额度
 ├── CodexCli      本机 `codex`
-├── OpenAiCompat  复用 qingjian-predict 的聊天客户端
+├── OpenAiCompat  复用 subtext-predict 的聊天客户端
 └── Anthropic     Messages API
 ```
 
-请求在独立线程里发，「最新请求优先」，结果带序号，过期丢弃，永远不阻塞输入（沿用 `qingjian-predict` 的做法）。
+请求在独立线程里发，「最新请求优先」，结果带序号，过期丢弃，永远不阻塞输入（沿用 `subtext-predict` 的做法）。
 
 ## 面板
 
