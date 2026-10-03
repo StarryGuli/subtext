@@ -35,7 +35,7 @@ const BUTTON_GAP: f64 = 8.0;
 const SECTION_GAP: f64 = 10.0;
 
 /// 正文区最高多少；超过就放进滚动区，面板不会比屏幕还高。
-const MAX_TEXT_HEIGHT: f64 = 460.0;
+const MAX_TEXT_HEIGHT: f64 = 540.0;
 
 /// 圆角半径。
 const CORNER_RADIUS: f64 = 10.0;
