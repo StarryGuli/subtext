@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2F5240"/>
+      <stop offset="1" stop-color="#152A20"/>
+    </linearGradient>
+  </defs>
+  <rect x="56" y="56" width="912" height="912" rx="208" fill="url(#bg)"/>
+  <!-- 对话气泡：圆角矩形加左下的尾巴，一条连续轮廓 -->
+  <path d="M300 250 H724 A96 96 0 0 1 820 346 V588 A96 96 0 0 1 724 684 H470 L336 790 V684 H300 A96 96 0 0 1 204 588 V346 A96 96 0 0 1 300 250 Z" fill="#F5F7F2"/>
+  <!-- 说出口的话 -->
+  <rect x="300" y="360" width="424" height="52" rx="26" fill="#1E3A2C"/>
+  <!-- 言外之意：下面一行淡淡的字 -->
+  <rect x="300" y="472" width="268" height="52" rx="26" fill="#B0CE7D"/>
+</svg>

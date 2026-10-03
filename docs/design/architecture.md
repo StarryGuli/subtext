@@ -1,5 +1,7 @@
 # 架构
 
+> 本文继承自青简 Qingjian 的设计文档。Subtext 只保留 macOS 外壳，文中涉及 Windows / Linux / 官网 / 发版流程的部分已不适用，留作内核设计的背景。
+
 ## 总体结构
 
 ```text

@@ -1,0 +1,23 @@
+{
+  "situation": "同事在 Discord 上客气地催你看 PR，还给了你台阶。",
+  "points": [
+    {"phrase": "no rush at all", "kind": "hedge", "literal": "完全不着急",
+     "meaning": "软化催促的套话：真不急的人不会专门提这一句",
+     "zh": "「不着急哈」，但中文这句通常是真不急，英文这句更多是在催",
+     "usage": "No rush at all, but could you look at my draft by Friday?"},
+    {"phrase": "PR", "kind": "abbr", "literal": "pull request",
+     "meaning": "GitHub 上请求把你的代码合并进主分支",
+     "zh": "合并请求", "usage": "Can you review my PR when you get a sec?"},
+    {"phrase": "lmk", "kind": "abbr", "literal": "let me know",
+     "meaning": "随意聊天里的「告诉我一声」，正式邮件里别用",
+     "zh": "回我一声", "usage": "lmk if the board shows up before Monday."},
+    {"phrase": "just merge it", "kind": "hedge", "literal": "我直接合了",
+     "meaning": "给你台阶，也在暗示「你再不看我就自己合了」",
+     "zh": "没有清爽对应：中文很少把最后通牒说得这么体贴",
+     "usage": "If I don't hear back, I'll just merge it."}
+  ],
+  "tone": {"register": "casual", "subtext": "友好，但带一点 deadline 压力",
+           "contrast": "国内工作群会直接问「看完没」；这里把催促包在三层客气里，是美国开发圈的标准写法"},
+  "translation": "嘿，真的不急，不过你有空看那个 PR 了吗？要是你愿意，我就直接合了。",
+  "question": "他实际上希望你多久内回？"
+}

@@ -1,33 +1,18 @@
-# 安全政策 / Security Policy
-
-## 支持的版本
-
-言外还在测试阶段，只修最新版本：
-
-| 版本 | 支持 |
-|---|---|
-| 最新的 0.1.x | ✅ |
-| 更早 | ❌，请升级 |
+# 安全策略
 
 ## 报告漏洞
 
-**不要在公开 issue 里写漏洞细节。** 请用 GitHub 的私密漏洞报告：仓库页面「Security」→「Report a vulnerability」。
+请**不要**在公开 Issue 里贴漏洞细节。到仓库的 Security 页点 “Report a vulnerability” 私下报告，或在 Issue 里只写「有一个安全问题想私下说」，我会联系你。
 
-收到后 3 天内回复，确认后在下一个版本修复并在更新日志里致谢（除非你不愿意署名）；不算漏洞的会说明原因。
+## 我们特别在意的几类问题
 
-输入法能看到你敲的每一个键，所以我们特别在意这些：
+Subtext 在开启双语教练后会把你复制的英文和上屏的中文发往你选的后端，所以下面这些都算安全问题：
 
-- 敲的内容外泄：日志、诊断信息、云端请求里出现不该出现的输入；密码框（Secure Input）里仍在组句或发请求。
-- 密钥：`.env` / 配置里的 API 密钥被写进日志、诊断信息或别的文件。
-- 安装包完整性：Release 上的 pkg 与 `SHA256SUMS`、`releases.json` 里的哈希对不上，或签名有问题。
-- 解析崩溃：恶意构造的词库文件（TSV、Rime yaml、`.qj`）、配置文件或云端返回让输入法崩溃或越界。
+- 外发闸门被绕过：密码框、隐蔽剪贴板、`skip_apps`、疑似密钥的文本仍然被发送。
+- 密钥泄露：API 密钥出现在日志、诊断信息、配置文件导出或进程参数里。
+- 提示注入造成实际影响：复制来的文本让教练执行了写剪贴板以外的动作。
+- 替换逻辑改坏了用户的文字（核对失败时仍然执行了替换）。
 
-不在范围内：需要本机管理员权限或物理接触才能利用的问题；你自己填写的 AI 服务商那一侧的问题。
+## 受支持的版本
 
----
-
-**English.** Subtext is in beta; only the latest 0.1.x release receives fixes. Please report vulnerabilities privately via
-GitHub's "Report a vulnerability" (Security tab), not in public issues. Expect a reply within 3 days; confirmed issues are fixed
-in the next release and credited in the changelog. An input method sees every keystroke, so we care most about keystroke leakage
-(logs, diagnostics, cloud requests, Secure Input), API key exposure, installer integrity (pkg vs. `SHA256SUMS`), and crashes from
-malformed dictionaries, config or cloud responses.
+只维护最新的发布版本。

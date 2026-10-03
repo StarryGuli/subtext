@@ -1,6 +1,6 @@
 # subtext-macos
 
-macOS 输入法壳（InputMethodKit）。按键进 Core 的 `Engine`，候选画在自绘 NSPanel；源码按 `app / host / imk / candidates / menubar / preferences` 分目录，
+macOS 输入法壳（InputMethodKit）。按键进 Core 的 `Engine`，候选画在自绘 NSPanel；源码按 `app / host / imk / candidates / menubar / preferences / coach` 分目录，
 架构见 `docs/design/architecture.md`「macOS：IMK」。
 
 ## 开发安装

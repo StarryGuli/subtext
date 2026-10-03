@@ -1,5 +1,7 @@
 # 跨平台 UI 与自绘渲染器（2026-09-13）
 
+> 本文继承自青简 Qingjian 的设计文档。Subtext 只保留 macOS 外壳，文中涉及 Windows / Linux / 官网 / 发版流程的部分已不适用，留作内核设计的背景。
+
 ## 起因
 
 主题功能提上日程，同时有人建议用 Flutter 一类跨平台框架，「一套 UI 跑 Windows / macOS / Linux / iOS / Android」。

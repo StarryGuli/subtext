@@ -1,0 +1,37 @@
+name: 报告问题
+description: 输入法或双语教练的行为不对
+labels: [bug]
+body:
+  - type: checkboxes
+    attributes:
+      label: 先确认
+      options:
+        - label: 已看过[使用说明](https://github.com/StarryGuli/subtext/blob/main/docs/usage.md)的排错一节
+          required: true
+  - type: textarea
+    attributes:
+      label: 发生了什么
+      description: 你做了什么、期望什么、实际看到什么。教练面板的截图很有帮助（请先遮住敏感内容）。
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: 哪一部分
+      options: [输入法（拼音 / 候选 / 学习）, 双语教练：解码, 双语教练：组句 / 替换, 双语教练：改稿, 设置 / 安装, 其他]
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: 教练后端
+      options: [没用教练, 本机 Claude Code, 本机 Codex, OpenAI 兼容接口, Anthropic API]
+  - type: input
+    attributes:
+      label: 系统版本与应用
+      description: 例如 macOS 15.2，出问题的应用是 Slack / 备忘录 / Chrome
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: 诊断信息
+      description: 偏好设置 → 关于 → 「复制诊断信息」。日志默认不含你输入的内容，详情见 README 的隐私一节；**不要贴密钥**。
+      render: text

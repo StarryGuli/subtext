@@ -1,5 +1,7 @@
 # 同类项目与数据源
 
+> 本文继承自青简 Qingjian 的设计文档。Subtext 只保留 macOS 外壳，文中涉及 Windows / Linux / 官网 / 发版流程的部分已不适用，留作内核设计的背景。
+
 ## 水杉输入法（MetasequoiaIME）
 
 - https://github.com/metasequoiaime/MetasequoiaImeTsf

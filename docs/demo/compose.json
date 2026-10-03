@@ -1,0 +1,18 @@
+{
+  "context": "发给教授的邮件，对方是前一封邮件里催交材料的人",
+  "options": [
+    {"register": "formal", "recommended": true,
+     "text": "Hi Prof. Lee,\nI won't be able to finish the experiment this week. Would it be possible to have until Friday to submit it?\nThank you for your understanding."},
+    {"register": "neutral", "recommended": false,
+     "text": "Hi Prof. Lee,\nI'm running behind on the experiment. Could I send it by Friday instead?\nThanks!"}
+  ],
+  "points": [
+    {"zh": "做不完", "en": "won't be able to finish / running behind", "mapping": "partial",
+     "why": "直译 I can't finish 太硬，像在说自己没能力；英文习惯把焦点放在时间不够，而不是能力不足"},
+    {"zh": "宽限几天", "en": "have until Friday", "mapping": "none",
+     "why": "英文里没有「几天」这种说法：含糊地求宽限显得不专业，要给出你自己提的新日期"},
+    {"zh": "麻烦您了", "en": "Thank you for your understanding", "mapping": "none",
+     "why": "中文的谦辞和客套在英文里改成正面的感谢，直译 sorry to bother you 会显得没自信"}
+  ],
+  "traps": ["先道歉、再铺垫、最后才说事是中文邮件的结构；英文先说事，再简短给原因"]
+}

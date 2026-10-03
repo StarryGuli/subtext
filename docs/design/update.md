@@ -1,60 +1,23 @@
 # 检查更新
 
-2026-09-17 定。0.1.3 只做「检查 + 提示 + 打开下载页」，下载与安装留给后面的版本。
+输入法不替换自己：只提示，点了打开 GitHub Releases 的最新版页面，安装仍由系统安装程序完成。
 
-## 目标与边界
+## 流程
 
-- 用户不用再从群里拿包：发了新版，已装的言外一天内自己知道。测试者把渠道切到「测试版」就能收到 beta / rc。
-- 输入法不替换自己：只提示，点了打开 [下载页](https://qingjian.app/download)，安装仍由系统安装程序完成。
-- 更新通道等于远程代码执行通道，所以索引从第一版起就签名；客户端只认签过名的索引。
-- 隐私：请求是对静态文件的 GET，不带账号、设备标识或输入内容；`[update] check = false` 关掉后不联网。
+`crates/subtext-update`：激活期间每天一次，起一个一次性线程请求
+`https://api.github.com/repos/StarryGuli/subtext/releases`，把每个 Release 转成内部的 `Release`：
 
-## 数据流
+- 版本号取 `tag_name` 去掉前缀 `v`；草稿不算。
+- 渠道：版本号里带 `alpha` / `beta` / `rc` 就归对应渠道；GitHub 标了预发布但版本号没写的归 `beta`；其余是 `stable`。
+- 安装包：文件名以 `.pkg` 结尾，按名字里的 `arm64` / `x86_64` 认 CPU，`universal` 两种都算。
+- 更新日志：Release 正文的非空、非标题行，最多 8 行。
 
-```
-发版（release.yml）
-  releases_json.py → releases.json
-  subtext-release-sign sign → releases.json.sig      私钥：CI 密钥 SUBTEXT_INDEX_SIGNING_KEY
-  两个文件挂到本次 Release 与 GitHub latest
-官网构建（subtext-web scripts/sync-releases.mjs）
-  原样拷到 static/ → https://qingjian.app/releases.json 与 .sig
-客户端（crates/subtext-update）
-  下载两者 → ed25519 验签 → 解析 → 按平台 / CPU / 渠道挑比当前新的最新版 → 写 update.json
-```
+再按 偏好设置 里选的渠道（正式版 / 测试版）与这台机器的 CPU，挑出比当前新的最新一个，结果写进数据目录的 `update.json`，
+菜单与「关于」页读它显示。请求只带 `subtext/<版本>` 的 User-Agent，没有任何标识。
 
-索引放官网域名而不是直连 GitHub：国内访问 GitHub 不稳，官网是 Cloudflare 上的静态站（非浏览器 User-Agent 实测不被拦）。
-签名是对文件字节的分离签名，所以官网必须原样拷贝，不能经 JSON 重排。
+## 为什么不验签
 
-## 渠道与版本
+青简的版本索引由发版方私钥签名、客户端内置公钥验签，因为它走自己的官网。Subtext 直接读 GitHub 的 HTTPS 接口，
+更新**只是提示**、不下载不执行，所以不再自建签名体系。安装包的完整性靠 Release 里的 `SHA256SUMS` 由用户核对。
 
-- 索引里每个版本的 `channel` 是更新渠道：定期发的版本 `stable`，中间放给测试者的 `alpha` / `beta` / `rc`（版本号带同名预发布后缀）。
-- 客户端两档：`stable` 只看 `stable`；`beta` 看全部，取版本号最大的，所以测试版用户在正式版出来后会升到正式版。
-- 版本按语义化版本比较（`0.1.4-beta.2 < 0.1.4-rc.1 < 0.1.4`）。
-- 本地开发包（`0.1.3-dev-<哈希>`）不检查。调试用环境变量：`SUBTEXT_UPDATE_VERSION` 顶替当前版本，`SUBTEXT_UPDATE_INDEX` 换索引地址（签名照验）；
-  `cargo run -p subtext-update --example check -- 0.1.2 beta` 手动走一遍。
-- 只有带本机安装包（`platform` + `cpu`）的版本才算数：只发了 macOS 的版本不会提示 Windows 用户。
-
-## 调度
-
-壳在已有的每秒定时器里调 `Checker::poll`：开关开着、上次成功超过 24 小时（或换了渠道）、上次尝试超过 1 小时、没有正在查的，才起一个一次性线程去查。
-失败（断网、验签不过、格式版本不认识）只记日志。结果落在数据目录的 `update.json`，装上新版后旧结果因为「不比当前新」自然失效。
-
-- macOS 菜单的坑（2026-09-17）：「有新版本」这一行是可点的条目，必须放在「打开日志目录」那一组里。第一版把它放在最后一条分隔线之后、
-  夹在「配置文件有错误」与「言外 x.y.z」两个纯展示条目之间，结果 IMK 每次按键后都 `deactivateServer` 再新建控制器，
-  第二个字母盖掉第一个、候选框闪；与条目是否隐藏、标题、tag 都无关，挪个位置或去掉 action 就好（对照构建逐个验过）。
-- macOS：IMK 进程自己查；菜单里「有新版本 x.y.z…」一行与「关于」页的状态行，状态变了才刷界面。
-- Windows：Server 查并写 `update.json`（DLL 不联网）；设置程序的「关于」页读这个文件，「立即检查」在设置程序自己的后台线程里查。
-  任务栏「中 / 英」图标的右键菜单在查到新版本时多一项「有新版本，前往下载…」：Server 随 `ModeSync` 下发 `IndicatorState.update_available`，
-  点了发 `IndicatorCommand::OpenDownload`，由 Server 打开下载页（DLL 可能在 UWP 沙箱里起不了进程）。
-
-## 签名密钥
-
-`tools/release-sign`：`keygen --out <文件>` 生成密钥对（私钥只写文件），`sign <文件>` 按环境变量里的私钥写 `.sig`，`verify <文件>` 按内置公钥验。
-公钥在 `crates/subtext-update/src/index/signature.rs` 的 `PUBLIC_KEYS`，是个列表：换钥时新旧并列发一两个版本，等旧版本用户都升上来再去掉旧的。
-`sign` 会先核对私钥与内置公钥对得上，对不上当场失败；`release.yml` 的门禁在没配私钥时直接失败——签不了名的索引等于所有用户收不到更新。
-
-## 以后
-
-- 下载 + 校验 sha256（索引里已有）+ 调起安装程序（macOS 打开 pkg，Windows 静默跑安装包）。
-- 系统通知里的提示。
-- SignPath 要求「向非用户指定的系统发数据」的功能在安装时可关：安装向导里加一个「自动检查更新」勾选项。
+私有仓库的接口对匿名请求返回 404，客户端当作「没有新版」，不报错。
