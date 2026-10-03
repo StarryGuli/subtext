@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Subtext 面板草图</title>
+<style>
+:root{
+  --bg:#f4f4f2; --panel:#fff; --text:rgba(0,0,0,.85); --gloss:rgba(0,0,0,.5); --faint:rgba(0,0,0,.26);
+  --line:rgba(0,0,0,.08); --hl:rgba(176,206,125,.5); --fresh:#ff8d28; --cloud:#00c3d0; --shadow:0 8px 30px rgba(0,0,0,.12);
+  --chip:rgba(0,0,0,.05);
+}
+:root[data-theme=dark]{
+  --bg:#141414; --panel:#1e1e1e; --text:rgba(255,255,255,.85); --gloss:rgba(255,255,255,.55); --faint:rgba(255,255,255,.25);
+  --line:rgba(255,255,255,.09); --hl:#244c24; --fresh:#ff9230; --cloud:#00d2e0; --shadow:0 8px 30px rgba(0,0,0,.5);
+  --chip:rgba(255,255,255,.07);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme=light]){
+    --bg:#141414; --panel:#1e1e1e; --text:rgba(255,255,255,.85); --gloss:rgba(255,255,255,.55); --faint:rgba(255,255,255,.25);
+    --line:rgba(255,255,255,.09); --hl:#244c24; --fresh:#ff9230; --cloud:#00d2e0; --shadow:0 8px 30px rgba(0,0,0,.5); --chip:rgba(255,255,255,.07);
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,"PingFang SC","Helvetica Neue",sans-serif}
+header{max-width:1180px;margin:0 auto;padding:28px 16px 8px;display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap}
+h1{font-size:20px;margin:0;font-weight:600}
+header p{margin:4px 0 0;color:var(--gloss);font-size:13px}
+button.tg{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:8px;padding:6px 12px;cursor:pointer;font:inherit}
+.grid{max-width:1180px;margin:0 auto;padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:28px}
+.slot h2{font-size:13px;font-weight:600;margin:0 0 2px}
+.slot .sub{color:var(--gloss);font-size:12px;margin:0 0 12px}
+.card{background:var(--panel);border-radius:12px;box-shadow:var(--shadow);border:1px solid var(--line);overflow:hidden}
+.src{padding:12px 16px;border-bottom:1px solid var(--line);color:var(--gloss);font-size:13px}
+.src b{color:var(--text);font-weight:500}
+.row{padding:10px 16px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:baseline}
+.row + .row{border-top:1px solid var(--line)}
+.k{font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--text)}
+.v{color:var(--gloss);font-size:13px}
+.v em{font-style:normal;color:var(--text)}
+.tag{display:inline-block;font-size:11px;padding:0 6px;border-radius:5px;background:var(--chip);color:var(--gloss);margin-right:6px}
+.tag.fresh{color:var(--fresh)} .tag.cloud{color:var(--cloud)}
+.tone{padding:10px 16px;background:var(--hl);font-size:13px}
+.ask{padding:10px 16px;font-size:13px;color:var(--gloss)}
+.foot{padding:6px 16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:11px;color:var(--faint)}
+.foot .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--cloud);margin-right:5px}
+.tabs{display:flex;gap:2px;padding:8px 10px 0;border-bottom:1px solid var(--line)}
+.tabs span{padding:6px 12px;font-size:13px;color:var(--gloss);border-radius:8px 8px 0 0;cursor:default}
+.tabs span.on{color:var(--text);background:var(--hl)}
+.reveal{margin:10px 16px;border:1px dashed var(--line);border-radius:8px;padding:8px 12px;color:var(--gloss);font-size:13px;cursor:pointer;user-select:none}
+.reveal .t{display:none;color:var(--text)}
+.reveal.open .t{display:block}.reveal.open .h{display:none}
+.msg{padding:16px;font-size:15px;line-height:2}
+.s{border-bottom:2px solid;cursor:pointer;padding-bottom:1px}
+.s.slang{border-color:var(--fresh)} .s.hedge{border-color:var(--cloud)} .s.abbr{border-color:var(--faint)}
+.note{margin:0 16px 14px;padding:10px 12px;border-radius:8px;background:var(--chip);font-size:13px;color:var(--gloss);display:none}
+.note.show{display:block}.note b{color:var(--text);font-weight:500}
+.meter{padding:0 16px 14px;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--gloss)}
+.bar{flex:1;height:4px;border-radius:2px;background:var(--chip);position:relative}
+.bar i{position:absolute;left:0;top:0;height:100%;width:72%;background:var(--cloud);border-radius:2px}
+.comp{margin:0 16px 16px;border:1px solid var(--line);border-radius:8px;padding:8px 12px;color:var(--faint);font-size:13px}
+.legend{padding:0 16px 10px;font-size:11px;color:var(--faint);display:flex;gap:12px}
+.pos{opacity:.9;font-size:12px;color:var(--gloss);padding:0 16px 10px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Subtext 面板草图 · 解码模式（Mode A）</h1>
+    <p>示例：他发来 “hey — no rush at all but did you get a chance to look at that PR? lmk if you want me to just merge it”。配色沿用青简主题，辅助信息始终弱于正文。</p>
+  </div>
+  <button class="tg" onclick="var r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'">切换深浅色</button>
+</header>
+
+<div class="grid">
+
+<!-- A -->
+<section class="slot">
+  <h2>A · 注释卡（跟光标，最轻）</h2>
+  <p class="sub">像候选窗的延伸：选中文字按快捷键，卡片浮在光标下。不抢焦点，Esc 即收。适合快速读一条消息。</p>
+  <div class="card">
+    <div class="src">解码 · <b>同事在催你，但催得很客气</b></div>
+    <div class="row"><span class="k">no rush at all</span><span class="v"><span class="tag">套话</span>字面「不急」，实际是<em>软化催促</em>。真不急的人不会专门提</span></div>
+    <div class="row"><span class="k">PR</span><span class="v"><span class="tag fresh">生词</span>pull request，GitHub 上提交合并的请求</span></div>
+    <div class="row"><span class="k">lmk</span><span class="v"><span class="tag fresh">缩写</span>let me know</span></div>
+    <div class="row"><span class="k">just merge it</span><span class="v">给你台阶，也在暗示「你再不看我就自己合了」</span></div>
+    <div class="tone">语气：友好，带 deadline 压力（dev 圈标准客气话）</div>
+    <div class="ask">你觉得他希望你多久内回？</div>
+    <div class="foot"><span><span class="dot"></span>Claude Code · 本地</span><span>↩ 起草回复　⎋ 关闭</span></div>
+  </div>
+</section>
+
+<!-- B -->
+<section class="slot">
+  <h2>B · 侧栏教练（三模式 + 先猜后看）</h2>
+  <p class="sub">贴右边的固定面板，三个 Tab 对应你 Skill 的 A/B/C。译文默认折叠，点开才看，保留「先不给翻译」的规则。</p>
+  <div class="card">
+    <div class="tabs"><span class="on">解码</span><span>组句</span><span>改稿</span></div>
+    <div class="src">同事在催你，但催得很客气</div>
+    <div class="row"><span class="k">no rush at all</span><span class="v">软化催促的套话；中文「不着急哈」通常是真不急，英文这句更多是在催</span></div>
+    <div class="row"><span class="k">lmk</span><span class="v">let me know　<span class="tag">你可以这样用</span><em>lmk if the board arrives</em></span></div>
+    <div class="row"><span class="k">just merge it</span><span class="v">台阶 + 暗示</span></div>
+    <div class="reveal" onclick="this.classList.toggle('open')"><span class="h">先自己猜一下意思，再点开看译文 ›</span><span class="t">嘿——不急哈，不过你看过那个 PR 了吗？要是你愿意，我就直接合了。</span></div>
+    <div class="tone">语气：友好 + 轻 deadline 压力　·　国内类比：微信里的「不急哈～」</div>
+    <div class="foot"><span><span class="dot"></span>OpenAI 兼容 · deepseek-v4-flash</span><span>1/3 个教学点</span></div>
+  </div>
+</section>
+
+<!-- C -->
+<section class="slot">
+  <h2>C · 原文高亮（读原文为主）</h2>
+  <p class="sub">把整条消息摆出来，难点下划线着色（橙=俚语 / 青=软化 / 灰=缩写），点哪个展开哪个。信息量最大但最占地方。</p>
+  <div class="card">
+    <div class="msg">
+      hey — <span class="s hedge" data-n="n1">no rush at all</span> but did you get a chance to look at that
+      <span class="s abbr" data-n="n2">PR</span>?
+      <span class="s abbr" data-n="n3">lmk</span> if you want me to
+      <span class="s slang" data-n="n4">just merge it</span>
+    </div>
+    <div class="note" id="n1"><b>no rush at all</b> · 软化催促。中文近似「不着急哈」，但英文这里是在催</div>
+    <div class="note" id="n2"><b>PR</b> · pull request</div>
+    <div class="note" id="n3"><b>lmk</b> · let me know</div>
+    <div class="note" id="n4"><b>just merge it</b> · 给台阶，暗示你再不看我就自己合了</div>
+    <div class="legend"><span style="color:var(--fresh)">━ 俚语</span><span style="color:var(--cloud)">━ 软化</span><span>━ 缩写</span></div>
+    <div class="meter"><span>催促力度</span><div class="bar"><i></i></div><span>中偏高</span></div>
+    <div class="comp">写回复… （⌘↩ 交给教练改稿）</div>
+    <div class="foot"><span><span class="dot"></span>Codex · 本地</span><span>点击下划线展开</span></div>
+  </div>
+</section>
+
+</div>
+<script>
+document.querySelectorAll('.s').forEach(function(el){
+  el.addEventListener('click',function(){
+    document.querySelectorAll('.note').forEach(function(n){n.classList.remove('show')});
+    document.getElementById(el.dataset.n).classList.add('show');
+  });
+});
+</script>
+</body>
+</html>
