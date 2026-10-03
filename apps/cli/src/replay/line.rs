@@ -1,5 +1,5 @@
-use subtext_core::InputLogEntry;
 use serde::Deserialize;
+use subtext_core::InputLogEntry;
 
 /// 日志文件里的一行：时间戳 + 条目。与 `subtext-learning` 写出的格式对应。
 #[derive(Debug, Deserialize)]

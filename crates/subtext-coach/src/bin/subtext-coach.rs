@@ -109,7 +109,10 @@ fn main() -> ExitCode {
     };
     if args.print_prompt {
         let prompt = subtext_coach::prompt::build(&request, &config.profile);
-        println!("===== SYSTEM =====\n{}\n\n===== USER =====\n{}", prompt.system, prompt.user);
+        println!(
+            "===== SYSTEM =====\n{}\n\n===== USER =====\n{}",
+            prompt.system, prompt.user
+        );
         return ExitCode::SUCCESS;
     }
     if let Some(path) = &args.from_reply {
@@ -192,7 +195,10 @@ fn print_output(output: &CoachOutput) {
                 println!("    中文：{}", point.zh);
                 println!("    你可以说：{}", point.usage);
             }
-            println!("\n  语气：{} —— {}", decoded.tone.register, decoded.tone.subtext);
+            println!(
+                "\n  语气：{} —— {}",
+                decoded.tone.register, decoded.tone.subtext
+            );
             if !decoded.tone.contrast.is_empty() {
                 println!("  对照：{}", decoded.tone.contrast);
             }
@@ -208,7 +214,10 @@ fn print_output(output: &CoachOutput) {
                 println!("\n {star} [{}] {}", option.register, option.text);
             }
             for point in &composed.points {
-                println!("\n  {} → {}  ({})\n    {}", point.zh, point.en, point.mapping, point.why);
+                println!(
+                    "\n  {} → {}  ({})\n    {}",
+                    point.zh, point.en, point.mapping, point.why
+                );
             }
             for trap in &composed.traps {
                 println!("\n  ⚠ {trap}");
@@ -217,7 +226,10 @@ fn print_output(output: &CoachOutput) {
         CoachOutput::Edit(edited) => {
             println!("【改稿】{}", edited.corrected);
             for fix in &edited.fixes {
-                println!("\n  {} → {}  [{}]\n    {}", fix.from, fix.to, fix.kind, fix.why);
+                println!(
+                    "\n  {} → {}  [{}]\n    {}",
+                    fix.from, fix.to, fix.kind, fix.why
+                );
             }
             for kept in &edited.kept {
                 println!("\n  ✓ {kept}");

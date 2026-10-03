@@ -10,6 +10,9 @@ pub enum MenuAction {
     /// 开关云联想（写 `[predict] enabled`）。
     ToggleCloud,
 
+    /// 开关双语教练（写 `[coach] enabled`）。
+    ToggleCoach,
+
     /// 开关一条模糊音规则，值是 [`FuzzyRules::NAMES`] 的下标。
     ToggleFuzzy(usize),
 
@@ -30,6 +33,7 @@ impl MenuAction {
             Self::OpenPreferences => 2,
             Self::OpenLogs => 3,
             Self::OpenDownload => 4,
+            Self::ToggleCoach => 5,
             Self::ToggleFuzzy(index) => FUZZY_TAG_BASE + index as NSInteger,
         }
     }
@@ -40,6 +44,7 @@ impl MenuAction {
             2 => Self::OpenPreferences,
             3 => Self::OpenLogs,
             4 => Self::OpenDownload,
+            5 => Self::ToggleCoach,
             _ => {
                 let index = usize::try_from(tag.checked_sub(FUZZY_TAG_BASE)?).ok()?;
                 (index < FuzzyRules::NAMES.len()).then_some(Self::ToggleFuzzy(index))?
@@ -59,6 +64,7 @@ mod tests {
             MenuAction::OpenPreferences,
             MenuAction::OpenLogs,
             MenuAction::OpenDownload,
+            MenuAction::ToggleCoach,
             MenuAction::ToggleFuzzy(0),
             MenuAction::ToggleFuzzy(FuzzyRules::NAMES.len() - 1),
         ];

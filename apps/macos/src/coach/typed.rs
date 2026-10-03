@@ -39,7 +39,9 @@ impl TypedBuffer {
 
     fn note_at(&mut self, text: &str, now: Instant) -> Note {
         let chinese = text.chars().any(is_cjk)
-            && text.chars().all(|c| is_cjk(c) || CJK_PUNCTUATION.contains(c) || c.is_whitespace());
+            && text
+                .chars()
+                .all(|c| is_cjk(c) || CJK_PUNCTUATION.contains(c) || c.is_whitespace());
         let punctuation = !text.is_empty() && text.chars().all(|c| CJK_PUNCTUATION.contains(c));
         if !chinese && !punctuation {
             self.reset();
@@ -51,7 +53,11 @@ impl TypedBuffer {
         }
         self.text.push_str(text);
         self.last_commit = Some(now);
-        if started_new { Note::StartedNew } else { Note::Appended }
+        if started_new {
+            Note::StartedNew
+        } else {
+            Note::Appended
+        }
     }
 
     /// 停顿满 `idle` 且还没交出去的这一句。
@@ -91,9 +97,15 @@ mod tests {
         let t0 = Instant::now();
         let mut buffer = TypedBuffer::default();
         assert_eq!(buffer.note_at("我这周", t0), Note::Appended);
-        assert_eq!(buffer.note_at("实验做不完", t0 + Duration::from_millis(400)), Note::Appended);
+        assert_eq!(
+            buffer.note_at("实验做不完", t0 + Duration::from_millis(400)),
+            Note::Appended
+        );
         assert_eq!(buffer.ready_at(IDLE, t0 + Duration::from_millis(900)), None);
-        assert_eq!(buffer.ready_at(IDLE, t0 + Duration::from_millis(1800)), Some("我这周实验做不完"));
+        assert_eq!(
+            buffer.ready_at(IDLE, t0 + Duration::from_millis(1800)),
+            Some("我这周实验做不完")
+        );
     }
 
     #[test]

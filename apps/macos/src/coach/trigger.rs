@@ -55,10 +55,12 @@ impl Coach {
         let Some(service) = &self.service else {
             return;
         };
-        if let Err(skip) = service
-            .gate()
-            .check(Trigger::ClipboardCopy, &copied.text, app.as_deref(), copied.concealed)
-        {
+        if let Err(skip) = service.gate().check(
+            Trigger::ClipboardCopy,
+            &copied.text,
+            app.as_deref(),
+            copied.concealed,
+        ) {
             tracing::debug!(?skip, "复制的内容不交给教练");
             return;
         }
@@ -124,7 +126,11 @@ impl Coach {
     }
 
     /// 调用方确认了位置（`range` 为 `None` 表示找不到，只能复制）：发出组句请求，面板跟着光标出现。
-    pub fn submit_compose(&mut self, probe: ComposeProbe, range: Option<objc2_foundation::NSRange>) {
+    pub fn submit_compose(
+        &mut self,
+        probe: ComposeProbe,
+        range: Option<objc2_foundation::NSRange>,
+    ) {
         let Some(service) = &self.service else {
             return;
         };
@@ -178,7 +184,11 @@ impl Coach {
         self.last_client = unsafe { Retained::retain(std::ptr::from_ref(client).cast_mut()) };
         self.last_app = app;
         self.last_anchor = anchor;
-        if self.shown.as_ref().is_some_and(|shown| shown.mode == Mode::Compose) {
+        if self
+            .shown
+            .as_ref()
+            .is_some_and(|shown| shown.mode == Mode::Compose)
+        {
             self.dismiss();
         }
     }
@@ -190,4 +200,69 @@ fn frontmost_application() -> Option<String> {
         .frontmostApplication()
         .and_then(|app| app.bundleIdentifier())
         .map(|id| id.to_string())
+}
+
+impl Coach {
+    /// 把应用里选中的文字交给教练：英文先当自己写的草稿改稿，英文太像别人发来的也按改稿处理；
+    /// 中文给出英文表达。返回 `false` 表示闸门没放行或教练线程不在。
+    pub fn submit_selection(
+        &mut self,
+        text: &str,
+        range: objc2_foundation::NSRange,
+        client: &AnyObject,
+        app: Option<String>,
+        anchor: NSRect,
+    ) -> bool {
+        let Some(service) = &self.service else {
+            return false;
+        };
+        let (trigger, mode) = [Trigger::EnglishDraft, Trigger::ChineseCommitted]
+            .into_iter()
+            .find_map(|trigger| trigger.mode_for(text).map(|mode| (trigger, mode)))
+            .unzip();
+        let (Some(trigger), Some(mode)) = (trigger, mode) else {
+            return false;
+        };
+        if service
+            .gate()
+            .check(trigger, text, app.as_deref(), false)
+            .is_err()
+        {
+            return false;
+        }
+        self.next_id += 1;
+        let id = self.next_id;
+        let request = CoachRequest {
+            id,
+            mode,
+            text: text.trim().to_owned(),
+            context: CoachContext {
+                app,
+                before: String::new(),
+                peer_message: self.memory.peer_message().map(str::to_owned),
+            },
+        };
+        if service.submit(request).is_err() {
+            return false;
+        }
+        // SAFETY: client 是 IMK 传进来的有效对象，retain 之后自己持有一份引用
+        let retained = unsafe { Retained::retain(std::ptr::from_ref(client).cast_mut()) };
+        self.begin(Shown {
+            id,
+            mode,
+            source: text.to_owned(),
+            output: None,
+            failure: None,
+            revealed: false,
+            anchor,
+            target: retained.map(|client| ReplaceTarget {
+                client,
+                range,
+                expected: text.to_owned(),
+            }),
+            shown_at: std::time::Instant::now(),
+            note: None,
+        });
+        true
+    }
 }

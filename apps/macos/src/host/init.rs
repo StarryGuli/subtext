@@ -145,6 +145,7 @@ pub fn init(mtm: MainThreadMarker, info: &BundleInfo) -> Result<(), HostError> {
             delete_keys: ShortcutConfig::default().delete_keys(),
             status: None,
             input_log_enabled: None,
+            coach_keys: KeyCombo::COACH_DEFAULT,
             translate_keys: KeyCombo::TRANSLATE_DEFAULT,
             translation: None,
             notice: None,

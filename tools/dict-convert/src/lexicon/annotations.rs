@@ -3,8 +3,8 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use subtext_dictionary::canonical_syllable;
 use serde::Deserialize;
+use subtext_dictionary::canonical_syllable;
 
 use crate::error::ConvertError;
 

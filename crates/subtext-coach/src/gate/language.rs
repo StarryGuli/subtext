@@ -38,9 +38,18 @@ pub fn looks_like_machine_text(text: &str) -> bool {
     }
     let symbols = trimmed
         .chars()
-        .filter(|c| matches!(c, '{' | '}' | ';' | '=' | '<' | '>' | '[' | ']' | '\\' | '|' | '$'))
+        .filter(|c| {
+            matches!(
+                c,
+                '{' | '}' | ';' | '=' | '<' | '>' | '[' | ']' | '\\' | '|' | '$'
+            )
+        })
         .count();
-    let visible = trimmed.chars().filter(|c| !c.is_whitespace()).count().max(1);
+    let visible = trimmed
+        .chars()
+        .filter(|c| !c.is_whitespace())
+        .count()
+        .max(1);
     symbols * 12 > visible
 }
 
@@ -58,7 +67,9 @@ mod tests {
     #[test]
     fn mostly_english_tolerates_a_little_chinese() {
         assert!(is_mostly_english("lmk if you want me to just merge it"));
-        assert!(is_mostly_english("Thanks 老师 for the feedback on my draft this week"));
+        assert!(is_mostly_english(
+            "Thanks 老师 for the feedback on my draft this week"
+        ));
         assert!(!is_mostly_english("今天下午三点开会 ok"));
         assert!(!is_mostly_english("12345 67890"));
     }
@@ -67,8 +78,14 @@ mod tests {
     fn machine_text_is_recognized() {
         assert!(looks_like_machine_text("https://github.com/a/b"));
         assert!(looks_like_machine_text("/usr/local/bin/cargo"));
-        assert!(looks_like_machine_text("fn main() { let x = [1, 2]; x[0] = 3; }"));
-        assert!(!looks_like_machine_text("hey, did you get a chance to look at that PR?"));
-        assert!(!looks_like_machine_text("see https://example.com for details when you can"));
+        assert!(looks_like_machine_text(
+            "fn main() { let x = [1, 2]; x[0] = 3; }"
+        ));
+        assert!(!looks_like_machine_text(
+            "hey, did you get a chance to look at that PR?"
+        ));
+        assert!(!looks_like_machine_text(
+            "see https://example.com for details when you can"
+        ));
     }
 }

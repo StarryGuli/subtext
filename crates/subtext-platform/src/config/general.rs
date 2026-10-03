@@ -1,5 +1,5 @@
-use subtext_core::ShuangpinScheme;
 use serde::{Deserialize, Serialize};
+use subtext_core::ShuangpinScheme;
 
 use super::scheme::{Scheme, scheme_label};
 use super::{CandidateRenderer, LayoutMode, LogLevel, PreeditMode, ShiftLetter, ThemeMode};

@@ -60,6 +60,12 @@ impl Host {
                     self.apply_config(false);
                 }
             }
+            MenuAction::ToggleCoach => {
+                let on = !self.settings.config().coach.enabled;
+                if self.settings.set_bool("coach", "enabled", on) {
+                    self.apply_config(false);
+                }
+            }
             MenuAction::ToggleFuzzy(index) => {
                 let name = FuzzyRules::NAMES[index];
                 let on = !self.settings.config().fuzzy.is_on(name);
@@ -394,6 +400,70 @@ impl Host {
                 self.settings
                     .set_value("general", "wubi", if on { "wubi86" } else { "" });
             }
+            (Setting::CoachEnabled, SettingValue::Bool(on)) => {
+                self.settings.set_bool("coach", "enabled", on);
+            }
+            (Setting::CoachAutoDecode, SettingValue::Bool(on)) => {
+                self.settings.set_bool("coach", "auto_decode", on);
+            }
+            (Setting::CoachAutoCompose, SettingValue::Bool(on)) => {
+                self.settings.set_bool("coach", "auto_compose", on);
+            }
+            (Setting::CoachBackend, SettingValue::Index(index)) => {
+                if let Some(kind) = subtext_coach::BackendKind::ALL.get(index) {
+                    self.settings.set_value("coach", "backend", kind.key());
+                }
+            }
+            (Setting::CoachModel, SettingValue::Text(text)) => {
+                let text = text.trim();
+                let (key, current) = coach_model_field(&config.coach);
+                if !text.is_empty() && text != current {
+                    self.settings.set_value("coach", key, text);
+                }
+            }
+            (Setting::CoachPath, SettingValue::Text(text)) => {
+                let text = text.trim();
+                if let Some((key, current)) = coach_path_field(&config.coach)
+                    && text != current
+                {
+                    self.settings.set_value("coach", key, text);
+                }
+            }
+            (Setting::CoachBaseUrl, SettingValue::Text(text)) => {
+                let text = text.trim();
+                if !text.is_empty() && text != config.coach.openai_base_url {
+                    self.settings.set_value("coach", "openai_base_url", text);
+                }
+            }
+            (Setting::CoachApiKey, SettingValue::Text(text)) => {
+                let text = text.trim();
+                if text.chars().any(|c| !c.is_ascii_graphic()) {
+                    self.preferences.set_status(
+                        "密钥没有保存：里面有空格或非英文字符，多半是粘贴时多带了别的内容",
+                    );
+                    return;
+                }
+                let Some(env_name) = coach_key_env(&config.coach) else {
+                    return;
+                };
+                if text.is_empty() {
+                    return;
+                }
+                if self.settings.set_env_var(env_name, text) {
+                    // 后端在建的时候读密钥，换了密钥必须重建
+                    self.coach.restart(&config.coach);
+                    self.preferences.set_status("密钥已保存");
+                } else {
+                    self.preferences
+                        .set_status("密钥没有保存：写不进配置目录的 .env，详情见日志");
+                }
+                return;
+            }
+            (Setting::CoachTest, _) => {
+                self.preferences.set_status("正在测试双语教练连接…");
+                self.coach.start_test(&config.coach);
+                return;
+            }
             // 文本框失焦也会发 action：值没变就不写，免得每次切窗口都重写一遍配置
             (Setting::BaseUrl, SettingValue::Text(text)) => {
                 let text = text.trim();
@@ -504,5 +574,36 @@ impl Host {
             (setting, value) => tracing::warn!(?setting, ?value, "设置项与控件值不匹配"),
         }
         self.apply_config(false);
+    }
+}
+
+/// 当前后端的模型对应哪个配置键，以及它现在的值。
+fn coach_model_field(coach: &subtext_coach::CoachConfig) -> (&'static str, &str) {
+    use subtext_coach::BackendKind;
+    match coach.backend {
+        BackendKind::ClaudeCli => ("claude_model", &coach.claude_model),
+        BackendKind::CodexCli => ("codex_model", &coach.codex_model),
+        BackendKind::OpenAi => ("openai_model", &coach.openai_model),
+        BackendKind::Anthropic => ("anthropic_model", &coach.anthropic_model),
+    }
+}
+
+/// 命令行后端的路径对应哪个配置键；API 后端没有路径。
+fn coach_path_field(coach: &subtext_coach::CoachConfig) -> Option<(&'static str, &str)> {
+    use subtext_coach::BackendKind;
+    match coach.backend {
+        BackendKind::ClaudeCli => Some(("claude_path", &coach.claude_path)),
+        BackendKind::CodexCli => Some(("codex_path", &coach.codex_path)),
+        BackendKind::OpenAi | BackendKind::Anthropic => None,
+    }
+}
+
+/// API 后端的密钥存在哪个环境变量里；命令行后端不需要密钥。
+fn coach_key_env(coach: &subtext_coach::CoachConfig) -> Option<&str> {
+    use subtext_coach::BackendKind;
+    match coach.backend {
+        BackendKind::OpenAi => Some(&coach.openai_api_key_env),
+        BackendKind::Anthropic => Some(&coach.anthropic_api_key_env),
+        BackendKind::ClaudeCli | BackendKind::CodexCli => None,
     }
 }

@@ -9,9 +9,9 @@ use std::io::{BufWriter, Write};
 use std::path::Path;
 use std::time::Instant;
 
+use serde_json::json;
 use subtext_core::Engine;
 use subtext_neural::{CharScorer, P2c};
-use serde_json::json;
 
 use entry::Entry;
 use error::ColdError;

@@ -14,10 +14,14 @@ use super::panel::{CoachPanel, PanelContent};
 /// 命令行参数里有 `--coach-preview` 就渲染并返回退出码；没有返回 `None`。
 pub fn run_if_requested(mtm: MainThreadMarker) -> Option<i32> {
     let arguments: Vec<String> = std::env::args().skip(1).collect();
-    let position = arguments.iter().position(|argument| argument == "--coach-preview")?;
+    let position = arguments
+        .iter()
+        .position(|argument| argument == "--coach-preview")?;
     let rest = &arguments[position + 1..];
     let [mode, reply, output, options @ ..] = rest else {
-        eprintln!("用法：--coach-preview <decode|compose|edit> <回复.json> <输出.png> [light|dark] [reveal] [replace]");
+        eprintln!(
+            "用法：--coach-preview <decode|compose|edit> <回复.json> <输出.png> [light|dark] [reveal] [replace]"
+        );
         return Some(2);
     };
     Some(match render(mtm, mode, reply, output, options) {
@@ -42,7 +46,8 @@ fn render(
         "edit" => Mode::Edit,
         other => return Err(format!("不认识的模式：{other}")),
     };
-    let text = std::fs::read_to_string(reply).map_err(|error| format!("读不了 {reply}：{error}"))?;
+    let text =
+        std::fs::read_to_string(reply).map_err(|error| format!("读不了 {reply}：{error}"))?;
     let parsed = CoachOutput::parse(mode, &text).map_err(|error| format!("解析失败：{error}"))?;
     let reveal = options.iter().any(|option| option == "reveal");
     let replace = options.iter().any(|option| option == "replace");
@@ -76,7 +81,11 @@ fn content(output: &CoachOutput, reveal: bool, replace: bool) -> PanelContent {
                 buttons.push(("显示译文".to_owned(), CoachAction::Reveal));
             }
             buttons.push(close);
-            PanelContent { doc: Doc::decode(decoded, reveal), buttons, footer }
+            PanelContent {
+                doc: Doc::decode(decoded, reveal),
+                buttons,
+                footer,
+            }
         }
         CoachOutput::Compose(composed) => {
             let mut buttons = Vec::new();
@@ -92,7 +101,11 @@ fn content(output: &CoachOutput, reveal: bool, replace: bool) -> PanelContent {
                 buttons.push(("复制推荐".to_owned(), CoachAction::Copy(0)));
             }
             buttons.push(close);
-            PanelContent { doc: Doc::compose(composed), buttons, footer }
+            PanelContent {
+                doc: Doc::compose(composed),
+                buttons,
+                footer,
+            }
         }
         CoachOutput::Edit(edited) => PanelContent {
             doc: Doc::edit(edited),

@@ -56,8 +56,14 @@ mod tests {
 
     #[test]
     fn key_ignores_the_request_id_but_not_the_text() {
-        assert_eq!(ResultCache::key(&request(1, "a b c")), ResultCache::key(&request(2, "a b c")));
-        assert_ne!(ResultCache::key(&request(1, "a b c")), ResultCache::key(&request(1, "a b d")));
+        assert_eq!(
+            ResultCache::key(&request(1, "a b c")),
+            ResultCache::key(&request(2, "a b c"))
+        );
+        assert_ne!(
+            ResultCache::key(&request(1, "a b c")),
+            ResultCache::key(&request(1, "a b d"))
+        );
     }
 
     #[test]

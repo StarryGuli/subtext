@@ -104,6 +104,33 @@ pub enum Setting {
     /// 密钥，写到 `.env`。
     ApiKey,
 
+    /// `[coach] enabled`。
+    CoachEnabled,
+
+    /// `[coach] auto_decode`。
+    CoachAutoDecode,
+
+    /// `[coach] auto_compose`。
+    CoachAutoCompose,
+
+    /// `[coach] backend`，弹出菜单，值是 `BackendKind::ALL` 的下标。
+    CoachBackend,
+
+    /// 当前后端的模型（`claude_model` / `codex_model` / `openai_model` / `anthropic_model`）。
+    CoachModel,
+
+    /// 当前命令行后端的路径（`claude_path` / `codex_path`）。
+    CoachPath,
+
+    /// `[coach] openai_base_url`。
+    CoachBaseUrl,
+
+    /// 当前 API 后端的密钥，写到 `.env`。
+    CoachApiKey,
+
+    /// 教练「测试连接」按钮。
+    CoachTest,
+
     /// 「在编辑器中打开配置文件」按钮。
     OpenConfigFile,
 
@@ -241,6 +268,15 @@ impl Setting {
             Self::OpenWebsite => 30,
             Self::OpenRepository => 31,
             Self::LocalModelEnabled => 32,
+            Self::CoachEnabled => 60,
+            Self::CoachAutoDecode => 61,
+            Self::CoachAutoCompose => 62,
+            Self::CoachBackend => 63,
+            Self::CoachModel => 64,
+            Self::CoachPath => 65,
+            Self::CoachBaseUrl => 66,
+            Self::CoachApiKey => 67,
+            Self::CoachTest => 68,
             Self::UpdateCheck => 53,
             Self::UpdateChannel => 54,
             Self::CheckUpdateNow => 55,
@@ -308,6 +344,15 @@ impl Setting {
             30 => Self::OpenWebsite,
             31 => Self::OpenRepository,
             32 => Self::LocalModelEnabled,
+            60 => Self::CoachEnabled,
+            61 => Self::CoachAutoDecode,
+            62 => Self::CoachAutoCompose,
+            63 => Self::CoachBackend,
+            64 => Self::CoachModel,
+            65 => Self::CoachPath,
+            66 => Self::CoachBaseUrl,
+            67 => Self::CoachApiKey,
+            68 => Self::CoachTest,
             53 => Self::UpdateCheck,
             54 => Self::UpdateChannel,
             55 => Self::CheckUpdateNow,
@@ -353,6 +398,15 @@ mod tests {
             Setting::ExpressionKey,
             Setting::QuestionKey,
             Setting::CloudEnabled,
+            Setting::CoachEnabled,
+            Setting::CoachAutoDecode,
+            Setting::CoachAutoCompose,
+            Setting::CoachBackend,
+            Setting::CoachModel,
+            Setting::CoachPath,
+            Setting::CoachBaseUrl,
+            Setting::CoachApiKey,
+            Setting::CoachTest,
             Setting::LocalModelEnabled,
             Setting::UpdateCheck,
             Setting::UpdateChannel,

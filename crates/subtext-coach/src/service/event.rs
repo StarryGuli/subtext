@@ -15,7 +15,11 @@ pub enum CoachEvent {
     },
 
     /// 失败，`message` 是给人看的原因。
-    Failed { id: u64, mode: Mode, message: String },
+    Failed {
+        id: u64,
+        mode: Mode,
+        message: String,
+    },
 }
 
 impl CoachEvent {

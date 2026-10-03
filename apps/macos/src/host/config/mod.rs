@@ -31,6 +31,7 @@ impl Host {
         self.translation_keys = config.shortcut.translation_keys();
         self.delete_keys = config.shortcut.delete_keys();
         self.translate_keys = config.shortcut.translate_selection;
+        self.coach_keys = config.shortcut.coach_selection;
         self.page_size = config.general.page_size();
         self.cloud_slots = config.predict.slots;
         self.page_keys = config.general.page_keys();
@@ -101,10 +102,16 @@ impl Host {
             .as_deref()
             .is_some_and(|key| !key.trim().is_empty())
             || std::env::var(&config.predict.api_key_env).is_ok_and(|key| !key.trim().is_empty());
+        let coach_key_present = match config.coach.backend {
+            subtext_coach::BackendKind::OpenAi => config.coach.resolve_openai_key().is_some(),
+            subtext_coach::BackendKind::Anthropic => config.coach.resolve_anthropic_key().is_some(),
+            _ => false,
+        };
         self.dictionary_list = self.dictionary_infos();
         self.preferences.sync(
             &config,
             key_present,
+            coach_key_present,
             self.settings.error(),
             &self.dictionary_list,
             &self.update_status,

@@ -12,8 +12,8 @@ use objc2_app_kit::{
 use objc2_foundation::{
     NSInteger, NSNotification, NSObject, NSObjectProtocol, NSPoint, NSRect, NSSize, NSString,
 };
-use subtext_core::CustomPhrase;
 use std::cell::RefCell;
+use subtext_core::CustomPhrase;
 
 define_class!(
     // SAFETY: 仅在主线程访问 AppKit 控件，数据回调不访问 Host。

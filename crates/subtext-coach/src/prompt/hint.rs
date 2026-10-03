@@ -8,13 +8,33 @@ const HINTS: &[(&[&str], &str)] = &[
     ),
     (
         &[
-            "messages", "imessage", "whatsapp", "telegram", "discord", "slack", "wechat", "xinwechat",
-            "signal", "line", "teams",
+            "messages",
+            "imessage",
+            "whatsapp",
+            "telegram",
+            "discord",
+            "slack",
+            "wechat",
+            "xinwechat",
+            "signal",
+            "line",
+            "teams",
         ],
         "即时聊天，默认偏随意，可以用常见缩写",
     ),
     (
-        &["xcode", "vscode", "visualstudio", "zed", "jetbrains", "cursor", "terminal", "iterm", "warp", "ghostty"],
+        &[
+            "xcode",
+            "vscode",
+            "visualstudio",
+            "zed",
+            "jetbrains",
+            "cursor",
+            "terminal",
+            "iterm",
+            "warp",
+            "ghostty",
+        ],
         "开发场合：技术圈说话随意但要精确，GitHub issue / PR 讨论用中性偏随意",
     ),
     (
@@ -40,7 +60,11 @@ mod tests {
     fn known_apps_map_to_hints() {
         assert!(register_hint("com.apple.mail").unwrap().contains("邮件"));
         assert!(register_hint("com.hnc.Discord").unwrap().contains("聊天"));
-        assert!(register_hint("com.microsoft.VSCode").unwrap().contains("开发"));
+        assert!(
+            register_hint("com.microsoft.VSCode")
+                .unwrap()
+                .contains("开发")
+        );
         assert_eq!(register_hint("com.example.unknown"), None);
     }
 }

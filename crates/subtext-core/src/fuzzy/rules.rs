@@ -1,5 +1,5 @@
-use subtext_dictionary::{SyllablePattern, canonical_syllable};
 use serde::{Deserialize, Serialize};
+use subtext_dictionary::{SyllablePattern, canonical_syllable};
 
 use super::Expanded;
 use crate::parser;

@@ -2,8 +2,8 @@
 
 use objc2::rc::Retained;
 use objc2_app_kit::{NSButton, NSTableView};
-use subtext_core::CustomPhrase;
 use std::cell::RefCell;
+use subtext_core::CustomPhrase;
 
 pub(super) struct TableState {
     /// 当前配置的只读显示副本，回调不借用 Host。

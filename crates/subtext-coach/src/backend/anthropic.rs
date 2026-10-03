@@ -122,7 +122,9 @@ mod tests {
             Err(CoachError::MissingApiKey(_))
         ));
         let (base, _seen) = test_server::once(529, r#"{"error":{"type":"overloaded_error"}}"#);
-        let error = Anthropic::with_base_url(&config(Some("k")), &base).complete("s", "u").unwrap_err();
+        let error = Anthropic::with_base_url(&config(Some("k")), &base)
+            .complete("s", "u")
+            .unwrap_err();
         assert!(matches!(error, CoachError::Api { status: 529, .. }));
     }
 }

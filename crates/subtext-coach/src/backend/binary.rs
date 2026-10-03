@@ -59,7 +59,10 @@ fn is_executable(path: &Path) -> bool {
 
 /// `zsh -lc 'command -v name'`：读到用户的 `.zprofile` 里设的 PATH。超时就放弃。
 fn ask_login_shell(name: &str) -> Option<PathBuf> {
-    if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
+    if !name
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+    {
         return None;
     }
     let mut child = Command::new("/bin/zsh")

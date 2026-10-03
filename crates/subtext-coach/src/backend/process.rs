@@ -27,7 +27,11 @@ impl Output {
         if self.success {
             return Ok(self);
         }
-        let detail = if self.stderr.trim().is_empty() { &self.stdout } else { &self.stderr };
+        let detail = if self.stderr.trim().is_empty() {
+            &self.stdout
+        } else {
+            &self.stderr
+        };
         Err(CoachError::CommandFailed {
             command: label.to_owned(),
             status: self.status.clone(),
@@ -141,30 +145,55 @@ mod tests {
 
     #[test]
     fn failure_detail_falls_back_to_stdout() {
-        let error = run(sh("echo from-stdout; exit 1"), "", Duration::from_secs(5), "x")
-            .unwrap()
-            .into_success("x")
-            .unwrap_err();
-        assert!(matches!(&error, CoachError::CommandFailed { stderr, .. } if stderr == "from-stdout"));
+        let error = run(
+            sh("echo from-stdout; exit 1"),
+            "",
+            Duration::from_secs(5),
+            "x",
+        )
+        .unwrap()
+        .into_success("x")
+        .unwrap_err();
+        assert!(
+            matches!(&error, CoachError::CommandFailed { stderr, .. } if stderr == "from-stdout")
+        );
     }
 
     #[test]
     fn timeout_kills_the_process_group() {
         let started = Instant::now();
-        let error = run(sh("sleep 30 & sleep 30"), "", Duration::from_millis(200), "sleep").unwrap_err();
+        let error = run(
+            sh("sleep 30 & sleep 30"),
+            "",
+            Duration::from_millis(200),
+            "sleep",
+        )
+        .unwrap_err();
         assert!(matches!(error, CoachError::Timeout(200)));
         assert!(started.elapsed() < Duration::from_secs(5));
     }
 
     #[test]
     fn large_output_does_not_deadlock() {
-        let output = run(sh("head -c 500000 /dev/zero | tr '\\0' a"), "", Duration::from_secs(10), "big").unwrap();
+        let output = run(
+            sh("head -c 500000 /dev/zero | tr '\\0' a"),
+            "",
+            Duration::from_secs(10),
+            "big",
+        )
+        .unwrap();
         assert_eq!(output.stdout.len(), 500_000);
     }
 
     #[test]
     fn missing_binary_is_a_spawn_error() {
-        let error = run(Command::new("/no/such/binary"), "", Duration::from_secs(1), "nope").unwrap_err();
+        let error = run(
+            Command::new("/no/such/binary"),
+            "",
+            Duration::from_secs(1),
+            "nope",
+        )
+        .unwrap_err();
         assert!(matches!(error, CoachError::Spawn { .. }));
     }
 }

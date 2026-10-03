@@ -53,8 +53,7 @@ impl CoachOutput {
 }
 
 fn parse_object<T: DeserializeOwned>(reply: &str) -> Result<T, CoachError> {
-    let object = json::extract_object(reply)
-        .ok_or_else(|| CoachError::BadReply(preview(reply)))?;
+    let object = json::extract_object(reply).ok_or_else(|| CoachError::BadReply(preview(reply)))?;
     serde_json::from_str(object).map_err(|error| CoachError::BadReply(error.to_string()))
 }
 
@@ -83,7 +82,8 @@ mod tests {
     #[test]
     fn compose_reply_parses_options() {
         let reply = r#"{"options": [{"register": "formal", "text": "Would it be possible to have until Friday?", "recommended": true}]}"#;
-        let CoachOutput::Compose(composed) = CoachOutput::parse(Mode::Compose, reply).unwrap() else {
+        let CoachOutput::Compose(composed) = CoachOutput::parse(Mode::Compose, reply).unwrap()
+        else {
             panic!("expected compose");
         };
         assert!(composed.recommended().unwrap().text.starts_with("Would"));

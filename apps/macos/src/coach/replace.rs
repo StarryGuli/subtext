@@ -55,7 +55,9 @@ impl Coach {
             (CoachAction::Replace(index), CoachOutput::Compose(composed)) => {
                 composed.options.get(index)?.text.trim().to_owned()
             }
-            (CoachAction::ReplaceEdited, CoachOutput::Edit(edited)) => edited.corrected.trim().to_owned(),
+            (CoachAction::ReplaceEdited, CoachOutput::Edit(edited)) => {
+                edited.corrected.trim().to_owned()
+            }
             _ => return None,
         };
         (!replacement.is_empty()).then(|| ReplacePlan {
@@ -84,10 +86,13 @@ impl Coach {
             return;
         };
         let text = match (action, output) {
-            (CoachAction::Copy(index), CoachOutput::Compose(composed)) => {
-                composed.options.get(index).map(|option| option.text.trim().to_owned())
+            (CoachAction::Copy(index), CoachOutput::Compose(composed)) => composed
+                .options
+                .get(index)
+                .map(|option| option.text.trim().to_owned()),
+            (CoachAction::CopyEdited, CoachOutput::Edit(edited)) => {
+                Some(edited.corrected.trim().to_owned())
             }
-            (CoachAction::CopyEdited, CoachOutput::Edit(edited)) => Some(edited.corrected.trim().to_owned()),
             _ => None,
         };
         let Some(text) = text.filter(|text| !text.is_empty()) else {

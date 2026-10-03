@@ -8,6 +8,9 @@ use crate::imk::TextClient;
 
 /// 轮询定时器每 0.3 秒来一次。
 pub fn coach_tick() {
+    if let Some(message) = with(|h| h.coach.take_test_result()).flatten() {
+        with(|h| h.preferences.set_status(&message));
+    }
     let Some(probe) = with(|h| h.coach.tick()).flatten() else {
         return;
     };
@@ -52,11 +55,10 @@ pub fn coach_perform(action: CoachAction) {
 
 /// ⌥ + 数字：面板上有组句选项时，用对应那个替换刚输入的中文。返回 `true` 表示按键已被用掉。
 pub fn coach_digit(digit: usize) -> bool {
-    let options = with(|h| h.coach.compose_options()).unwrap_or(0);
-    if digit == 0 || digit > options.min(crate::coach::MAX_OPTIONS) {
+    let Some(action) = with(|h| h.coach.digit_action(digit)).flatten() else {
         return false;
-    }
-    coach_perform(CoachAction::Replace(digit - 1));
+    };
+    coach_perform(action);
     true
 }
 

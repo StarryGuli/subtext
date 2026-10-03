@@ -67,7 +67,10 @@ impl ClipboardWatch {
         }
         // SAFETY: 只读 AppKit 导出的类型名常量
         let text = unsafe { pasteboard.stringForType(NSPasteboardTypeString) }?.to_string();
-        Some(Copied { text, concealed: false })
+        Some(Copied {
+            text,
+            concealed: false,
+        })
     }
 }
 

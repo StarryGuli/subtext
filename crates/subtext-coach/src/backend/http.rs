@@ -78,7 +78,8 @@ pub mod test_server {
                         let read = stream.read(&mut chunk).unwrap();
                         buffer.extend_from_slice(&chunk[..read]);
                     }
-                    let body = String::from_utf8_lossy(&buffer[end + 4..end + 4 + length]).into_owned();
+                    let body =
+                        String::from_utf8_lossy(&buffer[end + 4..end + 4 + length]).into_owned();
                     break (head, body);
                 }
             };
@@ -93,6 +94,8 @@ pub mod test_server {
     }
 
     fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
-        haystack.windows(needle.len()).position(|window| window == needle)
+        haystack
+            .windows(needle.len())
+            .position(|window| window == needle)
     }
 }

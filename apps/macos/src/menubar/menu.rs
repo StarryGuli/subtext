@@ -16,6 +16,9 @@ pub struct InputMenu {
     /// 「云联想」勾选项。
     cloud: Retained<NSMenuItem>,
 
+    /// 「双语教练」勾选项。
+    coach: Retained<NSMenuItem>,
+
     /// 模糊音子菜单的九条勾选项，顺序同 [`FuzzyRules::NAMES`]。
     fuzzy: Vec<Retained<NSMenuItem>>,
 
@@ -38,6 +41,8 @@ impl InputMenu {
 
         let cloud = action_item(mtm, "云联想", Some(MenuAction::ToggleCloud), &target);
         menu.addItem(&cloud);
+        let coach = action_item(mtm, "双语教练", Some(MenuAction::ToggleCoach), &target);
+        menu.addItem(&coach);
 
         let fuzzy_menu = NSMenu::new(mtm);
         fuzzy_menu.setAutoenablesItems(false);
@@ -89,6 +94,7 @@ impl InputMenu {
         Self {
             menu,
             cloud,
+            coach,
             fuzzy,
             error,
             update,
@@ -122,6 +128,7 @@ impl InputMenu {
         };
         self.cloud.setTitle(&NSString::from_str(title));
         set_checked(&self.cloud, cloud_active);
+        set_checked(&self.coach, config.coach.enabled);
         for (item, name) in self.fuzzy.iter().zip(FuzzyRules::NAMES) {
             set_checked(item, config.fuzzy.is_on(name));
         }

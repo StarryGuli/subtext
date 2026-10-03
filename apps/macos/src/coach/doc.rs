@@ -64,11 +64,17 @@ impl Doc {
         }
     }
 
-    /// 全文纯文本，调试与测试用。
+    /// 全文纯文本，测试用。
+    #[cfg(test)]
     pub fn plain_text(&self) -> String {
         self.lines
             .iter()
-            .map(|line| line.runs.iter().map(|run| run.text.as_str()).collect::<String>())
+            .map(|line| {
+                line.runs
+                    .iter()
+                    .map(|run| run.text.as_str())
+                    .collect::<String>()
+            })
             .collect::<Vec<_>>()
             .join("\n")
     }
@@ -78,7 +84,10 @@ impl Doc {
         let mut doc = Self::default();
         doc.push(
             false,
-            vec![(Style::Title, "解码  ".to_owned()), (Style::Body, decoded.situation.clone())],
+            vec![
+                (Style::Title, "解码  ".to_owned()),
+                (Style::Body, decoded.situation.clone()),
+            ],
         );
         for point in &decoded.points {
             let tag_style = match point.kind.as_str() {
@@ -103,24 +112,47 @@ impl Doc {
                 doc.push(false, vec![(Style::Dim, format!("中文：{}", point.zh))]);
             }
             if !point.usage.is_empty() {
-                doc.push(false, vec![(Style::Dim, "你可以说：".to_owned()), (Style::Phrase, point.usage.clone())]);
+                doc.push(
+                    false,
+                    vec![
+                        (Style::Dim, "你可以说：".to_owned()),
+                        (Style::Phrase, point.usage.clone()),
+                    ],
+                );
             }
         }
         let tone = &decoded.tone;
         if !tone.register.is_empty() || !tone.subtext.is_empty() {
             doc.push(
                 true,
-                vec![(Style::Highlight, format!("语气 · {}　{}", tone.register, tone.subtext).trim().to_owned())],
+                vec![(
+                    Style::Highlight,
+                    format!("语气 · {}　{}", tone.register, tone.subtext)
+                        .trim()
+                        .to_owned(),
+                )],
             );
         }
         if !tone.contrast.is_empty() {
-            doc.push(false, vec![(Style::Dim, format!("对照：{}", tone.contrast))]);
+            doc.push(
+                false,
+                vec![(Style::Dim, format!("对照：{}", tone.contrast))],
+            );
         }
         if !decoded.question.is_empty() {
-            doc.push(true, vec![(Style::Dim, format!("想一想：{}", decoded.question))]);
+            doc.push(
+                true,
+                vec![(Style::Dim, format!("想一想：{}", decoded.question))],
+            );
         }
         if reveal && !decoded.translation.is_empty() {
-            doc.push(true, vec![(Style::Dim, "译文　".to_owned()), (Style::Body, decoded.translation.clone())]);
+            doc.push(
+                true,
+                vec![
+                    (Style::Dim, "译文　".to_owned()),
+                    (Style::Body, decoded.translation.clone()),
+                ],
+            );
         }
         doc
     }
@@ -128,14 +160,26 @@ impl Doc {
     /// 组句。选项的英文放在最醒目的位置；`recommended` 的加星。
     pub fn compose(composed: &Composed) -> Self {
         let mut doc = Self::default();
-        doc.push(false, vec![(Style::Title, "组句  ".to_owned()), (Style::Dim, composed.context.clone())]);
+        doc.push(
+            false,
+            vec![
+                (Style::Title, "组句  ".to_owned()),
+                (Style::Dim, composed.context.clone()),
+            ],
+        );
         for (index, option) in composed.options.iter().enumerate() {
             let star = if option.recommended { "★ " } else { "" };
             doc.push(
                 true,
-                vec![
-                    (Style::Dim, format!("{}  {}[{}]  ", index + 1, star, register_label(&option.register))),
-                ],
+                vec![(
+                    Style::Dim,
+                    format!(
+                        "{}  {}[{}]  ",
+                        index + 1,
+                        star,
+                        register_label(&option.register)
+                    ),
+                )],
             );
             doc.push(false, vec![(Style::Phrase, compact(option.text.trim()))]);
         }
@@ -145,7 +189,10 @@ impl Doc {
                 vec![
                     (Style::Body, format!("{} → ", point.zh)),
                     (Style::Phrase, point.en.clone()),
-                    (mapping_style(&point.mapping), format!("   {}", mapping_label(&point.mapping))),
+                    (
+                        mapping_style(&point.mapping),
+                        format!("   {}", mapping_label(&point.mapping)),
+                    ),
                 ],
             );
             doc.push(false, vec![(Style::Dim, point.why.clone())]);
@@ -160,7 +207,10 @@ impl Doc {
     pub fn edit(edited: &Edited) -> Self {
         let mut doc = Self::default();
         doc.push(false, vec![(Style::Title, "改稿".to_owned())]);
-        doc.push(false, vec![(Style::Phrase, edited.corrected.trim().to_owned())]);
+        doc.push(
+            false,
+            vec![(Style::Phrase, edited.corrected.trim().to_owned())],
+        );
         for fix in &edited.fixes {
             doc.push(
                 true,
@@ -176,7 +226,10 @@ impl Doc {
             doc.push(true, vec![(Style::Teal, format!("✓ {kept}"))]);
         }
         if !edited.pattern.is_empty() {
-            doc.push(true, vec![(Style::Highlight, format!("反复出现 · {}", edited.pattern))]);
+            doc.push(
+                true,
+                vec![(Style::Highlight, format!("反复出现 · {}", edited.pattern))],
+            );
         }
         doc
     }
@@ -184,7 +237,13 @@ impl Doc {
     /// 等待后端时显示的占位。
     pub fn thinking(title: &str) -> Self {
         let mut doc = Self::default();
-        doc.push(false, vec![(Style::Title, format!("{title}  ")), (Style::Dim, "思考中…".to_owned())]);
+        doc.push(
+            false,
+            vec![
+                (Style::Title, format!("{title}  ")),
+                (Style::Dim, "思考中…".to_owned()),
+            ],
+        );
         doc
     }
 
@@ -283,7 +342,11 @@ mod tests {
         let hidden = Doc::decode(&decoded(), false).plain_text();
         assert!(!hidden.contains("嘿，不着急"));
         assert!(hidden.contains("lmk") && hidden.contains("语气 · casual"));
-        assert!(Doc::decode(&decoded(), true).plain_text().contains("嘿，不着急"));
+        assert!(
+            Doc::decode(&decoded(), true)
+                .plain_text()
+                .contains("嘿，不着急")
+        );
     }
 
     #[test]
@@ -304,8 +367,16 @@ mod tests {
         let composed = Composed {
             context: "发给教授的邮件".to_owned(),
             options: vec![
-                ComposeOption { register: "neutral".into(), text: "Can I have until Friday?".into(), recommended: false },
-                ComposeOption { register: "formal".into(), text: "Would it be possible to have until Friday?".into(), recommended: true },
+                ComposeOption {
+                    register: "neutral".into(),
+                    text: "Can I have until Friday?".into(),
+                    recommended: false,
+                },
+                ComposeOption {
+                    register: "formal".into(),
+                    text: "Would it be possible to have until Friday?".into(),
+                    recommended: true,
+                },
             ],
             ..Composed::default()
         };
@@ -316,14 +387,22 @@ mod tests {
 
     #[test]
     fn email_option_blank_lines_are_squeezed() {
-        assert_eq!(compact("Hi Prof. Lee,\n\nThank you.\n\n\nBest"), "Hi Prof. Lee,\nThank you.\nBest");
+        assert_eq!(
+            compact("Hi Prof. Lee,\n\nThank you.\n\n\nBest"),
+            "Hi Prof. Lee,\nThank you.\nBest"
+        );
     }
 
     #[test]
     fn edit_lists_fixes_and_keeps() {
         let edited = Edited {
             corrected: "Can you check my wiring?".to_owned(),
-            fixes: vec![Fix { from: "u".into(), to: "you".into(), kind: "register".into(), why: "对教授要写全".into() }],
+            fixes: vec![Fix {
+                from: "u".into(),
+                to: "you".into(),
+                kind: "register".into(),
+                why: "对教授要写全".into(),
+            }],
             kept: vec!["ngl 很自然".to_owned()],
             pattern: String::new(),
         };

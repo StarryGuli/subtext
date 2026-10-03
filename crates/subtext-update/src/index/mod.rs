@@ -116,8 +116,16 @@ mod tests {
 
     #[test]
     fn drafts_never_count() {
-        assert_eq!(newest("0.1.0", MAC, UpdateChannel::Beta).as_deref(), Some("0.2.0-beta.1"));
-        assert!(index().releases.iter().all(|release| release.version != "9.9.9"));
+        assert_eq!(
+            newest("0.1.0", MAC, UpdateChannel::Beta).as_deref(),
+            Some("0.2.0-beta.1")
+        );
+        assert!(
+            index()
+                .releases
+                .iter()
+                .all(|release| release.version != "9.9.9")
+        );
     }
 
     #[test]
@@ -130,7 +138,11 @@ mod tests {
     #[test]
     fn notes_and_date_come_from_the_release() {
         let found = index()
-            .newest(&Version::parse("0.1.0").unwrap(), MAC, UpdateChannel::Stable)
+            .newest(
+                &Version::parse("0.1.0").unwrap(),
+                MAC,
+                UpdateChannel::Stable,
+            )
             .unwrap();
         assert_eq!(found.date, "2026-10-10");
         assert_eq!(found.notes, ["修了 a", "加了 b"]);

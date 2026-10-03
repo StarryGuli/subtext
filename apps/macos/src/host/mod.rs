@@ -49,9 +49,9 @@ use crate::menubar::{InputMenu, MenuAction, ModeIndicator};
 use crate::preferences::{PreferencesWindow, Setting, SettingValue, UpdateStatus};
 
 use cloud::{CloudTestMonitor, PredictMonitor};
+pub use coach::{coach_digit, coach_escape, coach_note_commit, coach_perform, coach_tick};
 use config::{ConfigWatch, TextReplacement};
 pub use dictionaries::DictionaryInfo;
-pub use coach::{coach_digit, coach_escape, coach_note_commit, coach_perform, coach_tick};
 pub use init::init;
 use model::RescoreMonitor;
 use presenting::Notice;
@@ -127,6 +127,9 @@ pub struct Host {
 
     /// 输入日志是否在记（配置 `[general] input_log`），换了才重开文件。
     input_log_enabled: Option<bool>,
+
+    /// 选中文字交给双语教练的快捷键（配置 `[shortcut] coach_selection`）。
+    pub coach_keys: KeyCombo,
 
     /// 翻译选中文字的快捷键（配置 `[shortcut] translate_selection`）。
     pub translate_keys: KeyCombo,

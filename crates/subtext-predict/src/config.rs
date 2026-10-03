@@ -1,5 +1,5 @@
-use subtext_core::PredictionPolicy;
 use serde::{Deserialize, Serialize};
+use subtext_core::PredictionPolicy;
 
 /// 云联想配置。默认**关闭**，开启后光标附近的文本会发往 `base_url`。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

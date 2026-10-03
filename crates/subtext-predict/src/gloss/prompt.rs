@@ -1,7 +1,7 @@
 //! 释义兜底的提示词与回复解析。
 
-use subtext_core::{FilledGloss, Language, PartOfSpeech, Sense, Translation};
 use serde::{Deserialize, Serialize};
+use subtext_core::{FilledGloss, Language, PartOfSpeech, Sense, Translation};
 
 /// 每个词最多留几条译词。
 const MAX_SENSES: usize = Translation::MAX_SENSES;

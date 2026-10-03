@@ -12,8 +12,8 @@ use super::{
 use crate::candidate::{Candidate, CandidateKind, CandidateList, Language};
 use crate::correction::typo;
 use crate::{parser, sentence};
-use subtext_dictionary::Dictionary;
 use std::time::Instant;
+use subtext_dictionary::Dictionary;
 
 mod chain;
 mod last;

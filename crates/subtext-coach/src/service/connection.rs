@@ -17,10 +17,7 @@ pub struct ConnectionReport {
 pub fn test_connection(config: &CoachConfig) -> Result<ConnectionReport, CoachError> {
     let backend = backend::build(config);
     let started = Instant::now();
-    let reply = backend.complete(
-        "Reply with exactly the word OK and nothing else.",
-        "ping",
-    )?;
+    let reply = backend.complete("Reply with exactly the word OK and nothing else.", "ping")?;
     if reply.trim().is_empty() {
         return Err(CoachError::EmptyReply);
     }

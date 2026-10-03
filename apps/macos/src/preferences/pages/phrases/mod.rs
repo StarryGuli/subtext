@@ -14,9 +14,9 @@ use objc2_app_kit::{
     NSWindowStyleMask,
 };
 use objc2_foundation::{NSIndexSet, NSPoint, NSRect, NSSize, NSString};
+use std::cell::{Cell, RefCell};
 use subtext_core::CustomPhrase;
 use subtext_platform::Config;
-use std::cell::{Cell, RefCell};
 use table::PhraseTableSource;
 
 pub struct PhrasesPage {

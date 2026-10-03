@@ -22,7 +22,17 @@ const MARKERS: &[&str] = &[
 ];
 
 /// 常见服务的密钥前缀，后面跟一串字母数字。
-const KEY_PREFIXES: &[&str] = &["sk-", "ghp_", "gho_", "ghs_", "github_pat_", "xoxb-", "xoxp-", "akia", "aiza"];
+const KEY_PREFIXES: &[&str] = &[
+    "sk-",
+    "ghp_",
+    "gho_",
+    "ghs_",
+    "github_pat_",
+    "xoxb-",
+    "xoxp-",
+    "akia",
+    "aiza",
+];
 
 /// 文本里有没有疑似凭据。
 pub fn contains_secret(text: &str) -> bool {
@@ -31,7 +41,9 @@ pub fn contains_secret(text: &str) -> bool {
         return true;
     }
     lowered
-        .split(|c: char| c.is_whitespace() || matches!(c, '=' | ':' | ',' | ';' | '"' | '\'' | '(' | ')'))
+        .split(|c: char| {
+            c.is_whitespace() || matches!(c, '=' | ':' | ',' | ';' | '"' | '\'' | '(' | ')')
+        })
         .any(|word| has_key_prefix(word) || looks_like_token(word) || looks_like_card_number(word))
 }
 
@@ -46,7 +58,9 @@ fn has_key_prefix(word: &str) -> bool {
 fn looks_like_token(word: &str) -> bool {
     let word = word.trim_matches(|c: char| !c.is_ascii_alphanumeric());
     word.len() >= 32
-        && word.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '+' | '/' | '='))
+        && word
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '+' | '/' | '='))
         && word.chars().any(|c| c.is_ascii_digit())
         && word.chars().any(|c| c.is_ascii_alphabetic())
 }
@@ -65,7 +79,9 @@ mod tests {
     fn catches_credentials() {
         assert!(contains_secret("my password is hunter2"));
         assert!(contains_secret("export KEY=sk-abcdefghijklmnopqrstuv"));
-        assert!(contains_secret("token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9abcdef1234"));
+        assert!(contains_secret(
+            "token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9abcdef1234"
+        ));
         assert!(contains_secret("卡号 4111111111111111"));
         assert!(contains_secret("-----BEGIN RSA PRIVATE KEY-----"));
         assert!(contains_secret("你的验证码是 123456"));
@@ -73,7 +89,9 @@ mod tests {
 
     #[test]
     fn leaves_ordinary_messages_alone() {
-        assert!(!contains_secret("hey, no rush at all but did you look at that PR?"));
+        assert!(!contains_secret(
+            "hey, no rush at all but did you look at that PR?"
+        ));
         assert!(!contains_secret("Our meeting is on 2026-10-12 at 3pm"));
         assert!(!contains_secret("I'll send the report by Friday"));
     }

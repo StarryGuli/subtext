@@ -2,8 +2,8 @@ use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
-use subtext_core::{InputLogEntry, InputLogger};
 use serde::Serialize;
+use subtext_core::{InputLogEntry, InputLogger};
 
 /// 输入日志落盘：每条一行 JSON（jsonl），追加写，带本机时间戳。只写在这台电脑的数据目录里。
 ///

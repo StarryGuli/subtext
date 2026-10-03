@@ -17,6 +17,17 @@ pub struct KeyCombo {
 }
 
 impl KeyCombo {
+    /// 选中文字交给双语教练的缺省键：⌃⌥E（English）。
+    pub const COACH_DEFAULT: Self = Self {
+        modifiers: Modifiers {
+            option: true,
+            shift: false,
+            control: true,
+            command: false,
+        },
+        key: 'e',
+    };
+
     pub const TRANSLATE_DEFAULT: Self = Self {
         modifiers: Modifiers {
             option: true,

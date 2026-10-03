@@ -119,12 +119,21 @@ pub fn friendly(error: &CoachError) -> String {
         CoachError::MissingApiKey(env) => {
             format!("还没填 API 密钥。请在教练设置里填写，或设置环境变量 {env}。")
         }
-        CoachError::Timeout(ms) => format!("等了 {} 秒还没有回复，已放弃。可以在设置里调大超时。", ms / 1000),
-        CoachError::Api { status: 401 | 403, .. } => "密钥被拒绝（401/403），请检查密钥与接口地址。".to_owned(),
+        CoachError::Timeout(ms) => format!(
+            "等了 {} 秒还没有回复，已放弃。可以在设置里调大超时。",
+            ms / 1000
+        ),
+        CoachError::Api {
+            status: 401 | 403, ..
+        } => "密钥被拒绝（401/403），请检查密钥与接口地址。".to_owned(),
         CoachError::Api { status: 429, .. } => "请求太频繁或额度用完了（429）。".to_owned(),
         CoachError::Api { status, .. } => format!("接口返回错误 {status}。详情见日志。"),
-        CoachError::EmptyReply | CoachError::BadReply(_) => "模型这次没有给出可用的回复，可以再试一次。".to_owned(),
-        CoachError::CommandFailed { command, stderr, .. } if needs_login(stderr) => {
+        CoachError::EmptyReply | CoachError::BadReply(_) => {
+            "模型这次没有给出可用的回复，可以再试一次。".to_owned()
+        }
+        CoachError::CommandFailed {
+            command, stderr, ..
+        } if needs_login(stderr) => {
             format!("{command} 还没登录或登录过期了。请在终端里运行一次 {command} 完成登录，再试。")
         }
         CoachError::CommandFailed { command, .. } => {
@@ -137,9 +146,16 @@ pub fn friendly(error: &CoachError) -> String {
 /// 命令行工具的报错里有没有「没登录」的特征。
 fn needs_login(stderr: &str) -> bool {
     let lowered = stderr.to_lowercase();
-    ["authenticate", "login", "log in", "expired", "unauthorized", "api key"]
-        .iter()
-        .any(|marker| lowered.contains(marker))
+    [
+        "authenticate",
+        "login",
+        "log in",
+        "expired",
+        "unauthorized",
+        "api key",
+    ]
+    .iter()
+    .any(|marker| lowered.contains(marker))
 }
 
 #[cfg(test)]
@@ -150,7 +166,13 @@ mod tests {
     fn friendly_messages_tell_the_user_what_to_do() {
         assert!(friendly(&CoachError::BinaryNotFound("claude".into())).contains("安装"));
         assert!(friendly(&CoachError::Timeout(90_000)).contains("90 秒"));
-        assert!(friendly(&CoachError::Api { status: 401, body: String::new() }).contains("密钥"));
+        assert!(
+            friendly(&CoachError::Api {
+                status: 401,
+                body: String::new()
+            })
+            .contains("密钥")
+        );
         assert!(friendly(&CoachError::EmptyReply).contains("再试"));
         let expired = CoachError::CommandFailed {
             command: "claude".into(),

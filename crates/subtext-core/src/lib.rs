@@ -45,5 +45,5 @@ pub use fuzzy::FuzzyRules;
 pub use history::InputHistory;
 pub use parser::{ParseError, Segmentation};
 pub use punctuation::Punctuation;
-pub use subtext_dictionary as dictionary;
 pub use shuangpin::Scheme as ShuangpinScheme;
+pub use subtext_dictionary as dictionary;

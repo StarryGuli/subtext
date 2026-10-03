@@ -12,8 +12,8 @@ use subtext_platform::Config;
 use super::controls::{language_label, small_label};
 use super::layout::{Layout, PAGE_PADDING, PAGE_WIDTH};
 use super::pages::{
-    AboutPage, AdvancedPage, CandidatesPage, CloudPage, DictionariesPage, FuzzyPage, GeneralPage,
-    PhrasesPage, ShortcutsPage, UpdateStatus, UsagePage, build_about,
+    AboutPage, AdvancedPage, CandidatesPage, CloudPage, CoachPage, DictionariesPage, FuzzyPage,
+    GeneralPage, PhrasesPage, ShortcutsPage, UpdateStatus, UsagePage, build_about,
 };
 use super::panel::PreferencesPanel;
 use super::target::PreferencesTarget;
@@ -55,6 +55,9 @@ pub struct PreferencesWindow {
 
     /// 「云服务」页。
     cloud: CloudPage,
+
+    /// 「双语教练」页。
+    coach: CoachPage,
 
     /// 「高级」页。
     advanced: AdvancedPage,
@@ -116,6 +119,10 @@ impl PreferencesWindow {
         let mut layout = new_layout();
         let cloud = CloudPage::build(&mut layout, mtm, &target);
         pages.push(page("云服务", layout));
+
+        let mut layout = new_layout();
+        let coach = CoachPage::build(&mut layout, mtm, &target);
+        pages.push(page("双语教练", layout));
 
         let mut layout = new_layout();
         let advanced = AdvancedPage::build(&mut layout, mtm, &target);
@@ -193,6 +200,7 @@ impl PreferencesWindow {
             fuzzy,
             dictionaries,
             cloud,
+            coach,
             advanced,
             usage,
             about,
@@ -233,6 +241,7 @@ impl PreferencesWindow {
         &self,
         config: &Config,
         key_present: bool,
+        coach_key_present: bool,
         error: Option<&str>,
         dictionaries: &[DictionaryInfo],
         update: &UpdateStatus,
@@ -250,6 +259,7 @@ impl PreferencesWindow {
             crate::app::paths::p2c_model_path().is_some()
                 || crate::app::paths::model_path().is_some(),
         );
+        self.coach.sync(config, coach_key_present);
         self.advanced.sync(config);
         let status = error
             .map(|e| format!("配置文件有错误，已沿用上一份：{e}"))

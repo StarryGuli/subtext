@@ -44,7 +44,14 @@ impl Backend for CodexCli {
         ));
         let mut command = Command::new(&binary);
         command
-            .args(["exec", "--skip-git-repo-check", "--sandbox", "read-only", "--color", "never"])
+            .args([
+                "exec",
+                "--skip-git-repo-check",
+                "--sandbox",
+                "read-only",
+                "--color",
+                "never",
+            ])
             .arg("--output-last-message")
             .arg(&reply_file)
             .env("PATH", binary::search_path())
@@ -82,7 +89,8 @@ mod tests {
 
     /// 假的 `codex`：把 stdin 写进 `--output-last-message` 指的文件。
     fn fake_codex(name: &str) -> String {
-        let dir = std::env::temp_dir().join(format!("subtext-codex-test-{name}-{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("subtext-codex-test-{name}-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("codex");
         let script = r#"#!/bin/sh

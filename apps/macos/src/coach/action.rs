@@ -37,7 +37,11 @@ impl CoachAction {
     }
 
     pub fn from_tag(tag: isize) -> Option<Self> {
-        let index = |base: isize| usize::try_from(tag - base).ok().filter(|i| *i < MAX_OPTIONS);
+        let index = |base: isize| {
+            usize::try_from(tag - base)
+                .ok()
+                .filter(|i| *i < MAX_OPTIONS)
+        };
         match tag {
             1 => Some(Self::Close),
             2 => Some(Self::Reveal),

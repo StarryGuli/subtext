@@ -5,9 +5,10 @@
 use objc2::rc::Retained;
 use objc2::{MainThreadMarker, sel};
 use objc2_app_kit::{
-    NSAppearanceCustomization,    NSAttributedStringNSStringDrawingDeprecated, NSBackingStoreType, NSBorderType, NSBox, NSBoxType, NSButton, NSColor,
-    NSControlSize, NSFont, NSPanel, NSScrollView, NSStringDrawingOptions, NSTextField, NSView,
-    NSWindowCollectionBehavior, NSWindowLevel, NSWindowStyleMask,
+    NSAppearanceCustomization, NSAttributedStringNSStringDrawingDeprecated, NSBackingStoreType,
+    NSBorderType, NSBox, NSBoxType, NSButton, NSColor, NSControlSize, NSFont, NSPanel,
+    NSScrollView, NSStringDrawingOptions, NSTextField, NSView, NSWindowCollectionBehavior,
+    NSWindowLevel, NSWindowStyleMask,
 };
 use objc2_foundation::{NSPoint, NSRect, NSSize, NSString};
 
@@ -109,8 +110,8 @@ impl CoachPanel {
                     | NSStringDrawingOptions::UsesFontLeading,
             )
             .size
-        .height
-        .ceil()
+            .height
+            .ceil()
             + 2.0;
 
         let scrolls = full_text_height > MAX_TEXT_HEIGHT;
@@ -132,24 +133,34 @@ impl CoachPanel {
         for subview in container.subviews().iter() {
             subview.removeFromSuperview();
         }
-        self.frame_box.setFrame(NSRect::new(NSPoint::ZERO, NSSize::new(WIDTH, height)));
+        self.frame_box
+            .setFrame(NSRect::new(NSPoint::ZERO, NSSize::new(WIDTH, height)));
 
         let mut y = height - PAD - text_height;
         let label = NSTextField::labelWithAttributedString(&text, self.mtm);
         label.setSelectable(true);
         if scrolls {
             // 内容比上限高：放进滚动区，滚轮可滚，滚动条自动隐藏
-            label.setFrame(NSRect::new(NSPoint::ZERO, NSSize::new(inner, full_text_height)));
+            label.setFrame(NSRect::new(
+                NSPoint::ZERO,
+                NSSize::new(inner, full_text_height),
+            ));
             let scroll = NSScrollView::new(self.mtm);
             scroll.setHasVerticalScroller(true);
             scroll.setAutohidesScrollers(true);
             scroll.setDrawsBackground(false);
             scroll.setBorderType(NSBorderType::NoBorder);
-            scroll.setFrame(NSRect::new(NSPoint::new(PAD, y), NSSize::new(inner, text_height)));
+            scroll.setFrame(NSRect::new(
+                NSPoint::new(PAD, y),
+                NSSize::new(inner, text_height),
+            ));
             scroll.setDocumentView(Some(&label));
             container.addSubview(&scroll);
         } else {
-            label.setFrame(NSRect::new(NSPoint::new(PAD, y), NSSize::new(inner, text_height)));
+            label.setFrame(NSRect::new(
+                NSPoint::new(PAD, y),
+                NSSize::new(inner, text_height),
+            ));
             container.addSubview(&label);
         }
 
@@ -159,13 +170,17 @@ impl CoachPanel {
             for (title, action) in &content.buttons {
                 let button = self.button(title, *action);
                 let width = button.frame().size.width.max(52.0);
-                button.setFrame(NSRect::new(NSPoint::new(x, y), NSSize::new(width, BUTTON_HEIGHT)));
+                button.setFrame(NSRect::new(
+                    NSPoint::new(x, y),
+                    NSSize::new(width, BUTTON_HEIGHT),
+                ));
                 container.addSubview(&button);
                 x += width + BUTTON_GAP;
             }
         }
         if has_footer {
-            let footer = NSTextField::labelWithString(&NSString::from_str(&content.footer), self.mtm);
+            let footer =
+                NSTextField::labelWithString(&NSString::from_str(&content.footer), self.mtm);
             footer.setFont(Some(&NSFont::systemFontOfSize(10.0)));
             footer.setTextColor(Some(&NSColor::tertiaryLabelColor()));
             footer.setFrame(NSRect::new(

@@ -89,7 +89,10 @@ mod tests {
         }
     }
 
-    fn service_with(reply: &str, delay: Duration) -> (CoachService, std::sync::Arc<std::sync::atomic::AtomicUsize>) {
+    fn service_with(
+        reply: &str,
+        delay: Duration,
+    ) -> (CoachService, std::sync::Arc<std::sync::atomic::AtomicUsize>) {
         let (request_sender, request_receiver) = channel();
         let (event_sender, event_receiver) = channel();
         let calls = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
@@ -98,7 +101,12 @@ mod tests {
             delay,
             calls: calls.clone(),
         };
-        let worker = worker::Worker::new(request_receiver, event_sender, Box::new(fake), "profile".to_owned());
+        let worker = worker::Worker::new(
+            request_receiver,
+            event_sender,
+            Box::new(fake),
+            "profile".to_owned(),
+        );
         std::thread::spawn(move || worker.run());
         (
             CoachService {
@@ -137,12 +145,30 @@ mod tests {
     #[test]
     fn answers_and_then_serves_repeats_from_cache() {
         let (service, calls) = service_with(REPLY, Duration::ZERO);
-        service.submit(request(1, "lmk if you want me to merge it")).unwrap();
-        let first = wait_for(&service, |events| events.iter().any(|e| matches!(e, CoachEvent::Finished { .. })));
-        assert!(matches!(first.first(), Some(CoachEvent::Started { id: 1, .. })));
-        service.submit(request(2, "lmk if you want me to merge it")).unwrap();
+        service
+            .submit(request(1, "lmk if you want me to merge it"))
+            .unwrap();
+        let first = wait_for(&service, |events| {
+            events
+                .iter()
+                .any(|e| matches!(e, CoachEvent::Finished { .. }))
+        });
+        assert!(matches!(
+            first.first(),
+            Some(CoachEvent::Started { id: 1, .. })
+        ));
+        service
+            .submit(request(2, "lmk if you want me to merge it"))
+            .unwrap();
         let second = wait_for(&service, |events| !events.is_empty());
-        assert!(matches!(&second[0], CoachEvent::Finished { id: 2, cached: true, .. }));
+        assert!(matches!(
+            &second[0],
+            CoachEvent::Finished {
+                id: 2,
+                cached: true,
+                ..
+            }
+        ));
         assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 1);
     }
 
@@ -150,12 +176,24 @@ mod tests {
     fn backlog_keeps_only_the_latest_request() {
         let (service, calls) = service_with(REPLY, Duration::from_millis(150));
         service.submit(request(1, "first message here ok")).unwrap();
-        wait_for(&service, |events| events.iter().any(|e| matches!(e, CoachEvent::Started { id: 1, .. })));
+        wait_for(&service, |events| {
+            events
+                .iter()
+                .any(|e| matches!(e, CoachEvent::Started { id: 1, .. }))
+        });
         // 第一个还在处理时连发三个：只有最后一个会被处理
-        for (id, text) in [(2, "second message here ok"), (3, "third message here ok"), (4, "fourth message here ok")] {
+        for (id, text) in [
+            (2, "second message here ok"),
+            (3, "third message here ok"),
+            (4, "fourth message here ok"),
+        ] {
             service.submit(request(id, text)).unwrap();
         }
-        let events = wait_for(&service, |events| events.iter().any(|e| matches!(e, CoachEvent::Finished { id: 4, .. })));
+        let events = wait_for(&service, |events| {
+            events
+                .iter()
+                .any(|e| matches!(e, CoachEvent::Finished { id: 4, .. }))
+        });
         assert!(!events.iter().any(|e| e.id() == 2 || e.id() == 3));
         assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 2);
     }
@@ -163,8 +201,14 @@ mod tests {
     #[test]
     fn bad_replies_become_friendly_failures() {
         let (service, _calls) = service_with("sorry I cannot help", Duration::ZERO);
-        service.submit(request(1, "can you take a look today")).unwrap();
-        let events = wait_for(&service, |events| events.iter().any(|e| matches!(e, CoachEvent::Failed { .. })));
+        service
+            .submit(request(1, "can you take a look today"))
+            .unwrap();
+        let events = wait_for(&service, |events| {
+            events
+                .iter()
+                .any(|e| matches!(e, CoachEvent::Failed { .. }))
+        });
         let Some(CoachEvent::Failed { message, .. }) = events.last() else {
             panic!("expected failure");
         };

@@ -1,7 +1,7 @@
 //! 提示词与回复解析。模型只输出约定的 JSON，其余一概不信；拼音校验在 Core 里再做一遍。
 
-use subtext_core::{CloudWord, PredictionKind, PredictionRequest};
 use serde::{Deserialize, Serialize};
+use subtext_core::{CloudWord, PredictionKind, PredictionRequest};
 
 /// 系统提示。语言跟随上下文，不限定中文。
 pub const SYSTEM_PROMPT: &str = "\

@@ -41,7 +41,11 @@ impl GithubRelease {
         }
         let version = self.tag_name.trim_start_matches('v').to_owned();
         let channel = channel_of(&version, self.prerelease);
-        let assets = self.assets.iter().flat_map(|asset| installers(&asset.name)).collect();
+        let assets = self
+            .assets
+            .iter()
+            .flat_map(|asset| installers(&asset.name))
+            .collect();
         let notes = self
             .body
             .unwrap_or_default()

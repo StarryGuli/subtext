@@ -6,6 +6,7 @@
 mod action;
 mod attributed;
 mod clipboard;
+mod connection;
 mod doc;
 mod monitor;
 mod panel;
@@ -24,7 +25,7 @@ use objc2::runtime::AnyObject;
 use objc2_foundation::{NSRange, NSRect};
 use subtext_coach::{CoachConfig, CoachOutput, CoachService, ConversationMemory, Mode};
 
-pub use action::{CoachAction, MAX_OPTIONS};
+pub use action::CoachAction;
 pub use preview::run_if_requested as run_preview_if_requested;
 pub use trigger::ComposeProbe;
 
@@ -105,6 +106,9 @@ pub struct Coach {
 
     /// 输入法正处于激活状态（轮询只在激活期间跑）。
     active: bool,
+
+    /// 进行中的「测试连接」，结果是给设置页底部状态行的一句话。
+    test: Option<std::sync::mpsc::Receiver<String>>,
 }
 
 impl Coach {
@@ -123,6 +127,7 @@ impl Coach {
             next_id: 0,
             shown: None,
             active: false,
+            test: None,
         }
     }
 
@@ -138,7 +143,11 @@ impl Coach {
             self.typed.reset();
         }
         self.sync_monitor();
-        tracing::info!(enabled = config.enabled, backend = config.backend.key(), "双语教练配置已套用");
+        tracing::info!(
+            enabled = config.enabled,
+            backend = config.backend.key(),
+            "双语教练配置已套用"
+        );
     }
 
     /// 输入法被切到前台：开始盯剪贴板与上屏停顿。此前复制的内容不追溯。
@@ -156,6 +165,11 @@ impl Coach {
         self.sync_monitor();
     }
 
+    /// 教练是否开着。
+    pub fn is_enabled(&self) -> bool {
+        self.service.is_some()
+    }
+
     /// 关掉面板并忘掉正显示的内容。
     pub fn dismiss(&mut self) {
         self.panel.hide();
@@ -163,7 +177,7 @@ impl Coach {
     }
 
     fn sync_monitor(&mut self) {
-        if self.active && self.service.is_some() {
+        if self.active && (self.service.is_some() || self.test.is_some()) {
             self.monitor.start();
         } else {
             self.monitor.stop();

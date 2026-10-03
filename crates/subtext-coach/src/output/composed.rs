@@ -54,7 +54,9 @@ impl Composed {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.options.iter().all(|option| option.text.trim().is_empty())
+        self.options
+            .iter()
+            .all(|option| option.text.trim().is_empty())
     }
 }
 
@@ -66,16 +68,29 @@ mod tests {
     fn recommended_falls_back_to_first() {
         let composed = Composed {
             options: vec![
-                ComposeOption { text: "a".into(), ..Default::default() },
-                ComposeOption { text: "b".into(), ..Default::default() },
+                ComposeOption {
+                    text: "a".into(),
+                    ..Default::default()
+                },
+                ComposeOption {
+                    text: "b".into(),
+                    ..Default::default()
+                },
             ],
             ..Default::default()
         };
         assert_eq!(composed.recommended().unwrap().text, "a");
         let marked = Composed {
             options: vec![
-                ComposeOption { text: "a".into(), ..Default::default() },
-                ComposeOption { text: "b".into(), recommended: true, ..Default::default() },
+                ComposeOption {
+                    text: "a".into(),
+                    ..Default::default()
+                },
+                ComposeOption {
+                    text: "b".into(),
+                    recommended: true,
+                    ..Default::default()
+                },
             ],
             ..Default::default()
         };

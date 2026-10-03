@@ -25,7 +25,12 @@ pub enum BackendKind {
 }
 
 impl BackendKind {
-    pub const ALL: [Self; 4] = [Self::ClaudeCli, Self::CodexCli, Self::OpenAi, Self::Anthropic];
+    pub const ALL: [Self; 4] = [
+        Self::ClaudeCli,
+        Self::CodexCli,
+        Self::OpenAi,
+        Self::Anthropic,
+    ];
 
     /// 配置文件里的写法。
     pub fn key(self) -> &'static str {
@@ -147,7 +152,10 @@ impl Default for CoachConfig {
             timeout_ms: 90_000,
             max_chars: 1500,
             profile: DEFAULT_PROFILE.to_owned(),
-            skip_apps: DEFAULT_SKIP_APPS.iter().map(|app| (*app).to_owned()).collect(),
+            skip_apps: DEFAULT_SKIP_APPS
+                .iter()
+                .map(|app| (*app).to_owned())
+                .collect(),
         }
     }
 }
@@ -164,7 +172,10 @@ impl CoachConfig {
 
     /// Anthropic 的密钥：配置里的优先，其次环境变量。
     pub fn resolve_anthropic_key(&self) -> Option<String> {
-        resolve_key(self.anthropic_api_key.as_deref(), &self.anthropic_api_key_env)
+        resolve_key(
+            self.anthropic_api_key.as_deref(),
+            &self.anthropic_api_key_env,
+        )
     }
 }
 

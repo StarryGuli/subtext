@@ -132,25 +132,39 @@ mod tests {
         assert!(reply.contains("--setting-sources project"));
         assert!(reply.contains("--system-prompt SYSTEM RULES"));
         assert!(reply.contains("--model haiku"));
-        assert!(!reply.split("| stdin=").next().unwrap().contains("secret clipboard text"));
+        assert!(
+            !reply
+                .split("| stdin=")
+                .next()
+                .unwrap()
+                .contains("secret clipboard text")
+        );
     }
 
     #[test]
     fn reports_error_results() {
         let dir = tempdir("err");
-        let path = fake_claude(&dir, r#"printf '{"is_error":true,"result":"Not logged in"}'"#);
+        let path = fake_claude(
+            &dir,
+            r#"printf '{"is_error":true,"result":"Not logged in"}'"#,
+        );
         let error = backend(path).complete("s", "u").unwrap_err();
-        assert!(matches!(error, CoachError::CommandFailed { ref stderr, .. } if stderr == "Not logged in"));
+        assert!(
+            matches!(error, CoachError::CommandFailed { ref stderr, .. } if stderr == "Not logged in")
+        );
     }
 
     #[test]
     fn missing_binary_is_reported() {
-        let error = backend("/no/such/claude".to_owned()).complete("s", "u").unwrap_err();
+        let error = backend("/no/such/claude".to_owned())
+            .complete("s", "u")
+            .unwrap_err();
         assert!(matches!(error, CoachError::BinaryNotFound(_)));
     }
 
     fn tempdir(name: &str) -> std::path::PathBuf {
-        let dir = std::env::temp_dir().join(format!("subtext-coach-test-{name}-{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("subtext-coach-test-{name}-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         dir
     }

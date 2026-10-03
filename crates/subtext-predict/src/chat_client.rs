@@ -8,8 +8,8 @@ use async_openai::types::chat::{
     ChatCompletionRequestUserMessage, CreateChatCompletionRequestArgs,
     CreateChatCompletionResponse, FinishReason, ReasoningEffort, ResponseFormat,
 };
-use subtext_core::PredictionRequest;
 use reqwest::header::{HeaderMap, HeaderValue};
+use subtext_core::PredictionRequest;
 
 use crate::config::PredictConfig;
 use crate::error::PredictError;

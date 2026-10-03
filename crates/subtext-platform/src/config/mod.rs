@@ -19,10 +19,10 @@ mod update;
 
 use std::path::Path;
 
-use subtext_core::FuzzyRules;
-use subtext_coach::CoachConfig;
-use subtext_predict::PredictConfig;
 use serde::{Deserialize, Serialize};
+use subtext_coach::CoachConfig;
+use subtext_core::FuzzyRules;
+use subtext_predict::PredictConfig;
 use toml_edit::DocumentMut;
 
 use crate::error::ConfigError;
@@ -169,6 +169,8 @@ translation_second = "shift+option"
 # 把应用里选中的文字译成学习语言（要开着云服务）：译文先出现在候选窗口，回车替换选中的文字，Esc 保留原文
 # 修饰键 + 一个字母或数字，任意组合；避开 ⌘T 这类应用常用键
 translate_selection = "control+option+t"
+# 把应用里选中的文字交给双语教练（要开着双语教练）：选中英文改稿、选中中文给出英文表达，回车键位同教练面板（⌥1 替换，Esc 关闭）
+coach_selection = "control+option+e"
 # 数字键配这些修饰键删掉候选：用户词（云端选过的、自动造的）整个删掉，词库里的词清掉对它的学习记录。组句中要打感叹号先把词上屏
 delete_candidate = "shift"
 "#
@@ -188,6 +190,7 @@ translation = "ctrl"
 translation_second = "shift+ctrl"
 # 把应用里选中的文字译成学习语言（要开着云服务）：译文先出现在候选窗口，回车替换选中的文字，Esc 保留原文
 translate_selection = "ctrl+alt+t"
+coach_selection = "ctrl+alt+e"
 # 数字键配这些修饰键删掉候选：用户词（云端选过的、自动造的）整个删掉，词库里的词清掉对它的学习记录。组句中要打感叹号先把词上屏
 delete_candidate = "shift"
 "#

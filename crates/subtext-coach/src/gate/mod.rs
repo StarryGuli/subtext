@@ -57,7 +57,10 @@ impl Gate {
             return Err(Skip::Concealed);
         }
         if let Some(app) = app
-            && self.skip_apps.iter().any(|skip| skip.eq_ignore_ascii_case(app))
+            && self
+                .skip_apps
+                .iter()
+                .any(|skip| skip.eq_ignore_ascii_case(app))
         {
             return Err(Skip::SkippedApp);
         }
@@ -82,7 +85,11 @@ impl Gate {
             Trigger::ChineseCommitted => language::cjk_chars(text) >= MIN_COMPOSE_CJK,
             Trigger::EnglishDraft => language::english_words(text) >= MIN_EDIT_WORDS,
         };
-        if long_enough { Ok(()) } else { Err(Skip::TooShort) }
+        if long_enough {
+            Ok(())
+        } else {
+            Err(Skip::TooShort)
+        }
     }
 }
 
@@ -98,14 +105,25 @@ mod tests {
 
     #[test]
     fn ordinary_english_copy_passes() {
-        assert_eq!(gate().check(Trigger::ClipboardCopy, PR, None, false), Ok(()));
+        assert_eq!(
+            gate().check(Trigger::ClipboardCopy, PR, None, false),
+            Ok(())
+        );
     }
 
     #[test]
     fn concealed_and_skipped_apps_are_blocked_first() {
-        assert_eq!(gate().check(Trigger::ClipboardCopy, PR, None, true), Err(Skip::Concealed));
         assert_eq!(
-            gate().check(Trigger::ClipboardCopy, PR, Some("COM.1PASSWORD.1PASSWORD"), false),
+            gate().check(Trigger::ClipboardCopy, PR, None, true),
+            Err(Skip::Concealed)
+        );
+        assert_eq!(
+            gate().check(
+                Trigger::ClipboardCopy,
+                PR,
+                Some("COM.1PASSWORD.1PASSWORD"),
+                false
+            ),
             Err(Skip::SkippedApp)
         );
     }
@@ -114,11 +132,21 @@ mod tests {
     fn secrets_links_and_long_text_are_blocked() {
         let g = gate();
         assert_eq!(
-            g.check(Trigger::ClipboardCopy, "my password is hunter2 please keep it", None, false),
+            g.check(
+                Trigger::ClipboardCopy,
+                "my password is hunter2 please keep it",
+                None,
+                false
+            ),
             Err(Skip::LooksLikeSecret)
         );
         assert_eq!(
-            g.check(Trigger::ClipboardCopy, "https://example.com/a/very/long/path", None, false),
+            g.check(
+                Trigger::ClipboardCopy,
+                "https://example.com/a/very/long/path",
+                None,
+                false
+            ),
             Err(Skip::MachineText)
         );
         assert_eq!(
@@ -130,9 +158,21 @@ mod tests {
     #[test]
     fn short_text_and_wrong_language_are_skipped() {
         let g = gate();
-        assert_eq!(g.check(Trigger::ClipboardCopy, "thanks a lot", None, false), Err(Skip::TooShort));
-        assert_eq!(g.check(Trigger::ClipboardCopy, "今天开会吗", None, false), Err(Skip::NotTheRightLanguage));
-        assert_eq!(g.check(Trigger::ChineseCommitted, "好的", None, false), Err(Skip::TooShort));
-        assert_eq!(g.check(Trigger::ChineseCommitted, "我这周实验做不完", None, false), Ok(()));
+        assert_eq!(
+            g.check(Trigger::ClipboardCopy, "thanks a lot", None, false),
+            Err(Skip::TooShort)
+        );
+        assert_eq!(
+            g.check(Trigger::ClipboardCopy, "今天开会吗", None, false),
+            Err(Skip::NotTheRightLanguage)
+        );
+        assert_eq!(
+            g.check(Trigger::ChineseCommitted, "好的", None, false),
+            Err(Skip::TooShort)
+        );
+        assert_eq!(
+            g.check(Trigger::ChineseCommitted, "我这周实验做不完", None, false),
+            Ok(())
+        );
     }
 }

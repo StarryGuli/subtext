@@ -1,7 +1,7 @@
 //! 提示词与回复解析。
 
-use subtext_core::PartOfSpeech;
 use serde::Deserialize;
+use subtext_core::PartOfSpeech;
 
 use crate::entry::{GlossEntry, JapaneseSense};
 

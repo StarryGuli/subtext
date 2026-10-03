@@ -94,7 +94,11 @@ impl Backend for OpenAi {
             .as_array()
             .into_iter()
             .flatten()
-            .find_map(|choice| choice["message"]["content"].as_str().filter(|text| !text.trim().is_empty()))
+            .find_map(|choice| {
+                choice["message"]["content"]
+                    .as_str()
+                    .filter(|text| !text.trim().is_empty())
+            })
             .map(str::to_owned)
             .ok_or(CoachError::EmptyReply)
     }
@@ -122,12 +126,19 @@ mod tests {
 
     #[test]
     fn posts_chat_completions_with_bearer_key() {
-        let (base, seen) = test_server::once(200, r#"{"choices":[{"message":{"content":"{\"ok\":1}"}}]}"#);
-        let reply = backend(&base, Some("sk-test"), "none").complete("SYS", "USER").unwrap();
+        let (base, seen) =
+            test_server::once(200, r#"{"choices":[{"message":{"content":"{\"ok\":1}"}}]}"#);
+        let reply = backend(&base, Some("sk-test"), "none")
+            .complete("SYS", "USER")
+            .unwrap();
         assert_eq!(reply, r#"{"ok":1}"#);
         let seen = seen.join().unwrap();
         assert!(seen.head.starts_with("POST /chat/completions"));
-        assert!(seen.head.to_lowercase().contains("authorization: bearer sk-test"));
+        assert!(
+            seen.head
+                .to_lowercase()
+                .contains("authorization: bearer sk-test")
+        );
         let body: Value = serde_json::from_str(&seen.body).unwrap();
         assert_eq!(body["messages"][0]["content"], "SYS");
         assert_eq!(body["messages"][1]["content"], "USER");
@@ -142,7 +153,8 @@ mod tests {
 
     #[test]
     fn zhipu_uses_the_thinking_switch() {
-        let body = backend("https://open.bigmodel.cn/api/paas/v4", Some("k"), "none").request_body("s", "u");
+        let body = backend("https://open.bigmodel.cn/api/paas/v4", Some("k"), "none")
+            .request_body("s", "u");
         assert_eq!(body["thinking"]["type"], "disabled");
         assert!(body.get("reasoning_effort").is_none());
     }
@@ -158,8 +170,12 @@ mod tests {
     #[test]
     fn http_errors_carry_status_and_body() {
         let (base, _seen) = test_server::once(401, r#"{"error":"bad key"}"#);
-        let error = backend(&base, Some("k"), "none").complete("s", "u").unwrap_err();
-        assert!(matches!(error, CoachError::Api { status: 401, ref body } if body.contains("bad key")));
+        let error = backend(&base, Some("k"), "none")
+            .complete("s", "u")
+            .unwrap_err();
+        assert!(
+            matches!(error, CoachError::Api { status: 401, ref body } if body.contains("bad key"))
+        );
     }
 
     #[test]

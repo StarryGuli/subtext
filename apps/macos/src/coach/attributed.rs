@@ -3,8 +3,8 @@
 use objc2::rc::Retained;
 use objc2::runtime::AnyObject;
 use objc2_app_kit::{
-    NSBackgroundColorAttributeName, NSColor, NSFont, NSFontAttributeName, 
-    NSFontWeightMedium, NSFontWeightRegular, NSFontWeightSemibold, NSForegroundColorAttributeName,
+    NSBackgroundColorAttributeName, NSColor, NSFont, NSFontAttributeName, NSFontWeightMedium,
+    NSFontWeightRegular, NSFontWeightSemibold, NSForegroundColorAttributeName,
     NSMutableParagraphStyle, NSParagraphStyleAttributeName,
 };
 use objc2_foundation::{NSAttributedString, NSDictionary, NSMutableAttributedString, NSString};
@@ -31,18 +31,23 @@ pub fn build(doc: &Doc) -> Retained<NSMutableAttributedString> {
             paragraph.setParagraphSpacingBefore(if line.gap { GAP_SPACING } else { TIGHT_SPACING });
         }
         for run in &line.runs {
-            let text = if std::ptr::eq(run, line.runs.last().expect("non-empty line")) && index != last {
-                format!("{}\n", run.text)
-            } else {
-                run.text.clone()
-            };
+            let text =
+                if std::ptr::eq(run, line.runs.last().expect("non-empty line")) && index != last {
+                    format!("{}\n", run.text)
+                } else {
+                    run.text.clone()
+                };
             result.appendAttributedString(&styled(&text, run.style, &paragraph));
         }
     }
     result
 }
 
-fn styled(text: &str, style: Style, paragraph: &NSMutableParagraphStyle) -> Retained<NSAttributedString> {
+fn styled(
+    text: &str,
+    style: Style,
+    paragraph: &NSMutableParagraphStyle,
+) -> Retained<NSAttributedString> {
     let font = font_for(style);
     let color = color_for(style);
     let background = background_for(style);
@@ -69,7 +74,9 @@ fn font_for(style: Style) -> Retained<NSFont> {
     unsafe {
         match style {
             Style::Title => NSFont::systemFontOfSize_weight(11.0, NSFontWeightSemibold),
-            Style::Body | Style::Highlight => NSFont::systemFontOfSize_weight(13.0, NSFontWeightRegular),
+            Style::Body | Style::Highlight => {
+                NSFont::systemFontOfSize_weight(13.0, NSFontWeightRegular)
+            }
             Style::Phrase => NSFont::systemFontOfSize_weight(13.5, NSFontWeightMedium),
             Style::Dim | Style::Orange | Style::Teal | Style::Warn => {
                 NSFont::systemFontOfSize_weight(12.0, NSFontWeightRegular)
@@ -89,6 +96,12 @@ fn color_for(style: Style) -> Retained<NSColor> {
 }
 
 fn background_for(style: Style) -> Option<Retained<NSColor>> {
-    (style == Style::Highlight)
-        .then(|| NSColor::colorWithSRGBRed_green_blue_alpha(176.0 / 255.0, 206.0 / 255.0, 125.0 / 255.0, HIGHLIGHT_ALPHA))
+    (style == Style::Highlight).then(|| {
+        NSColor::colorWithSRGBRed_green_blue_alpha(
+            176.0 / 255.0,
+            206.0 / 255.0,
+            125.0 / 255.0,
+            HIGHLIGHT_ALPHA,
+        )
+    })
 }

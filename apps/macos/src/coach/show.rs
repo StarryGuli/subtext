@@ -96,11 +96,19 @@ impl Coach {
         self.panel.show(&content, anchor);
     }
 
-    /// 面板是否正显示组句结果、且带有可替换的选项（⌥1–3 才有意义）。
-    pub fn compose_options(&self) -> usize {
-        match self.shown.as_ref().and_then(|shown| shown.output.as_ref()) {
-            Some(CoachOutput::Compose(composed)) if self.panel.is_visible() => composed.options.len(),
-            _ => 0,
+    /// ⌥ + 数字对应的动作：组句时是第几个英文选项，改稿时 1 是修改版；没有对应的就是 `None`。
+    pub fn digit_action(&self, digit: usize) -> Option<CoachAction> {
+        if !self.panel.is_visible() || digit == 0 {
+            return None;
+        }
+        match self.shown.as_ref()?.output.as_ref()? {
+            CoachOutput::Compose(composed)
+                if digit <= composed.options.len().min(super::action::MAX_OPTIONS) =>
+            {
+                Some(CoachAction::Replace(digit - 1))
+            }
+            CoachOutput::Edit(_) if digit == 1 => Some(CoachAction::ReplaceEdited),
+            _ => None,
         }
     }
 
@@ -179,11 +187,19 @@ fn content_for(shown: &Shown, backend: &str) -> PanelContent {
                 footer,
             }
         }
-        CoachOutput::Edit(edited) => PanelContent {
-            doc: Doc::edit(edited),
-            buttons: vec![("复制".to_owned(), CoachAction::CopyEdited), close],
-            footer,
-        },
+        CoachOutput::Edit(edited) => {
+            let mut buttons = Vec::new();
+            if can_replace {
+                buttons.push(("替换 ⌥1".to_owned(), CoachAction::ReplaceEdited));
+            }
+            buttons.push(("复制".to_owned(), CoachAction::CopyEdited));
+            buttons.push(close);
+            PanelContent {
+                doc: Doc::edit(edited),
+                buttons,
+                footer,
+            }
+        }
     }
 }
 
