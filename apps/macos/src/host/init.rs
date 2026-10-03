@@ -155,6 +155,7 @@ pub fn init(mtm: MainThreadMarker, info: &BundleInfo) -> Result<(), HostError> {
             text_replacements: Vec::new(),
             apps: AppsConfig::default(),
             monitor,
+            coach: Coach::new(mtm),
             cloud_test: None,
             cloud_test_monitor: CloudTestMonitor::new(mtm),
             rescore: RescoreMonitor::new(mtm),

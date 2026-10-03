@@ -101,6 +101,7 @@ define_class!(
                     h.reload_config_if_changed();
                     h.indicator.activate();
                     h.watch.start();
+                    h.coach.activate();
                 });
             });
             if done.is_none() {
@@ -136,6 +137,7 @@ define_class!(
                     h.window.hide();
                     h.indicator.deactivate();
                     h.watch.stop();
+                    h.coach.deactivate();
                     h.engine.break_chain();
                     h.engine.flush_learning();
                     h.last_flush = std::time::Instant::now();
@@ -232,6 +234,22 @@ impl SubtextInputController {
         // 以前在这里被截走后原样还给应用，全角转换就没机会做了。
         // 表达式模式（`v2^3`）里 ⇧+数字打的是 `^ * ( )`，不当快捷键
         let composing = host::with(|h| !h.engine.composition().is_empty()).unwrap_or(false);
+        // 教练面板在显示、没在组句：Esc 收起它，⌥ + 数字用对应的英文替换刚输入的中文
+        if !composing {
+            if key == 53 && pressed.is_empty() && host::coach_escape() {
+                return true;
+            }
+            let option_only = Modifiers {
+                option: true,
+                ..Modifiers::default()
+            };
+            if pressed == option_only
+                && let Some(digit) = digit_key(key)
+                && host::coach_digit(digit)
+            {
+                return true;
+            }
+        }
         let expression = composing && host::with(|h| h.engine.expression_mode()).unwrap_or(false);
         if composing
             && !expression

@@ -7,6 +7,7 @@
 
 mod app;
 mod candidates;
+mod coach;
 mod error;
 mod host;
 mod imk;
@@ -36,6 +37,12 @@ fn main() {
             }
         }
         return;
+    }
+    // 开发预览：把教练回复渲染成 PNG 后退出，不起 IMK
+    if let Some(mtm) = MainThreadMarker::new()
+        && let Some(code) = coach::run_preview_if_requested(mtm)
+    {
+        std::process::exit(code);
     }
     let _log_guard = app::logging::init();
     // panic 的位置与 backtrace 记进日志（拦截在 imk::catch_panic，这里只记不碰状态）；

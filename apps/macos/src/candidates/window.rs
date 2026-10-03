@@ -56,7 +56,7 @@ impl CandidateWindow {
             return;
         }
         let size = self.view.set_frame(&frame);
-        let origin = self.place(size, anchor);
+        let origin = place_near(self.mtm, size, anchor);
         self.panel.setFrame_display(NSRect::new(origin, size), true);
         self.order_front_on_active_space();
         if !self.panel.isVisible() {
@@ -132,42 +132,41 @@ impl CandidateWindow {
     pub fn max_rows(&self) -> usize {
         self.view.theme().max_rows
     }
+}
 
-    /// 窗口左下角坐标：贴在光标行下方；下方放不下放上方；不出光标所在的那块屏幕。
-    /// 光标矩形是零或落在所有屏幕之外（应用不支持、或给的是胡话）时以鼠标位置为准，至少落在用户看着的屏幕上。
-    fn place(&self, size: NSSize, anchor: NSRect) -> NSPoint {
-        let (anchor, screen) = match screen_containing(self.mtm, anchor.origin) {
-            Some(screen) if !(anchor.size.height == 0.0 && anchor.origin == NSPoint::ZERO) => {
-                (anchor, screen)
-            }
-            _ => {
-                let mouse = NSEvent::mouseLocation();
-                let anchor = NSRect::new(mouse, NSSize::new(0.0, FALLBACK_LINE_HEIGHT));
-                (
-                    anchor,
-                    screen_containing(self.mtm, mouse)
-                        .unwrap_or_else(|| main_screen_or_anywhere(self.mtm)),
-                )
-            }
-        };
-        let min_x = screen.origin.x;
-        let max_x = (screen.origin.x + screen.size.width - size.width).max(min_x);
-        let x = anchor.origin.x.clamp(min_x, max_x);
-        let below = anchor.origin.y - CARET_GAP - size.height;
-        let above = anchor.origin.y + anchor.size.height + CARET_GAP;
-        let top = screen.origin.y + screen.size.height;
-        let y = if below >= screen.origin.y {
-            below
-        } else if above + size.height <= top {
-            above
-        } else {
-            // 上下都放不下（屏幕很矮或窗口很高）：贴屏幕底边，宁可盖住光标也别出屏
-            screen.origin.y
-        };
-        // 无论怎么算，最后都要落在这块屏幕里：出屏等于不显示
-        let max_y = (top - size.height).max(screen.origin.y);
-        NSPoint::new(x, y.clamp(screen.origin.y, max_y))
-    }
+/// 窗口左下角坐标：贴在光标行下方；下方放不下放上方；不出光标所在的那块屏幕。
+/// 光标矩形是零或落在所有屏幕之外（应用不支持、或给的是胡话）时以鼠标位置为准，至少落在用户看着的屏幕上。
+pub(crate) fn place_near(mtm: MainThreadMarker, size: NSSize, anchor: NSRect) -> NSPoint {
+    let (anchor, screen) = match screen_containing(mtm, anchor.origin) {
+        Some(screen) if !(anchor.size.height == 0.0 && anchor.origin == NSPoint::ZERO) => {
+            (anchor, screen)
+        }
+        _ => {
+            let mouse = NSEvent::mouseLocation();
+            let anchor = NSRect::new(mouse, NSSize::new(0.0, FALLBACK_LINE_HEIGHT));
+            (
+                anchor,
+                screen_containing(mtm, mouse).unwrap_or_else(|| main_screen_or_anywhere(mtm)),
+            )
+        }
+    };
+    let min_x = screen.origin.x;
+    let max_x = (screen.origin.x + screen.size.width - size.width).max(min_x);
+    let x = anchor.origin.x.clamp(min_x, max_x);
+    let below = anchor.origin.y - CARET_GAP - size.height;
+    let above = anchor.origin.y + anchor.size.height + CARET_GAP;
+    let top = screen.origin.y + screen.size.height;
+    let y = if below >= screen.origin.y {
+        below
+    } else if above + size.height <= top {
+        above
+    } else {
+        // 上下都放不下（屏幕很矮或窗口很高）：贴屏幕底边，宁可盖住光标也别出屏
+        screen.origin.y
+    };
+    // 无论怎么算，最后都要落在这块屏幕里：出屏等于不显示
+    let max_y = (top - size.height).max(screen.origin.y);
+    NSPoint::new(x, y.clamp(screen.origin.y, max_y))
 }
 
 /// 建一块面板并把内容视图装进去：无边框、不抢焦点、透明背景带阴影、不吃鼠标。

@@ -13,6 +13,7 @@ workspace = true
 subtext-core.workspace = true
 subtext-dictionary.workspace = true
 subtext-predict.workspace = true
+subtext-coach.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

@@ -22,6 +22,24 @@ impl<'a> TextClient<'a> {
         Self { object }
     }
 
+    /// 底层的 IMK 客户端对象；教练要把它 retain 下来，过一会儿再替换已上屏的文字。
+    pub fn object(&self) -> &'a AnyObject {
+        self.object
+    }
+
+    /// 当前选区（没有选区时就是光标，长度 0）；应用不支持返回 `None`。
+    pub fn selected_range(&self) -> Option<NSRange> {
+        let selected: NSRange = unsafe { msg_send![self.object, selectedRange] };
+        (selected.location != NSNotFound as usize).then_some(selected)
+    }
+
+    /// 应用里 `range` 那段文字；应用不支持读文本或范围越界返回 `None`。
+    pub fn text_in_range(&self, range: NSRange) -> Option<String> {
+        let text: Option<Retained<NSAttributedString>> =
+            unsafe { msg_send![self.object, attributedSubstringFromRange: range] };
+        text.map(|text| text.string().to_string())
+    }
+
     /// 设置 marked text（带下划线的未上屏文本），光标放在第 `cursor` 个字符处。空串等于清除。
     pub fn set_marked_text(&self, text: &str, cursor: usize) {
         let string = NSString::from_str(text);

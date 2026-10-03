@@ -201,6 +201,7 @@ impl SubtextInputController {
         match host::with(|h| h.engine.punctuate(c)).flatten() {
             Some(full_width) => {
                 client.insert_text(full_width);
+                host::coach_note_commit(full_width, client);
                 true
             }
             None => {

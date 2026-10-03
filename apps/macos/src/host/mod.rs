@@ -6,6 +6,7 @@
 //! 设置窗口、手改文件被监视到，全都走它；三个入口都只写 `config.toml`，不各存一套状态。
 
 mod cloud;
+mod coach;
 mod config;
 mod diagnostics;
 mod dictionaries;
@@ -42,6 +43,7 @@ use subtext_translate::{Glossary, LayeredTranslator, LevelTable, PersonalGlossar
 use crate::app::BundleInfo;
 use crate::app::{Settings, logging, paths};
 use crate::candidates::{CandidateWindow, Frame, Preedit, Row};
+use crate::coach::Coach;
 use crate::error::HostError;
 use crate::menubar::{InputMenu, MenuAction, ModeIndicator};
 use crate::preferences::{PreferencesWindow, Setting, SettingValue, UpdateStatus};
@@ -49,6 +51,7 @@ use crate::preferences::{PreferencesWindow, Setting, SettingValue, UpdateStatus}
 use cloud::{CloudTestMonitor, PredictMonitor};
 use config::{ConfigWatch, TextReplacement};
 pub use dictionaries::DictionaryInfo;
+pub use coach::{coach_digit, coach_escape, coach_note_commit, coach_perform, coach_tick};
 pub use init::init;
 use model::RescoreMonitor;
 use presenting::Notice;
@@ -76,6 +79,9 @@ pub struct Host {
 
     /// 配置文件监视定时器，激活期间跑。
     pub watch: ConfigWatch,
+
+    /// 双语教练：盯复制与上屏，出面板。
+    pub coach: Coach,
 
     /// 上次把学习数据落盘的时间；激活期间的定时器按 [`LEARNING_FLUSH_INTERVAL`] 再刷一次。
     pub last_flush: std::time::Instant,

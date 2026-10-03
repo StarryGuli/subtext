@@ -14,3 +14,4 @@ pub use frame::Frame;
 pub use preedit::Preedit;
 pub use row::Row;
 pub use window::CandidateWindow;
+pub(crate) use window::place_near;

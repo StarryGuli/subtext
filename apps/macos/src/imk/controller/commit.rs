@@ -22,6 +22,7 @@ impl SubtextInputController {
         };
         tracing::debug!(%text, "commit");
         client.insert_text(&text);
+        host::coach_note_commit(&text, client);
         self.refresh(client);
         true
     }
@@ -36,6 +37,7 @@ impl SubtextInputController {
         }
         tracing::debug!(%raw, "commit raw");
         client.insert_text(&raw);
+        host::coach_note_commit(&raw, client);
         self.refresh(client);
         true
     }

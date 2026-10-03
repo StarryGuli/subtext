@@ -3188,6 +3188,7 @@ dependencies = [
  "objc2-foundation",
  "objc2-input-method-kit",
  "plist",
+ "subtext-coach",
  "subtext-core",
  "subtext-dictionary",
  "subtext-learning",
@@ -3225,6 +3226,7 @@ version = "0.1.1"
 dependencies = [
  "serde",
  "serde_json",
+ "subtext-coach",
  "subtext-core",
  "subtext-dictionary",
  "subtext-predict",

@@ -1,0 +1,193 @@
+//! 触发：复制了英文 → 解码；上屏了一句中文并停顿 → 组句。每次轮询（0.3 秒）看一遍。
+
+use std::time::Duration;
+
+use objc2::rc::Retained;
+use objc2::runtime::AnyObject;
+use objc2_app_kit::NSWorkspace;
+use objc2_foundation::NSRect;
+use subtext_coach::{CoachContext, CoachRequest, Mode, Trigger};
+
+use super::{Coach, ReplaceTarget, Shown};
+use crate::imk::secure_input;
+
+/// 上屏后停顿多久，才把攒下的中文当作写完的一句。
+const COMPOSE_IDLE: Duration = Duration::from_millis(1400);
+
+/// 轮询交给调用方的活：要去应用里确认这句中文的位置（碰客户端，必须在借用 Host 之外做）。
+pub struct ComposeProbe {
+    pub client: Retained<AnyObject>,
+
+    pub text: String,
+
+    pub app: Option<String>,
+
+    pub anchor: NSRect,
+}
+
+impl Coach {
+    /// 每 0.3 秒一次。返回的探测任务由调用方在 Host 借用之外完成，再调 [`Self::submit_compose`]。
+    pub fn tick(&mut self) -> Option<ComposeProbe> {
+        self.process_events();
+        self.expire();
+        if self.service.is_none() || !self.active {
+            return None;
+        }
+        // 密码框：连缓冲里的中文也丢掉，更不读剪贴板
+        if secure_input::enabled() {
+            self.typed.reset();
+            self.clipboard.reset();
+            return None;
+        }
+        self.poll_clipboard();
+        self.compose_candidate()
+    }
+
+    /// 剪贴板里有新复制：过闸门，通过就解码。
+    fn poll_clipboard(&mut self) {
+        let Some(copied) = self.clipboard.poll() else {
+            return;
+        };
+        if !self.config.auto_decode {
+            return;
+        }
+        let app = frontmost_application();
+        let Some(service) = &self.service else {
+            return;
+        };
+        if let Err(skip) = service
+            .gate()
+            .check(Trigger::ClipboardCopy, &copied.text, app.as_deref(), copied.concealed)
+        {
+            tracing::debug!(?skip, "复制的内容不交给教练");
+            return;
+        }
+        let text = copied.text.trim().to_owned();
+        self.next_id += 1;
+        let id = self.next_id;
+        let request = CoachRequest {
+            id,
+            mode: Mode::Decode,
+            text: text.clone(),
+            context: CoachContext {
+                app,
+                before: String::new(),
+                peer_message: None,
+            },
+        };
+        if service.submit(request).is_err() {
+            tracing::warn!("教练线程已停止，解码请求没有发出");
+            return;
+        }
+        self.begin(Shown {
+            id,
+            mode: Mode::Decode,
+            source: text,
+            output: None,
+            failure: None,
+            revealed: false,
+            anchor: NSRect::ZERO,
+            target: None,
+            shown_at: std::time::Instant::now(),
+            note: None,
+        });
+    }
+
+    /// 攒的中文停顿够久了：过闸门，通过就交给调用方去确认位置。
+    fn compose_candidate(&mut self) -> Option<ComposeProbe> {
+        if !self.config.auto_compose {
+            return None;
+        }
+        let text = self.typed.ready(COMPOSE_IDLE)?.to_owned();
+        let service = self.service.as_ref()?;
+        let app = self.last_app.clone();
+        match service
+            .gate()
+            .check(Trigger::ChineseCommitted, &text, app.as_deref(), false)
+        {
+            Ok(()) => {}
+            // 太短就继续等：用户可能还在写这一句
+            Err(subtext_coach::gate::Skip::TooShort) => return None,
+            Err(skip) => {
+                tracing::debug!(?skip, "上屏的中文不交给教练");
+                self.typed.mark_submitted();
+                return None;
+            }
+        }
+        self.typed.mark_submitted();
+        Some(ComposeProbe {
+            client: self.last_client.clone()?,
+            text,
+            app,
+            anchor: self.last_anchor,
+        })
+    }
+
+    /// 调用方确认了位置（`range` 为 `None` 表示找不到，只能复制）：发出组句请求，面板跟着光标出现。
+    pub fn submit_compose(&mut self, probe: ComposeProbe, range: Option<objc2_foundation::NSRange>) {
+        let Some(service) = &self.service else {
+            return;
+        };
+        let id = self.next_id + 1;
+        let request = CoachRequest {
+            id,
+            mode: Mode::Compose,
+            text: probe.text.clone(),
+            context: CoachContext {
+                app: probe.app,
+                before: String::new(),
+                peer_message: self.memory.peer_message().map(str::to_owned),
+            },
+        };
+        if service.submit(request).is_err() {
+            return;
+        }
+        self.next_id = id;
+        let target = range.map(|range| ReplaceTarget {
+            client: probe.client,
+            range,
+            expected: probe.text.clone(),
+        });
+        self.begin(Shown {
+            id,
+            mode: Mode::Compose,
+            source: probe.text,
+            output: None,
+            failure: None,
+            revealed: false,
+            anchor: probe.anchor,
+            target,
+            shown_at: std::time::Instant::now(),
+            note: None,
+        });
+    }
+
+    /// 刚上屏了一段文字：中文接进缓冲，别的内容让缓冲作废；上屏说明用户在继续写，正显示的组句面板收起。
+    pub fn note_commit(
+        &mut self,
+        text: &str,
+        client: &AnyObject,
+        app: Option<String>,
+        anchor: NSRect,
+    ) {
+        if self.service.is_none() {
+            return;
+        }
+        self.typed.note(text);
+        // SAFETY: client 是 IMK 传进来的有效对象，retain 之后自己持有一份引用
+        self.last_client = unsafe { Retained::retain(std::ptr::from_ref(client).cast_mut()) };
+        self.last_app = app;
+        self.last_anchor = anchor;
+        if self.shown.as_ref().is_some_and(|shown| shown.mode == Mode::Compose) {
+            self.dismiss();
+        }
+    }
+}
+
+/// 最前面那个应用的 bundle id，给闸门的「不处理这些应用」与语域推断用。
+fn frontmost_application() -> Option<String> {
+    NSWorkspace::sharedWorkspace()
+        .frontmostApplication()
+        .and_then(|app| app.bundleIdentifier())
+        .map(|id| id.to_string())
+}

@@ -37,6 +37,7 @@ impl Host {
         self.preedit_mode = config.general.preedit;
         self.english_candidates = config.general.english_candidates;
         self.apps = config.apps.clone();
+        self.coach.apply(&config.coach);
         self.window.set_theme(config.general.theme);
         self.window.set_layout(config.general.layout);
         if self.layout != config.general.layout

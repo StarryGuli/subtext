@@ -18,6 +18,7 @@ subtext-dictionary.workspace = true
 subtext-learning.workspace = true
 subtext-platform.workspace = true
 subtext-predict.workspace = true
+subtext-coach.workspace = true
 subtext-render.workspace = true
 subtext-lm.workspace = true
 subtext-neural = { workspace = true, features = ["metal"] }

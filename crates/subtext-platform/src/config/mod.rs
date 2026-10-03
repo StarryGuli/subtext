@@ -20,6 +20,7 @@ mod update;
 use std::path::Path;
 
 use subtext_core::FuzzyRules;
+use subtext_coach::CoachConfig;
 use subtext_predict::PredictConfig;
 use serde::{Deserialize, Serialize};
 use toml_edit::DocumentMut;
@@ -80,6 +81,9 @@ pub struct Config {
 
     /// 云联想。
     pub predict: PredictConfig,
+
+    /// 双语教练：复制了英文就解码，打了中文就给英文表达。
+    pub coach: CoachConfig,
 
     /// 悬浮状态条（桌面上常驻、可拖动的中 / 英浮窗）。
     pub status_bar: StatusBarConfig,
@@ -335,6 +339,38 @@ slots = 2
 # 组句中除了词候选还要不要整句补全（preedit 右侧，Tab 接受）
 sentence = true
 
+[coach]
+# 双语教练：复制了英文就自动解码（读懂潜台词、学会这样说），上屏了一句中文就给出地道英文。默认关闭。
+# 开启后，复制的英文与上屏的中文会发往下面选的后端；密码框、密码管理器、疑似密钥的内容绝不发送。
+enabled = false
+# 后端：claude-cli 本机 Claude Code / codex-cli 本机 Codex / openai 自填的 OpenAI 兼容接口 / anthropic Anthropic API
+backend = "claude-cli"
+# 复制英文自动解码、上屏中文自动给英文
+auto_decode = true
+auto_compose = true
+# 本机命令行后端：留空则自动查找；模型缺省用快的 haiku
+claude_path = ""
+claude_model = "haiku"
+codex_path = ""
+codex_model = ""
+# OpenAI 兼容接口（后端选 openai 时用）；密钥填在这里，或留空并设置 openai_api_key_env 指定的环境变量
+openai_base_url = "https://api.deepseek.com"
+openai_model = "deepseek-v4-flash"
+# openai_api_key = ""
+openai_api_key_env = "SUBTEXT_COACH_API_KEY"
+reasoning_effort = "none"
+# Anthropic（后端选 anthropic 时用）
+anthropic_model = "claude-haiku-4-5-20251001"
+# anthropic_api_key = ""
+anthropic_api_key_env = "ANTHROPIC_API_KEY"
+# 单次请求超时（毫秒）、单次最多发多少字符（超了不发）
+timeout_ms = 90000
+max_chars = 1500
+# 不处理这些应用里的内容（bundle identifier）；缺省是常见密码管理器，设成 [] 就处处都处理
+# skip_apps = ["com.1password.1password"]
+# 学习者画像：写进给模型的说明，改成更贴近你的描述，教练会更对症
+# profile = "…"
+
 [status_bar]
 # 桌面上常驻、可拖动的悬浮状态条（Windows）：「中 / 英」格点一下切换模式（开着双拼时还显示方案名）、「，。」格切全角 / 半角标点、齿轮打开设置。
 # 只在当前输入法是言外时显示；与任务栏的中 / 英指示器并存
@@ -446,6 +482,15 @@ impl Config {
         })?;
         // 配置或环境变量里的密钥登记给日志掩码；各进程都从这里加载配置，登记在这一处就够
         if let Some(key) = config.predict.resolve_api_key() {
+            crate::logs::secrets::register(&key);
+        }
+        for key in [
+            config.coach.resolve_openai_key(),
+            config.coach.resolve_anthropic_key(),
+        ]
+        .into_iter()
+        .flatten()
+        {
             crate::logs::secrets::register(&key);
         }
         Ok(config)
