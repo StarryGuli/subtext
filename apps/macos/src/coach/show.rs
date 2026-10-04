@@ -41,7 +41,13 @@ impl Coach {
             };
             match event {
                 CoachEvent::Started { .. } => {}
+                CoachEvent::Partial { output, .. } => {
+                    shown.output = Some(output);
+                    shown.streaming = true;
+                    changed = true;
+                }
                 CoachEvent::Finished { output, .. } => {
+                    shown.streaming = false;
                     if let (CoachOutput::Decode(_), true) = (&output, shown.mode == Mode::Decode) {
                         self.memory.remember_peer(&shown.source);
                     }
@@ -116,6 +122,9 @@ impl Coach {
         if !self.panel.is_visible() || digit == 0 {
             return None;
         }
+        if self.shown.as_ref()?.streaming {
+            return None;
+        }
         match self.shown.as_ref()?.output.as_ref()? {
             CoachOutput::Compose(composed)
                 if digit <= composed.options.len().min(super::action::MAX_OPTIONS) =>
@@ -173,6 +182,19 @@ fn content_for(shown: &Shown, backend: &str, slow: bool) -> PanelContent {
             footer,
         };
     };
+    // 还在生成：内容没写完，不给替换 / 复制，只留关闭
+    if shown.streaming {
+        let doc = match output {
+            CoachOutput::Decode(decoded) => Doc::decode(decoded, false),
+            CoachOutput::Compose(composed) => Doc::compose(composed),
+            CoachOutput::Edit(edited) => Doc::edit(edited),
+        };
+        return PanelContent {
+            doc,
+            buttons: vec![close],
+            footer: format!("{backend} · 生成中…"),
+        };
+    }
     let can_replace = shown.target.is_some();
     match output {
         CoachOutput::Decode(decoded) => {

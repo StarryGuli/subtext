@@ -52,6 +52,9 @@ struct Shown {
     /// 解码的译文是否已展开。
     revealed: bool,
 
+    /// 还在流式生成：内容会继续变长，这时不能替换、复制。
+    streaming: bool,
+
     /// 面板跟着哪里出现：组句跟光标，解码跟鼠标（零矩形即取鼠标位置）。
     anchor: NSRect,
 

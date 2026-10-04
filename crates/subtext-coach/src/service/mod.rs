@@ -142,6 +142,75 @@ mod tests {
 
     const REPLY: &str = r#"{"situation": "同事在催你", "points": []}"#;
 
+    /// 一个字一个字吐出回复的后端，用来验证流式：中间应有越来越完整的 Partial，最后是 Finished。
+    struct Trickle;
+
+    impl backend::Backend for Trickle {
+        fn complete(&self, _system: &str, _user: &str) -> Result<String, CoachError> {
+            unreachable!("worker 应该走 stream")
+        }
+
+        fn stream(
+            &self,
+            _system: &str,
+            _user: &str,
+            on_text: &mut dyn FnMut(&str),
+        ) -> Result<String, CoachError> {
+            let reply = r#"{"situation": "同事在催你，但催得很客气", "points": []}"#;
+            for ch in reply.chars() {
+                on_text(&ch.to_string());
+                std::thread::sleep(Duration::from_millis(15));
+            }
+            Ok(reply.to_owned())
+        }
+
+        fn describe(&self) -> String {
+            "trickle".to_owned()
+        }
+    }
+
+    #[test]
+    fn partial_results_grow_before_the_final_one() {
+        let (request_sender, request_receiver) = channel();
+        let (event_sender, event_receiver) = channel();
+        let worker = worker::Worker::new(
+            request_receiver,
+            event_sender,
+            Box::new(Trickle),
+            "profile".to_owned(),
+        );
+        std::thread::spawn(move || worker.run());
+        let service = CoachService {
+            requests: request_sender,
+            events: event_receiver,
+            gate: Gate::new(1500, Vec::new()),
+        };
+        service
+            .submit(request(1, "can you take a look today"))
+            .unwrap();
+        let events = wait_for(&service, |events| {
+            events
+                .iter()
+                .any(|e| matches!(e, CoachEvent::Finished { .. }))
+        });
+        let lengths: Vec<usize> = events
+            .iter()
+            .filter_map(|event| match event {
+                CoachEvent::Partial {
+                    output: CoachOutput::Decode(decoded),
+                    ..
+                } => Some(decoded.situation.chars().count()),
+                _ => None,
+            })
+            .collect();
+        assert!(lengths.len() >= 2, "应该有多次中间结果: {lengths:?}");
+        assert!(
+            lengths.windows(2).all(|pair| pair[0] < pair[1]),
+            "{lengths:?}"
+        );
+        assert!(matches!(events.last(), Some(CoachEvent::Finished { .. })));
+    }
+
     #[test]
     fn answers_and_then_serves_repeats_from_cache() {
         let (service, calls) = service_with(REPLY, Duration::ZERO);

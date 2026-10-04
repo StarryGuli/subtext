@@ -40,6 +40,85 @@ impl Output {
     }
 }
 
+/// stdout 按行读：每来一行就调 `on_line`，其余行为同 [`run`]（限时、超时杀进程组、不留后台进程）。
+/// 流式输出（`--output-format stream-json`）靠它边读边处理。
+pub fn run_lines(
+    mut command: Command,
+    stdin: &str,
+    timeout: Duration,
+    label: &str,
+    mut on_line: impl FnMut(&str),
+) -> Result<Output, CoachError> {
+    use std::io::{BufRead, BufReader};
+    use std::sync::mpsc::{RecvTimeoutError, channel};
+
+    let spawn_error = |source| CoachError::Spawn {
+        command: label.to_owned(),
+        source,
+    };
+    let mut child = command
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .process_group(0)
+        .spawn()
+        .map_err(spawn_error)?;
+    let pid = child.id();
+    let mut input = child.stdin.take().ok_or(CoachError::EmptyReply)?;
+    let payload = stdin.to_owned();
+    let writer = std::thread::spawn(move || {
+        let _ = input.write_all(payload.as_bytes());
+    });
+    let stderr = drain(child.stderr.take());
+    let (sender, receiver) = channel::<String>();
+    let stdout = child.stdout.take();
+    let reader = std::thread::spawn(move || {
+        if let Some(stdout) = stdout {
+            for line in BufReader::new(stdout).lines().map_while(Result::ok) {
+                if sender.send(line).is_err() {
+                    break;
+                }
+            }
+        }
+    });
+
+    let started = Instant::now();
+    let mut collected = String::new();
+    let mut timed_out = false;
+    loop {
+        match receiver.recv_timeout(Duration::from_millis(30)) {
+            Ok(line) => {
+                on_line(&line);
+                collected.push_str(&line);
+                collected.push('\n');
+            }
+            Err(RecvTimeoutError::Disconnected) => break,
+            Err(RecvTimeoutError::Timeout) => {}
+        }
+        if started.elapsed() >= timeout {
+            timed_out = true;
+            break;
+        }
+    }
+    if timed_out {
+        kill_group(pid);
+        let _ = child.kill();
+        let _ = child.wait();
+        let _ = writer.join();
+        let _ = reader.join();
+        return Err(CoachError::Timeout(timeout.as_millis() as u64));
+    }
+    let status = child.wait().map_err(spawn_error)?;
+    let _ = writer.join();
+    let _ = reader.join();
+    Ok(Output {
+        stdout: collected,
+        stderr: stderr.join().unwrap_or_default(),
+        success: status.success(),
+        status: status.to_string(),
+    })
+}
+
 /// stderr 进错误信息时最多留这么多字符。
 const STDERR_CHARS: usize = 400;
 
@@ -132,6 +211,36 @@ mod tests {
     fn feeds_stdin_and_captures_stdout() {
         let output = run(sh("cat"), "hello", Duration::from_secs(5), "cat").unwrap();
         assert_eq!(output.stdout, "hello");
+    }
+
+    #[test]
+    fn run_lines_delivers_each_line_as_it_arrives() {
+        let mut seen = Vec::new();
+        let output = run_lines(
+            sh("echo one; sleep 0.1; echo two"),
+            "",
+            Duration::from_secs(5),
+            "lines",
+            |line| seen.push(line.to_owned()),
+        )
+        .unwrap();
+        assert_eq!(seen, ["one", "two"]);
+        assert!(output.success);
+    }
+
+    #[test]
+    fn run_lines_times_out_and_kills() {
+        let started = Instant::now();
+        let error = run_lines(
+            sh("echo first; sleep 30"),
+            "",
+            Duration::from_millis(300),
+            "slow",
+            |_| {},
+        )
+        .unwrap_err();
+        assert!(matches!(error, CoachError::Timeout(300)));
+        assert!(started.elapsed() < Duration::from_secs(5));
     }
 
     #[test]

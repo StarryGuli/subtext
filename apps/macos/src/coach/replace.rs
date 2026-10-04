@@ -49,7 +49,7 @@ impl ReplacePlan {
 impl Coach {
     /// 该动作要替换应用里的文字时，给出替换计划；不是替换动作或没有可替换的位置返回 `None`。
     pub fn replace_plan(&self, action: CoachAction) -> Option<ReplacePlan> {
-        let shown = self.shown.as_ref()?;
+        let shown = self.shown.as_ref().filter(|shown| !shown.streaming)?;
         let target = shown.target.as_ref()?;
         let replacement = match (action, shown.output.as_ref()?) {
             (CoachAction::Replace(index), CoachOutput::Compose(composed)) => {
@@ -85,7 +85,12 @@ impl Coach {
 
     /// 复制某个英文选项（或修改版）到剪贴板。
     pub fn copy(&mut self, action: CoachAction) {
-        let Some(output) = self.shown.as_ref().and_then(|shown| shown.output.as_ref()) else {
+        let Some(output) = self
+            .shown
+            .as_ref()
+            .filter(|shown| !shown.streaming)
+            .and_then(|shown| shown.output.as_ref())
+        else {
             return;
         };
         let text = match (action, output) {

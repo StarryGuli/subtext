@@ -5,6 +5,7 @@ mod composed;
 mod decoded;
 mod edited;
 mod json;
+mod partial;
 
 pub use alternative::Alternative;
 pub use composed::{ComposeOption, ComposePoint, Composed};
@@ -35,6 +36,17 @@ impl CoachOutput {
             return Err(CoachError::EmptyReply);
         }
         Ok(output)
+    }
+
+    /// 流式输出写到一半时，取此刻能看的部分；一点内容都还没有返回 `None`。
+    pub fn parse_partial(mode: Mode, text: &str) -> Option<Self> {
+        let value = partial::snapshot(text)?;
+        let output = match mode {
+            Mode::Decode => Self::Decode(serde_json::from_value(value).ok()?),
+            Mode::Compose => Self::Compose(serde_json::from_value(value).ok()?),
+            Mode::Edit => Self::Edit(serde_json::from_value(value).ok()?),
+        };
+        (!output.is_empty()).then_some(output)
     }
 
     pub fn mode(&self) -> Mode {

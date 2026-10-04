@@ -41,6 +41,7 @@ impl OpenAi {
 
     fn request_body(&self, system: &str, user: &str) -> Value {
         let mut body = json!({
+            "stream": true,
             "model": self.model,
             "messages": [
                 {"role": "system", "content": system},
@@ -77,6 +78,15 @@ impl OpenAi {
 
 impl Backend for OpenAi {
     fn complete(&self, system: &str, user: &str) -> Result<String, CoachError> {
+        self.stream(system, user, &mut |_| {})
+    }
+
+    fn stream(
+        &self,
+        system: &str,
+        user: &str,
+        on_text: &mut dyn FnMut(&str),
+    ) -> Result<String, CoachError> {
         let key = self
             .api_key
             .as_deref()
@@ -87,20 +97,29 @@ impl Backend for OpenAi {
             .json(&self.request_body(system, user))
             .send()
             .map_err(|error| http::map_error(error, self.timeout))?;
-        let value: Value = http::check(response)?
-            .json()
-            .map_err(|error| http::map_error(error, self.timeout))?;
-        value["choices"]
-            .as_array()
-            .into_iter()
-            .flatten()
-            .find_map(|choice| {
-                choice["message"]["content"]
-                    .as_str()
-                    .filter(|text| !text.trim().is_empty())
-            })
-            .map(str::to_owned)
-            .ok_or(CoachError::EmptyReply)
+        let mut text = String::new();
+        let plain = http::read_sse(http::check(response)?, &mut |data| {
+            if let Ok(chunk) = serde_json::from_str::<Value>(data)
+                && let Some(delta) = chunk["choices"][0]["delta"]["content"].as_str()
+                && !delta.is_empty()
+            {
+                text.push_str(delta);
+                on_text(delta);
+            }
+        })?;
+        // 接口不认 stream 参数、回了一整段普通 JSON
+        if text.trim().is_empty()
+            && let Some(plain) = plain
+            && let Ok(value) = serde_json::from_str::<Value>(&plain)
+            && let Some(full) = value["choices"][0]["message"]["content"].as_str()
+        {
+            on_text(full);
+            text = full.to_owned();
+        }
+        if text.trim().is_empty() {
+            return Err(CoachError::EmptyReply);
+        }
+        Ok(text)
     }
 
     fn describe(&self) -> String {
@@ -143,6 +162,23 @@ mod tests {
         assert_eq!(body["messages"][0]["content"], "SYS");
         assert_eq!(body["messages"][1]["content"], "USER");
         assert_eq!(body["reasoning_effort"], "none");
+    }
+
+    #[test]
+    fn streams_deltas_from_server_sent_events() {
+        let sse = "data: {\"choices\":[{\"delta\":{\"role\":\"assistant\"}}]}\n\n\
+                   data: {\"choices\":[{\"delta\":{\"content\":\"{\\\"ok\\\":\"}}]}\n\n\
+                   data: {\"choices\":[{\"delta\":{\"content\":\"1}\"}}]}\n\n\
+                   data: [DONE]\n\n";
+        let (base, seen) = test_server::once(200, Box::leak(sse.to_owned().into_boxed_str()));
+        let mut deltas = Vec::new();
+        let full = backend(&base, Some("k"), "none")
+            .stream("s", "u", &mut |delta| deltas.push(delta.to_owned()))
+            .unwrap();
+        assert_eq!(full, r#"{"ok":1}"#);
+        assert_eq!(deltas, [r#"{"ok":"#, "1}"]);
+        let body: Value = serde_json::from_str(&seen.join().unwrap().body).unwrap();
+        assert_eq!(body["stream"], true);
     }
 
     #[test]

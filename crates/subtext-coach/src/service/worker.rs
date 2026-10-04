@@ -8,6 +8,9 @@ use super::event::CoachEvent;
 use crate::backend::Backend;
 use crate::{CoachError, CoachOutput, CoachRequest, prompt};
 
+/// 流式输出里隔多久解析、推送一次中间结果。
+const PARTIAL_INTERVAL: std::time::Duration = std::time::Duration::from_millis(120);
+
 pub struct Worker {
     requests: Receiver<CoachRequest>,
 
@@ -99,9 +102,31 @@ impl Worker {
         }
     }
 
+    /// 流式地问后端：每攒够一点就把此刻能看的部分作为 `Partial` 送回去，最后按完整回复解析。
     fn ask(&self, request: &CoachRequest) -> Result<CoachOutput, CoachError> {
         let prompt = prompt::build(request, &self.profile);
-        let reply = self.backend.complete(&prompt.system, &prompt.user)?;
+        let mut raw = String::new();
+        let mut last_sent: Option<CoachOutput> = None;
+        let mut last_parse = Instant::now();
+        let reply = self
+            .backend
+            .stream(&prompt.system, &prompt.user, &mut |delta| {
+                raw.push_str(delta);
+                // 解析要补括号、重试，每个字都解析一遍白费；隔一会儿看一眼，内容没变就不重复发
+                if last_parse.elapsed() < PARTIAL_INTERVAL {
+                    return;
+                }
+                last_parse = Instant::now();
+                if let Some(output) = CoachOutput::parse_partial(request.mode, &raw)
+                    && last_sent.as_ref() != Some(&output)
+                {
+                    let _ = self.events.send(CoachEvent::Partial {
+                        id: request.id,
+                        output: output.clone(),
+                    });
+                    last_sent = Some(output);
+                }
+            })?;
         CoachOutput::parse(request.mode, &reply)
     }
 

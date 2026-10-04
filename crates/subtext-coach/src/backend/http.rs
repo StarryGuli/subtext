@@ -29,6 +29,41 @@ pub fn check(response: Response) -> Result<Response, CoachError> {
     })
 }
 
+/// 读 SSE 流（`text/event-stream`）：每个 `data:` 行的内容交给 `on_data`，直到流结束或收到 `[DONE]`。
+///
+/// 有的兼容接口不认 `stream` 参数、直接回一整段普通 JSON：没见到任何 `data:` 行时，把读到的整段正文原样返回，
+/// 让调用方按非流式的格式再解析一遍。
+pub fn read_sse(
+    response: Response,
+    on_data: &mut dyn FnMut(&str),
+) -> Result<Option<String>, CoachError> {
+    use std::io::{BufRead, BufReader};
+
+    let mut saw_data = false;
+    let mut plain = String::new();
+    for line in BufReader::new(response).lines() {
+        let line = line?;
+        match line.strip_prefix("data:") {
+            Some(data) => {
+                saw_data = true;
+                let data = data.trim();
+                if data == "[DONE]" {
+                    break;
+                }
+                if !data.is_empty() {
+                    on_data(data);
+                }
+            }
+            None if !saw_data => {
+                plain.push_str(&line);
+                plain.push('\n');
+            }
+            None => {}
+        }
+    }
+    Ok((!saw_data && !plain.trim().is_empty()).then_some(plain))
+}
+
 /// reqwest 的超时错误换成统一的 [`CoachError::Timeout`]。
 pub fn map_error(error: reqwest::Error, timeout: Duration) -> CoachError {
     if error.is_timeout() {

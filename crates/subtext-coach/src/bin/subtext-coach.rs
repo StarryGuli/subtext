@@ -133,10 +133,17 @@ fn main() -> ExitCode {
     if service.submit(request).is_err() {
         return fail("教练线程没有起来。");
     }
+    let mut first_partial = false;
     loop {
         for event in service.poll() {
             match event {
                 CoachEvent::Started { .. } => {}
+                CoachEvent::Partial { .. } => {
+                    if !first_partial {
+                        first_partial = true;
+                        eprintln!("（首批内容 {} ms）", started.elapsed().as_millis());
+                    }
+                }
                 CoachEvent::Finished { output, .. } => {
                     print_output(&output);
                     eprintln!("\n（{} ms）", started.elapsed().as_millis());

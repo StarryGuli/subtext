@@ -127,6 +127,7 @@ impl Coach {
             output: None,
             failure: None,
             revealed: false,
+            streaming: false,
             anchor,
             target: Some(ReplaceTarget {
                 client: probe.client,
@@ -183,6 +184,7 @@ impl Coach {
             output: None,
             failure: None,
             revealed: false,
+            streaming: false,
             anchor: NSRect::ZERO,
             target: None,
             shown_at: std::time::Instant::now(),
@@ -256,6 +258,7 @@ impl Coach {
             output: None,
             failure: None,
             revealed: false,
+            streaming: false,
             anchor: probe.anchor,
             target,
             shown_at: std::time::Instant::now(),
@@ -345,6 +348,7 @@ impl Coach {
             output: None,
             failure: None,
             revealed: false,
+            streaming: false,
             anchor,
             target: retained.map(|client| ReplaceTarget {
                 client,
