@@ -9,6 +9,11 @@ fn is_cjk(c: char) -> bool {
     matches!(c as u32, 0x4E00..=0x9FFF | 0x3400..=0x4DBF | 0xF900..=0xFAFF)
 }
 
+/// 拉丁字母个数。
+pub fn latin_letters(text: &str) -> usize {
+    text.chars().filter(char::is_ascii_alphabetic).count()
+}
+
 /// 英文单词个数：至少含两个字母、由字母与撇号连字符组成的片段。
 pub fn english_words(text: &str) -> usize {
     text.split(|c: char| !(c.is_ascii_alphabetic() || c == '\'' || c == '’' || c == '-'))

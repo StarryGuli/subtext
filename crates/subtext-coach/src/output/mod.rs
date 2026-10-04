@@ -6,11 +6,13 @@ mod decoded;
 mod edited;
 mod json;
 mod partial;
+mod screened;
 
 pub use alternative::Alternative;
 pub use composed::{ComposeOption, ComposePoint, Composed};
 pub use decoded::{DecodePoint, Decoded, Tone};
 pub use edited::{Edited, Fix};
+pub use screened::{ScreenItem, Screened};
 
 use serde::de::DeserializeOwned;
 
@@ -22,6 +24,7 @@ pub enum CoachOutput {
     Decode(Decoded),
     Compose(Composed),
     Edit(Edited),
+    Screen(Screened),
 }
 
 impl CoachOutput {
@@ -31,6 +34,7 @@ impl CoachOutput {
             Mode::Decode => Self::Decode(parse_object(reply)?),
             Mode::Compose => Self::Compose(parse_object(reply)?),
             Mode::Edit => Self::Edit(parse_object(reply)?),
+            Mode::Screen => Self::Screen(parse_object(reply)?),
         };
         if output.is_empty() {
             return Err(CoachError::EmptyReply);
@@ -45,6 +49,7 @@ impl CoachOutput {
             Mode::Decode => Self::Decode(serde_json::from_value(value).ok()?),
             Mode::Compose => Self::Compose(serde_json::from_value(value).ok()?),
             Mode::Edit => Self::Edit(serde_json::from_value(value).ok()?),
+            Mode::Screen => Self::Screen(serde_json::from_value(value).ok()?),
         };
         (!output.is_empty()).then_some(output)
     }
@@ -54,6 +59,7 @@ impl CoachOutput {
             Self::Decode(_) => Mode::Decode,
             Self::Compose(_) => Mode::Compose,
             Self::Edit(_) => Mode::Edit,
+            Self::Screen(_) => Mode::Screen,
         }
     }
 
@@ -62,6 +68,7 @@ impl CoachOutput {
             Self::Decode(output) => output.is_empty(),
             Self::Compose(output) => output.is_empty(),
             Self::Edit(output) => output.is_empty(),
+            Self::Screen(output) => output.is_empty(),
         }
     }
 }

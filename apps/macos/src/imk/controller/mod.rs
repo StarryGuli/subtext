@@ -247,6 +247,15 @@ impl SubtextInputController {
         {
             return self.translate_selection(client);
         }
+        // 屏幕阅读快捷键（不在组句中）：没在读就读鼠标所在的窗口，在读就停
+        let screen_combo = host::with(|h| h.screen_keys).unwrap_or_default();
+        if pressed == screen_combo.modifiers
+            && typed.as_deref().and_then(|t| t.chars().next()) == Some(screen_combo.key)
+            && !host::with(|h| !h.engine.composition().is_empty()).unwrap_or(false)
+        {
+            host::screen_toggle();
+            return true;
+        }
         // 教练快捷键（不在组句中）：读应用里的选区，交给双语教练
         let coach_combo = host::with(|h| h.coach_keys).unwrap_or_default();
         if pressed == coach_combo.modifiers

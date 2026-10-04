@@ -14,6 +14,7 @@ mod dictionaries;
 mod init;
 mod model;
 mod presenting;
+mod screen;
 mod session;
 mod settings;
 
@@ -58,6 +59,7 @@ pub use init::init;
 use model::RescoreMonitor;
 use presenting::Notice;
 pub use presenting::TranslationJob;
+pub use screen::{screen_region_done, screen_tick, screen_toggle};
 pub use session::Session;
 
 pub struct Host {
@@ -84,6 +86,9 @@ pub struct Host {
 
     /// 最近一次收到按键的输入控制器：鼠标点候选时用它的客户端上屏。
     pub controller: Option<objc2::rc::Retained<crate::imk::SubtextInputController>>,
+
+    /// 屏幕阅读：持续 OCR 指定窗口 / 区域，鼠标停在哪句就解释哪句。
+    pub screen: crate::screen::ScreenReader,
 
     /// 双语教练：盯复制与上屏，出面板。
     pub coach: Coach,
@@ -132,6 +137,9 @@ pub struct Host {
 
     /// 输入日志是否在记（配置 `[general] input_log`），换了才重开文件。
     input_log_enabled: Option<bool>,
+
+    /// 开始 / 停止屏幕阅读的快捷键（配置 `[shortcut] screen_reading`）。
+    pub screen_keys: KeyCombo,
 
     /// 选中文字交给双语教练的快捷键（配置 `[shortcut] coach_selection`）。
     pub coach_keys: KeyCombo,

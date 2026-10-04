@@ -253,6 +253,21 @@ impl Doc {
         doc
     }
 
+    /// 屏幕阅读悬浮卡：译文最醒目，下面一行弱一档的提示。
+    pub fn screen_card(translation: &str, note: &str) -> Self {
+        let mut doc = Self::default();
+        doc.push(false, vec![(Style::Body, translation.to_owned())]);
+        doc.push(true, vec![(Style::Orange, note.to_owned())]);
+        doc
+    }
+
+    /// 悬浮卡上的一句状态（解析中、跳过的原因）。
+    pub fn screen_status(text: &str) -> Self {
+        let mut doc = Self::default();
+        doc.push(false, vec![(Style::Dim, text.to_owned())]);
+        doc
+    }
+
     /// 等待后端时显示的占位。
     pub fn thinking(title: &str) -> Self {
         let mut doc = Self::default();

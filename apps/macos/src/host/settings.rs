@@ -73,6 +73,26 @@ impl Host {
                     self.apply_config(false);
                 }
             }
+            MenuAction::ScreenReadWindow => {
+                self.screen
+                    .schedule_window_pick(std::time::Duration::from_secs(3));
+                self.show_notice(
+                    "3 秒后读取鼠标所在的窗口：请把鼠标移到要读的窗口上",
+                    objc2_foundation::NSRect::ZERO,
+                );
+            }
+            MenuAction::ScreenReadRegion => {
+                self.screen.begin_region_pick();
+                if let Some(text) = self.screen.take_notice() {
+                    self.show_notice(&text, objc2_foundation::NSRect::ZERO);
+                }
+            }
+            MenuAction::ScreenReadStop => {
+                self.screen.stop();
+                if let Some(text) = self.screen.take_notice() {
+                    self.show_notice(&text, objc2_foundation::NSRect::ZERO);
+                }
+            }
             MenuAction::OpenFuzzySettings => {
                 self.preferences.show_page("模糊音");
             }

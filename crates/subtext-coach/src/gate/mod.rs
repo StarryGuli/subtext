@@ -37,12 +37,37 @@ const MIN_COMPOSE_CJK: usize = 4;
 /// 改稿至少要这么多英文单词。
 const MIN_EDIT_WORDS: usize = 3;
 
+/// 屏幕上的一块至少要这么多英文单词才翻译：界面上的按钮、菜单、昵称大多只有一两个词。
+const MIN_SCREEN_WORDS: usize = 3;
+
 impl Gate {
     pub fn new(max_chars: usize, skip_apps: Vec<String>) -> Self {
         Self {
             max_chars,
             skip_apps,
         }
+    }
+
+    /// 屏幕上识别出的一块文字能不能交给后端翻译：英文、不是链接 / 代码、没有疑似密钥、不太长、不在跳过的应用里。
+    /// 屏幕上什么都可能有（密码、验证码、银行页面），所以比复制、上屏更严：识别出的每一块都单独过一遍。
+    pub fn allow_screen_block(&self, text: &str, app: Option<&str>) -> bool {
+        let text = text.trim();
+        if let Some(app) = app
+            && self
+                .skip_apps
+                .iter()
+                .any(|skip| skip.eq_ignore_ascii_case(app))
+        {
+            return false;
+        }
+        !text.is_empty()
+            && text.chars().count() <= self.max_chars
+            && language::is_mostly_english(text)
+            // 汉字不能太多：「本机 Claude Code · Esc 关闭」这种界面文字夹着几个英文词，不是要读的英文消息
+            && language::cjk_chars(text) * 6 <= language::latin_letters(text)
+            && language::english_words(text) >= MIN_SCREEN_WORDS
+            && !language::looks_like_machine_text(text)
+            && !secrets::contains_secret(text)
     }
 
     /// 能发返回 `Ok(())`。`concealed` 是剪贴板上带的「隐蔽 / 瞬时」标记（密码管理器会打）。
@@ -153,6 +178,24 @@ mod tests {
             g.check(Trigger::ClipboardCopy, &"word ".repeat(100), None, false),
             Err(Skip::TooLong)
         );
+    }
+
+    #[test]
+    fn screen_blocks_must_be_english_sentences_without_secrets() {
+        let g = gate();
+        assert!(g.allow_screen_block(PR, None));
+        assert!(!g.allow_screen_block("Settings", None));
+        assert!(!g.allow_screen_block("本机 Claude Code · Esc 关闭", None));
+        // 英文消息里夹一个汉字昵称没关系
+        assert!(g.allow_screen_block(
+            "小明 hey, no rush at all but did you get a chance to look",
+            None
+        ));
+        assert!(!g.allow_screen_block("你好，今天开会吗", None));
+        assert!(!g.allow_screen_block("your verification code is 123456 do not share", None));
+        assert!(!g.allow_screen_block("https://example.com/a/very/long/path", None));
+        assert!(!g.allow_screen_block(PR, Some("com.1password.1password")));
+        assert!(!g.allow_screen_block(&"word ".repeat(100), None));
     }
 
     #[test]

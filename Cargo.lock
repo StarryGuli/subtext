@@ -3177,7 +3177,7 @@ dependencies = [
 
 [[package]]
 name = "subtext-macos"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "dotenvy",
  "jiff",
@@ -3188,6 +3188,8 @@ dependencies = [
  "objc2-foundation",
  "objc2-input-method-kit",
  "plist",
+ "serde",
+ "serde_json",
  "subtext-coach",
  "subtext-core",
  "subtext-dictionary",

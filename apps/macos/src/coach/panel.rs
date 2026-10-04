@@ -16,13 +16,13 @@ use super::action::CoachAction;
 use super::attributed;
 use super::doc::Doc;
 use super::target::CoachTarget;
-use crate::candidates::place_near;
+use crate::candidates::{clamp_into_screen, place_near};
 
 /// 与候选窗口、状态条同级。
 const POPUP_MENU_LEVEL: NSWindowLevel = 101;
 
 /// 面板宽度。
-const WIDTH: f64 = 440.0;
+pub const WIDTH: f64 = 440.0;
 
 /// 内边距。
 const PAD: f64 = 14.0;
@@ -57,11 +57,18 @@ pub struct CoachPanel {
 
     target: Retained<CoachTarget>,
 
+    /// 面板宽度。教练面板 440，屏幕阅读的悬浮卡与状态条窄一些。
+    width: f64,
+
     mtm: MainThreadMarker,
 }
 
 impl CoachPanel {
     pub fn new(mtm: MainThreadMarker) -> Self {
+        Self::with_width(mtm, WIDTH)
+    }
+
+    pub fn with_width(mtm: MainThreadMarker, width: f64) -> Self {
         let frame_box = NSBox::new(mtm);
         frame_box.setBoxType(NSBoxType::Custom);
         frame_box.setTitlePosition(objc2_app_kit::NSTitlePosition::NoTitle);
@@ -74,6 +81,7 @@ impl CoachPanel {
             panel: build_panel(mtm, &frame_box),
             frame_box,
             target: CoachTarget::new(mtm),
+            width,
             mtm,
         }
     }
@@ -97,6 +105,24 @@ impl CoachPanel {
         self.panel.setAppearance(appearance);
     }
 
+    /// 不吃鼠标：悬浮卡、状态条盖在别的窗口上，鼠标要能穿过去，否则一弹出来就把「鼠标停在哪句」挡住了。
+    pub fn set_ignores_mouse(&self, ignore: bool) {
+        self.panel.setIgnoresMouseEvents(ignore);
+    }
+
+    /// 摆内容，面板左上角放在 `top_left`（AppKit 屏幕坐标，原点在主屏左下）；不出屏。
+    pub fn show_at(&mut self, content: &PanelContent, top_left: NSPoint) {
+        let size = self.layout(content);
+        let anchor = NSRect::new(
+            NSPoint::new(top_left.x, top_left.y - size.height),
+            NSSize::ZERO,
+        );
+        // 复用候选窗的定位：anchor 的零矩形落在屏幕外时它会退回鼠标位置，所以这里直接按原点夹进屏幕
+        let origin = clamp_into_screen(self.mtm, anchor.origin, size);
+        self.panel.setFrame_display(NSRect::new(origin, size), true);
+        self.panel.orderFrontRegardless();
+    }
+
     pub fn hide(&self) {
         self.panel.orderOut(None);
     }
@@ -111,7 +137,7 @@ impl CoachPanel {
 
     /// 把内容摆进盒子，返回面板该有的尺寸。
     fn layout(&mut self, content: &PanelContent) -> NSSize {
-        let inner = WIDTH - 2.0 * PAD;
+        let inner = self.width - 2.0 * PAD;
         let text = attributed::build(&content.doc);
         let full_text_height = text
             .boundingRectWithSize_options(
@@ -138,13 +164,13 @@ impl CoachPanel {
         }
 
         let Some(container) = self.frame_box.contentView() else {
-            return NSSize::new(WIDTH, height);
+            return NSSize::new(self.width, height);
         };
         for subview in container.subviews().iter() {
             subview.removeFromSuperview();
         }
         self.frame_box
-            .setFrame(NSRect::new(NSPoint::ZERO, NSSize::new(WIDTH, height)));
+            .setFrame(NSRect::new(NSPoint::ZERO, NSSize::new(self.width, height)));
 
         let mut y = height - PAD - text_height;
         let label = NSTextField::labelWithAttributedString(&text, self.mtm);
@@ -199,7 +225,7 @@ impl CoachPanel {
             ));
             container.addSubview(&footer);
         }
-        NSSize::new(WIDTH, height)
+        NSSize::new(self.width, height)
     }
 
     fn button(&self, title: &str, action: CoachAction) -> Retained<NSButton> {

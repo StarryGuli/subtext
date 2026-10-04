@@ -44,6 +44,7 @@ fn render(
         "decode" => Mode::Decode,
         "compose" => Mode::Compose,
         "edit" => Mode::Edit,
+        "screen" => Mode::Screen,
         other => return Err(format!("不认识的模式：{other}")),
     };
     let text =
@@ -110,6 +111,13 @@ fn content(output: &CoachOutput, reveal: bool, replace: bool) -> PanelContent {
         CoachOutput::Edit(edited) => PanelContent {
             doc: Doc::edit(edited),
             buttons: vec![("复制".to_owned(), CoachAction::CopyEdited), close],
+            footer,
+        },
+        CoachOutput::Screen(screened) => PanelContent {
+            doc: screened.items.first().map_or_else(Doc::default, |item| {
+                Doc::screen_card(&item.translation, &item.note)
+            }),
+            buttons: vec![close],
             footer,
         },
     }

@@ -25,6 +25,7 @@ pub fn build(request: &CoachRequest, profile: &str) -> Prompt {
         Mode::Decode => rules::DECODE,
         Mode::Compose => rules::COMPOSE,
         Mode::Edit => rules::EDIT,
+        Mode::Screen => rules::SCREEN,
     };
     Prompt {
         system: format!("{}\n\n{task}", rules::COMMON.replace("{profile}", profile)),
@@ -42,10 +43,12 @@ fn user_message(request: &CoachRequest) -> String {
     }
     let before = request.context.before.trim();
     if !before.is_empty() {
-        lines.push(format!(
-            "- 光标前最近输入：{}",
-            tail_chars(before, BEFORE_CHARS)
-        ));
+        let label = if request.mode == Mode::Screen {
+            "上文（只供理解语境，不用翻译）"
+        } else {
+            "光标前最近输入"
+        };
+        lines.push(format!("- {label}：{}", tail_chars(before, BEFORE_CHARS)));
     }
     if let Some(peer) = &request.context.peer_message {
         lines.push(format!(
@@ -60,6 +63,7 @@ fn user_message(request: &CoachRequest) -> String {
         Mode::Decode => "请解码 <message> 里的英文，只输出 JSON。",
         Mode::Compose => "请把 <message> 里的中文组成地道英文，只输出 JSON。",
         Mode::Edit => "请修改 <message> 里的英文草稿，只输出 JSON。",
+        Mode::Screen => "请按编号逐条处理 <message> 里的屏幕消息，只输出 JSON。",
     };
     format!(
         "{}\n\n<message>\n{}\n</message>\n\n{instruction}",

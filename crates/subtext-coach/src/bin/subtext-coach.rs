@@ -24,6 +24,7 @@ enum ModeArg {
     Decode,
     Compose,
     Edit,
+    Screen,
 }
 
 #[derive(Debug, Parser)]
@@ -89,6 +90,7 @@ fn main() -> ExitCode {
         Some(ModeArg::Decode) => Mode::Decode,
         Some(ModeArg::Compose) => Mode::Compose,
         Some(ModeArg::Edit) => Mode::Edit,
+        Some(ModeArg::Screen) => Mode::Screen,
         None => match Trigger::ClipboardCopy
             .mode_for(&text)
             .or_else(|| Trigger::ChineseCommitted.mode_for(&text))
@@ -228,6 +230,15 @@ fn print_output(output: &CoachOutput) {
             }
             for trap in &composed.traps {
                 println!("\n  ⚠ {trap}");
+            }
+        }
+        CoachOutput::Screen(screened) => {
+            println!("【屏幕阅读】");
+            for item in &screened.items {
+                println!("\n  {}. {}", item.i, item.translation);
+                if !item.note.is_empty() {
+                    println!("     ↳ {}", item.note);
+                }
             }
         }
         CoachOutput::Edit(edited) => {

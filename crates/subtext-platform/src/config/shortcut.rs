@@ -28,6 +28,9 @@ pub struct ShortcutConfig {
     /// 把应用里选中的文字交给双语教练：英文当草稿改稿，中文给出英文表达。
     pub coach_selection: KeyCombo,
 
+    /// 开始 / 停止屏幕阅读：没在读就读鼠标所在的窗口，在读就停。
+    pub screen_reading: KeyCombo,
+
     /// 数字键配这些修饰键：删掉候选（用户词整个删掉，词库词清掉对它的学习）。
     pub delete_candidate: Modifiers,
 }
@@ -46,6 +49,7 @@ impl Default for ShortcutConfig {
             translation_second,
             translate_selection: KeyCombo::TRANSLATE_DEFAULT,
             coach_selection: KeyCombo::COACH_DEFAULT,
+            screen_reading: KeyCombo::SCREEN_DEFAULT,
             delete_candidate: Modifiers::SHIFT,
         }
     }

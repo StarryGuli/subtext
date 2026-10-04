@@ -13,6 +13,7 @@ mod host;
 mod imk;
 mod menubar;
 mod preferences;
+mod screen;
 
 use objc2::{AnyThread, ClassType, MainThreadMarker};
 use objc2_app_kit::NSApplication;
@@ -37,6 +38,12 @@ fn main() {
             }
         }
         return;
+    }
+    if let Some(code) = screen::run_selftest_if_requested() {
+        std::process::exit(code);
+    }
+    if let Some(code) = screen::run_probe_if_requested() {
+        std::process::exit(code);
     }
     // 开发预览：把教练回复渲染成 PNG 后退出，不起 IMK
     if let Some(mtm) = MainThreadMarker::new()

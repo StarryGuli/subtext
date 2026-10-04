@@ -85,6 +85,9 @@ pub struct CoachConfig {
     /// 上屏了一句中文就自动给出英文表达。
     pub auto_compose: bool,
 
+    /// 屏幕阅读两次截屏之间隔多久（毫秒）。OCR 本身要几百毫秒，太密了耗电。
+    pub screen_interval_ms: u64,
+
     /// 打完一句英文就自动校对：中文意思、改错、更地道的说法。
     pub auto_edit: bool,
 
@@ -141,6 +144,7 @@ impl Default for CoachConfig {
             auto_decode: true,
             auto_compose: true,
             auto_edit: true,
+            screen_interval_ms: 1500,
             claude_path: String::new(),
             claude_model: "haiku".to_owned(),
             codex_path: String::new(),

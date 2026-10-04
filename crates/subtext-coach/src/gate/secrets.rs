@@ -19,7 +19,15 @@ const MARKERS: &[&str] = &[
     "口令",
     "密钥",
     "验证码",
+    "verification code",
+    "security code",
+    "one-time",
+    "one time code",
+    "recovery code",
 ];
+
+/// 要按整词匹配的缩写：当子串会误伤正常单词（hotpot 里有 otp）。
+const WORD_MARKERS: &[&str] = &["otp", "2fa", "mfa"];
 
 /// 常见服务的密钥前缀，后面跟一串字母数字。
 const KEY_PREFIXES: &[&str] = &[
@@ -38,6 +46,12 @@ const KEY_PREFIXES: &[&str] = &[
 pub fn contains_secret(text: &str) -> bool {
     let lowered = text.to_lowercase();
     if MARKERS.iter().any(|marker| lowered.contains(marker)) {
+        return true;
+    }
+    if lowered
+        .split(|c: char| !c.is_alphanumeric())
+        .any(|word| WORD_MARKERS.contains(&word))
+    {
         return true;
     }
     lowered
@@ -85,6 +99,10 @@ mod tests {
         assert!(contains_secret("卡号 4111111111111111"));
         assert!(contains_secret("-----BEGIN RSA PRIVATE KEY-----"));
         assert!(contains_secret("你的验证码是 123456"));
+        assert!(contains_secret(
+            "Your verification code is 123456, do not share it"
+        ));
+        assert!(contains_secret("enter the OTP we sent you"));
     }
 
     #[test]
@@ -94,5 +112,6 @@ mod tests {
         ));
         assert!(!contains_secret("Our meeting is on 2026-10-12 at 3pm"));
         assert!(!contains_secret("I'll send the report by Friday"));
+        assert!(!contains_secret("let's get hotpot after the lab"));
     }
 }

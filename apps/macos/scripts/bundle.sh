@@ -150,6 +150,8 @@ for size in 16 32 128 256 512; do
 done
 iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/Subtext.icns"
 cp assets/icon/menu.pdf "$APP/Contents/Resources/subtext-menu.pdf"
+# 屏幕阅读的 OCR 帮手（Swift，调系统自带的 Vision，全程本机识别）：按目标架构编译，需要 Xcode 命令行工具
+swiftc -O -target "${ARCH}-apple-macos13.0" tools/ocr/subtext-ocr.swift -o "$APP/Contents/Resources/subtext-ocr"
 # 仓库放在 iCloud 同步的目录（Documents）时新建的 .app 会带上 Finder 扩展属性，codesign 会拒（detritus not allowed）：签名前清掉
 xattr -cr "$APP"
 # Apple Silicon 上未签名的二进制不会被系统加载。有 Developer ID 证书就正式签（开 hardened runtime，公证要求），

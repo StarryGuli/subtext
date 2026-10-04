@@ -156,6 +156,7 @@ fn content_for(shown: &Shown, backend: &str, slow: bool) -> PanelContent {
         Mode::Decode => "解码",
         Mode::Compose => "组句",
         Mode::Edit => "改稿",
+        Mode::Screen => "屏幕",
     };
     let close = ("关闭".to_owned(), CoachAction::Close);
     let footer = shown
@@ -188,6 +189,7 @@ fn content_for(shown: &Shown, backend: &str, slow: bool) -> PanelContent {
             CoachOutput::Decode(decoded) => Doc::decode(decoded, false),
             CoachOutput::Compose(composed) => Doc::compose(composed),
             CoachOutput::Edit(edited) => Doc::edit(edited),
+            CoachOutput::Screen(_) => Doc::default(),
         };
         return PanelContent {
             doc,
@@ -262,6 +264,12 @@ fn content_for(shown: &Shown, backend: &str, slow: bool) -> PanelContent {
                 footer,
             }
         }
+        // 屏幕阅读有自己的请求与悬浮卡，不走这个面板
+        CoachOutput::Screen(_) => PanelContent {
+            doc: Doc::default(),
+            buttons: vec![close],
+            footer,
+        },
     }
 }
 

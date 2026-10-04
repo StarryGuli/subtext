@@ -169,6 +169,17 @@ pub(crate) fn place_near(mtm: MainThreadMarker, size: NSSize, anchor: NSRect) ->
     NSPoint::new(x, y.clamp(screen.origin.y, max_y))
 }
 
+/// 把一块 `size` 大小、左下角在 `origin` 的窗口夹进它所在的那块屏幕（可见区域）；点不在任何屏幕上就用主屏。
+pub(crate) fn clamp_into_screen(mtm: MainThreadMarker, origin: NSPoint, size: NSSize) -> NSPoint {
+    let screen = screen_containing(mtm, origin).unwrap_or_else(|| main_screen_or_anywhere(mtm));
+    let max_x = (screen.origin.x + screen.size.width - size.width).max(screen.origin.x);
+    let max_y = (screen.origin.y + screen.size.height - size.height).max(screen.origin.y);
+    NSPoint::new(
+        origin.x.clamp(screen.origin.x, max_x),
+        origin.y.clamp(screen.origin.y, max_y),
+    )
+}
+
 /// 建一块面板并把内容视图装进去：无边框、不抢焦点、透明背景带阴影、不吃鼠标。
 fn build_panel(mtm: MainThreadMarker, view: &CandidateView) -> Retained<NSPanel> {
     let panel = NSPanel::initWithContentRect_styleMask_backing_defer(

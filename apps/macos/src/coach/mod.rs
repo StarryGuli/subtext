@@ -27,12 +27,13 @@ use objc2_foundation::{NSRange, NSRect};
 use subtext_coach::{CoachConfig, CoachOutput, CoachService, ConversationMemory, Mode};
 
 pub use action::CoachAction;
+pub use doc::Doc;
+pub use panel::{CoachPanel, PanelContent};
 pub use preview::run_if_requested as run_preview_if_requested;
 pub use trigger::{ComposeProbe, EnglishProbe, Probe};
 
 use clipboard::ClipboardWatch;
 use monitor::CoachMonitor;
-use panel::CoachPanel;
 use typed::TypedBuffer;
 
 /// 面板上正显示的这一次教练。

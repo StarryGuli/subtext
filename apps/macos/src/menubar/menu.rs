@@ -44,6 +44,20 @@ impl InputMenu {
         let coach = action_item(mtm, "双语教练", Some(MenuAction::ToggleCoach), &target);
         menu.addItem(&coach);
 
+        // 屏幕阅读：持续 OCR 一个窗口或区域，鼠标停在英文上就显示译文
+        let screen_menu = NSMenu::new(mtm);
+        screen_menu.setAutoenablesItems(false);
+        for (title, action) in [
+            ("读取鼠标所在的窗口（3 秒后）", MenuAction::ScreenReadWindow),
+            ("框选区域…", MenuAction::ScreenReadRegion),
+            ("停止屏幕阅读", MenuAction::ScreenReadStop),
+        ] {
+            screen_menu.addItem(&action_item(mtm, title, Some(action), &target));
+        }
+        let screen_parent = action_item(mtm, "屏幕阅读", None, &target);
+        screen_parent.setSubmenu(Some(&screen_menu));
+        menu.addItem(&screen_parent);
+
         let fuzzy_menu = NSMenu::new(mtm);
         fuzzy_menu.setAutoenablesItems(false);
         // 系统输入法菜单点一项就收起，要连着改几条很麻烦：第一项直接带到设置里的「模糊音」页

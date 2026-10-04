@@ -1,7 +1,7 @@
 [package]
 name = "subtext-macos"
 description = "macOS 输入法：Input Method Kit 外壳、候选窗口、菜单与偏好设置"
-version = "0.2.2"
+version = "0.3.0"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -19,6 +19,8 @@ subtext-learning.workspace = true
 subtext-platform.workspace = true
 subtext-predict.workspace = true
 subtext-coach.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 subtext-render.workspace = true
 subtext-lm.workspace = true
 subtext-neural = { workspace = true, features = ["metal"] }

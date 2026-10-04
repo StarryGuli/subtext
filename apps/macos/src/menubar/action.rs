@@ -16,6 +16,15 @@ pub enum MenuAction {
     /// 打开偏好设置并跳到「模糊音」页：菜单里勾一项就收起，要连着改多条在设置里改。
     OpenFuzzySettings,
 
+    /// 屏幕阅读：几秒后读取鼠标所在的窗口。
+    ScreenReadWindow,
+
+    /// 屏幕阅读：框选一块区域。
+    ScreenReadRegion,
+
+    /// 停止屏幕阅读。
+    ScreenReadStop,
+
     /// 开关一条模糊音规则，值是 [`FuzzyRules::NAMES`] 的下标。
     ToggleFuzzy(usize),
 
@@ -38,6 +47,9 @@ impl MenuAction {
             Self::OpenDownload => 4,
             Self::ToggleCoach => 5,
             Self::OpenFuzzySettings => 6,
+            Self::ScreenReadWindow => 7,
+            Self::ScreenReadRegion => 8,
+            Self::ScreenReadStop => 9,
             Self::ToggleFuzzy(index) => FUZZY_TAG_BASE + index as NSInteger,
         }
     }
@@ -50,6 +62,9 @@ impl MenuAction {
             4 => Self::OpenDownload,
             5 => Self::ToggleCoach,
             6 => Self::OpenFuzzySettings,
+            7 => Self::ScreenReadWindow,
+            8 => Self::ScreenReadRegion,
+            9 => Self::ScreenReadStop,
             _ => {
                 let index = usize::try_from(tag.checked_sub(FUZZY_TAG_BASE)?).ok()?;
                 (index < FuzzyRules::NAMES.len()).then_some(Self::ToggleFuzzy(index))?
@@ -71,6 +86,9 @@ mod tests {
             MenuAction::OpenDownload,
             MenuAction::ToggleCoach,
             MenuAction::OpenFuzzySettings,
+            MenuAction::ScreenReadWindow,
+            MenuAction::ScreenReadRegion,
+            MenuAction::ScreenReadStop,
             MenuAction::ToggleFuzzy(0),
             MenuAction::ToggleFuzzy(FuzzyRules::NAMES.len() - 1),
         ];

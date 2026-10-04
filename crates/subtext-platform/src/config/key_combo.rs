@@ -28,6 +28,17 @@ impl KeyCombo {
         key: 'e',
     };
 
+    /// 开始 / 停止屏幕阅读的缺省键：⌃⌥R（Reading）。
+    pub const SCREEN_DEFAULT: Self = Self {
+        modifiers: Modifiers {
+            option: true,
+            shift: false,
+            control: true,
+            command: false,
+        },
+        key: 'r',
+    };
+
     pub const TRANSLATE_DEFAULT: Self = Self {
         modifiers: Modifiers {
             option: true,
