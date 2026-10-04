@@ -8,6 +8,7 @@ mod desktop;
 pub mod geometry;
 mod monitor;
 pub mod ocr;
+mod peek;
 mod reader;
 mod region;
 pub mod scan;

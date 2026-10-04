@@ -8,6 +8,10 @@ use crate::imk::TextClient;
 
 /// 轮询定时器每 0.3 秒来一次。
 pub fn coach_tick() {
+    // 触控板用力按压：开始读鼠标下的文字（读完在屏幕阅读的定时回调里交给教练）
+    if with(|h| h.coach.take_press()).unwrap_or(false) {
+        with(|h| h.screen.begin_peek());
+    }
     if let Some(message) = with(|h| h.coach.take_test_result()).flatten() {
         with(|h| h.preferences.set_status(&message));
     }

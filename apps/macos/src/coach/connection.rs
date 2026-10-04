@@ -39,9 +39,8 @@ impl Coach {
 
     /// 密钥之类不在 [`CoachConfig`] 里的输入变了：丢掉旧服务重建，让后端读到新值。
     pub fn restart(&mut self, config: &CoachConfig) {
-        self.service = config
-            .enabled
-            .then(|| subtext_coach::CoachService::start_with_cache(config, self.cache.clone()));
+        self.config = config.clone();
+        self.start_services();
         self.sync_monitor();
     }
 }

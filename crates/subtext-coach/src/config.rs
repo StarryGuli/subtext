@@ -98,6 +98,12 @@ pub struct CoachConfig {
     /// 打完一句英文就自动校对：中文意思、改错、更地道的说法。
     pub auto_edit: bool,
 
+    /// 0.6 秒内连按两次 ⌘C：强制重新解析剪贴板（忽略缓存）。
+    pub double_copy: bool,
+
+    /// 触控板用力按压鼠标下的文字：不用复制，直接读屏幕上那一块去解析（需要屏幕录制权限）。
+    pub force_press: bool,
+
     /// `claude` 可执行文件的路径；留空则自动查找。
     pub claude_path: String,
 
@@ -151,6 +157,8 @@ impl Default for CoachConfig {
             auto_decode: true,
             auto_compose: true,
             auto_edit: true,
+            double_copy: true,
+            force_press: true,
             history: true,
             screen_prewarm: 3,
             screen_interval_ms: 1500,

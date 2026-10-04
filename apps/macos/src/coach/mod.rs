@@ -7,9 +7,12 @@ mod action;
 mod attributed;
 mod clipboard;
 mod connection;
+mod content;
 mod doc;
+mod lane;
 mod monitor;
 mod panel;
+mod pressure;
 mod preview;
 mod replace;
 pub(crate) mod sentence;
@@ -18,7 +21,6 @@ mod target;
 mod trigger;
 mod typed;
 
-use std::collections::VecDeque;
 use std::time::Instant;
 
 use objc2::MainThreadMarker;
@@ -36,7 +38,9 @@ pub use preview::run_if_requested as run_preview_if_requested;
 pub use trigger::{ComposeProbe, EnglishProbe, Probe};
 
 use clipboard::ClipboardWatch;
+use lane::Lane;
 use monitor::CoachMonitor;
+use pressure::PressureWatch;
 use typed::TypedBuffer;
 
 /// 面板上正显示的这一次教练。
@@ -84,6 +88,18 @@ pub(super) struct ReplaceTarget {
 /// 面板上最多能翻回几条之前的解读。
 const PAST_LIMIT: usize = 10;
 
+/// 两次 ⌘C 间隔不超过这么久算连按。
+const DOUBLE_COPY_WINDOW: std::time::Duration = std::time::Duration::from_millis(600);
+
+/// 通道编号：解码；组句与改稿。
+const DECODE: usize = 0;
+const WRITE: usize = 1;
+
+/// 这种模式的结果在哪条通道里。
+fn lane_for(mode: Mode) -> usize {
+    if mode == Mode::Decode { DECODE } else { WRITE }
+}
+
 /// 解读历史的文件名，在数据目录里。
 const HISTORY_FILE: &str = "coach-history.jsonl";
 
@@ -91,18 +107,22 @@ pub struct Coach {
     /// 当前套用的配置。
     config: CoachConfig,
 
-    /// 开着才有。配置变了整个换掉，旧线程自己退出。
-    service: Option<CoachService>,
-
     /// 解读历史：解码、屏幕阅读预解码共用；换后端、开关教练重建服务时它不丢，`history` 开着时还落盘。
     cache: SharedCache,
 
     /// 现在的 `cache` 是不是按「落盘」建的。
     history_on: bool,
 
-    panel: CoachPanel,
+    /// 两条通道：解码一条、组句 / 改稿一条，各有面板与后台线程，互不顶替。
+    lanes: [Lane; 2],
+
+    /// 最近一次出新内容的通道，Esc、翻页等按键在鼠标不在任何面板上时作用于它。
+    focus: usize,
 
     monitor: CoachMonitor,
+
+    /// 触控板用力按压的监听：教练开着且 `force_press` 开着才注册。
+    pressure: PressureWatch,
 
     clipboard: ClipboardWatch,
 
@@ -128,13 +148,8 @@ pub struct Coach {
 
     next_id: u64,
 
-    shown: Option<Shown>,
-
-    /// 之前看过的解读，旧的在前；面板上可以翻回去看。只收已经出完结果的，替换位置不留（应用里的文字早就变了）。
-    past: VecDeque<Shown>,
-
-    /// 面板正在看 `past` 里的第几条；`None` 是最新的那条。
-    view: Option<usize>,
+    /// 上一次按 ⌘C 的时间：很快再按一次就是「强制重新解析」。
+    last_copy_key: Option<Instant>,
 
     /// 系统当前选中的输入源是不是言外。轮询只在它为真时处理复制与上屏；
     /// 不跟 IMK 的激活回调走，那个随文本框焦点来回跳（复制网页上的文字时根本没有文本框）。
@@ -151,11 +166,15 @@ impl Coach {
     pub fn new(mtm: MainThreadMarker) -> Self {
         Self {
             config: CoachConfig::default(),
-            service: None,
             cache: SharedCache::in_memory(),
             history_on: false,
-            panel: CoachPanel::new(mtm),
+            lanes: [
+                Lane::new(CoachPanel::new(mtm)),
+                Lane::new(CoachPanel::new(mtm)),
+            ],
+            focus: DECODE,
             monitor: CoachMonitor::new(mtm),
+            pressure: PressureWatch::new(),
             clipboard: ClipboardWatch::new(),
             memory: ConversationMemory::default(),
             typed: TypedBuffer::default(),
@@ -165,9 +184,7 @@ impl Coach {
             english_dirty: None,
             last_edit_text: None,
             next_id: 0,
-            shown: None,
-            past: VecDeque::new(),
-            view: None,
+            last_copy_key: None,
             source_ours: false,
             source_checked: Instant::now(),
             test: None,
@@ -177,16 +194,15 @@ impl Coach {
     /// 套用配置：开关或后端设置变了才重建服务（重建会起新线程、丢缓存）。
     pub fn apply(&mut self, config: &CoachConfig) {
         self.sync_cache(config.history);
-        if *config == self.config && (self.service.is_some() == config.enabled) {
+        if *config == self.config && (self.is_enabled() == config.enabled) {
             return;
         }
         self.config = config.clone();
-        self.service = config
-            .enabled
-            .then(|| CoachService::start_with_cache(config, self.cache.clone()));
+        self.start_services();
         if !config.enabled {
-            self.dismiss();
-            self.past.clear();
+            for lane in &mut self.lanes {
+                lane.reset();
+            }
             self.typed.reset();
         }
         self.sync_monitor();
@@ -195,6 +211,17 @@ impl Coach {
             backend = config.backend.key(),
             "双语教练配置已套用"
         );
+    }
+
+    /// 按当前配置给两条通道各起一个后台线程（教练关着就都不起）。
+    fn start_services(&mut self) {
+        let config = &self.config;
+        for lane in &mut self.lanes {
+            lane.service = config
+                .enabled
+                .then(|| CoachService::start_with_cache(config, self.cache.clone()));
+            lane.set_backend(config.backend.label(), config.backend.is_local_cli());
+        }
     }
 
     /// 解读历史的共享缓存：屏幕阅读也用它，复制同一段文字时才会命中预解码的结果。
@@ -252,41 +279,42 @@ impl Coach {
         if !ours && self.source_ours {
             self.typed.reset();
             self.english_dirty = None;
-            self.dismiss();
+            self.dismiss_all();
         }
         self.source_ours = ours;
     }
 
+    /// 按了 ⌘C。很快（0.6 秒内）连按第二次且教练开着、`double_copy` 没关，返回 `true`：该强制重新解析剪贴板。
+    pub fn note_copy_key(&mut self) -> bool {
+        let now = Instant::now();
+        let double = self.config.double_copy
+            && self.is_enabled()
+            && self
+                .last_copy_key
+                .is_some_and(|last| now.duration_since(last) < DOUBLE_COPY_WINDOW);
+        self.last_copy_key = if double { None } else { Some(now) };
+        double
+    }
+
     /// 教练是否开着。
     pub fn is_enabled(&self) -> bool {
-        self.service.is_some()
+        self.lanes[DECODE].service.is_some()
     }
 
-    /// 关掉面板并忘掉正显示的内容。
-    pub fn dismiss(&mut self) {
-        self.panel.hide();
-        if let Some(shown) = self.shown.take() {
-            self.archive(shown);
-        }
-        self.view = None;
-    }
-
-    /// 把出完结果的一条收进「之前的解读」；没出完的（被新请求顶掉、失败）不收。
-    fn archive(&mut self, mut shown: Shown) {
-        if shown.output.is_none() || shown.failure.is_some() || shown.streaming {
-            return;
-        }
-        shown.target = None;
-        shown.note = None;
-        self.past.push_back(shown);
-        while self.past.len() > PAST_LIMIT {
-            self.past.pop_front();
-        }
+    /// 用力按压了一下（教练开着、言外是当前输入法、`force_press` 开着）：该读鼠标下的文字去解析。
+    pub fn take_press(&mut self) -> bool {
+        let pressed = self.pressure.take_press();
+        pressed && self.config.force_press && self.is_enabled() && self.source_ours
     }
 
     fn sync_monitor(&mut self) {
+        if self.is_enabled() && self.config.force_press {
+            self.pressure.start();
+        } else {
+            self.pressure.stop();
+        }
         // 轮询在教练开着（或正在测试连接）时一直跑；是不是该处理由每次轮询里问系统当前输入源决定
-        if self.service.is_some() || self.test.is_some() {
+        if self.is_enabled() || self.test.is_some() {
             self.monitor.start();
         } else {
             self.monitor.stop();

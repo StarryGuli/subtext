@@ -35,6 +35,9 @@ const GONE_LIMIT: Duration = Duration::from_secs(600);
 /// 预解码结果最多留几条。
 const DECODED_LIMIT: usize = 80;
 
+/// 同一块翻译失败几次就放弃。
+const MAX_FAILURES: u8 = 2;
+
 pub(in crate::screen) struct Active {
     target: Target,
 
@@ -66,6 +69,9 @@ pub(in crate::screen) struct Active {
 
     /// 预解码失败过的块，不再重试。
     warm_failed: HashSet<String>,
+
+    /// 翻译失败过几次的块：连续失败两次就不再重试，免得同一批文字每隔几秒重发一遍。
+    failures: HashMap<String, u8>,
 
     next_id: u64,
 
@@ -125,6 +131,7 @@ impl Active {
             warming: HashMap::new(),
             decoded: HashMap::new(),
             warm_failed: HashSet::new(),
+            failures: HashMap::new(),
             next_id: 0,
             last_scan: Instant::now() - Duration::from_secs(60),
             last_error: None,

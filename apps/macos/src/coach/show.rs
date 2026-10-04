@@ -1,371 +1,100 @@
-//! 把后台事件画到面板上：开始思考、出结果、出错；到时间自动收起。
-
-use std::time::{Duration, Instant};
-
-use objc2_app_kit::NSEvent;
-use objc2_foundation::{NSRect, NSSize};
-use subtext_coach::{CoachEvent, CoachOutput, Mode, friendly};
+//! Coach 对两条通道的统一入口：把事件、按键、按钮分到对的那条上。
 
 use super::action::CoachAction;
-use super::doc::Doc;
-use super::panel::PanelContent;
-use super::{Coach, Shown};
-
-/// 解码结果留多久：读英文、想一想要时间。
-const DECODE_TTL: Duration = Duration::from_secs(600);
-
-/// 组句结果留多久：用户多半很快就继续写了。
-const COMPOSE_TTL: Duration = Duration::from_secs(120);
+use super::{Coach, DECODE, Shown, WRITE, lane_for};
 
 impl Coach {
-    /// 开始新的一次：先显示「思考中」，结果到了再换。
-    pub(super) fn begin(&mut self, mut shown: Shown) {
-        // 没有光标位置的（复制触发的解码）固定在此刻的鼠标位置：后面每次重画都用它，面板不会跟着鼠标跑
-        if shown.anchor == NSRect::ZERO {
-            shown.anchor = NSRect::new(NSEvent::mouseLocation(), NSSize::new(0.0, 16.0));
-        }
-        if let Some(old) = self.shown.take() {
-            self.archive(old);
-        }
-        self.view = None;
-        self.shown = Some(shown);
-        self.render();
+    /// 开始新的一次：放进对应的通道，那条通道上一条出完结果的收进历史。
+    pub(super) fn begin(&mut self, shown: Shown) {
+        let index = lane_for(shown.mode);
+        self.focus = index;
+        self.lanes[index].begin(shown);
     }
 
-    /// 面板正在看的那条：翻回去时是之前的，否则是最新的。
-    pub(super) fn viewed(&self) -> Option<&Shown> {
-        match self.view {
-            Some(index) => self.past.get(index),
-            None => self.shown.as_ref(),
-        }
-    }
-
-    fn viewed_mut(&mut self) -> Option<&mut Shown> {
-        match self.view {
-            Some(index) => self.past.get_mut(index),
-            None => self.shown.as_mut(),
-        }
-    }
-
-    /// 可翻看的总条数（含最新的那条）与当前是第几条（从 0 数）。
-    fn position(&self) -> (usize, usize) {
-        let total = self.past.len() + usize::from(self.shown.is_some());
-        let current = self.view.unwrap_or(total.saturating_sub(1));
-        (current, total)
-    }
-
-    /// 翻到上一条（`delta` 为负）或下一条；到头不动。
-    pub fn navigate(&mut self, delta: isize) {
-        let (current, total) = self.position();
-        if total < 2 {
-            return;
-        }
-        let next = current.saturating_add_signed(delta).min(total - 1);
-        self.view = if next == total - 1 && self.shown.is_some() {
-            None
-        } else {
-            Some(next)
-        };
-        self.render();
-    }
-
-    /// 取走后台事件，只认最新那次请求的。
+    /// 取走两条通道的后台事件。
     pub(super) fn process_events(&mut self) {
-        let Some(service) = &self.service else {
-            return;
-        };
-        let events = service.poll();
-        let mut changed = false;
-        for event in events {
-            let Some(shown) = self.shown.as_mut().filter(|shown| shown.id == event.id()) else {
-                continue;
-            };
-            match event {
-                CoachEvent::Started { .. } => {}
-                CoachEvent::Partial { output, .. } => {
-                    shown.output = Some(output);
-                    shown.streaming = true;
-                    changed = true;
-                }
-                CoachEvent::Finished { output, .. } => {
-                    shown.streaming = false;
-                    if let (CoachOutput::Decode(_), true) = (&output, shown.mode == Mode::Decode) {
-                        self.memory.remember_peer(&shown.source);
-                    }
-                    shown.output = Some(output);
-                    shown.shown_at = Instant::now();
-                    changed = true;
-                }
-                CoachEvent::Failed { message, .. } => {
-                    shown.failure = Some(message);
-                    changed = true;
-                }
+        for index in 0..self.lanes.len() {
+            for peer in self.lanes[index].process_events() {
+                self.memory.remember_peer(&peer);
             }
         }
-        if changed {
-            self.render();
+    }
+
+    pub(super) fn expire(&mut self) {
+        for lane in &mut self.lanes {
+            lane.expire();
         }
     }
 
-    /// 到时间了就收起面板；鼠标停在面板上（正在读、正要点按钮）时重新计时。
-    pub(super) fn expire(&mut self) {
-        if self.panel.is_visible()
-            && self.panel.contains_mouse()
-            && let Some(shown) = self.shown.as_mut()
-        {
-            shown.shown_at = Instant::now();
+    /// 按键和「关闭」「上一条」这类按钮作用的通道：鼠标在哪块面板上就是哪块，否则是最近出内容的那块。
+    pub(super) fn active(&self) -> usize {
+        if let Some(index) = (0..self.lanes.len()).find(|&index| {
+            self.lanes[index].is_visible() && self.lanes[index].panel.contains_mouse()
+        }) {
+            return index;
         }
-        let expired = self.shown.as_ref().is_some_and(|shown| {
-            let ttl = match shown.mode {
-                Mode::Compose => COMPOSE_TTL,
-                _ => DECODE_TTL,
-            };
-            shown.output.is_some() && shown.shown_at.elapsed() > ttl
-        });
-        if expired {
-            self.dismiss();
+        if self.lanes[self.focus].is_visible() {
+            self.focus
+        } else {
+            1 - self.focus
+        }
+    }
+
+    /// 动作该落在哪条通道：替换、复制选项只有组句 / 改稿有，展开译文只有解码有，其余看鼠标与焦点。
+    pub(super) fn lane_of(&self, action: CoachAction) -> usize {
+        match action {
+            CoachAction::Replace(_)
+            | CoachAction::Copy(_)
+            | CoachAction::ReplaceEdited
+            | CoachAction::CopyEdited
+            | CoachAction::ReplaceAlternative(_) => WRITE,
+            CoachAction::Reveal => DECODE,
+            _ => self.active(),
         }
     }
 
     /// 展开解码的译文。
     pub fn reveal(&mut self) {
-        if let Some(shown) = self.viewed_mut() {
-            shown.revealed = true;
-        }
-        self.render();
+        self.lanes[DECODE].reveal();
     }
 
     /// 脚注里临时提示一句话。
-    pub(super) fn set_note(&mut self, note: &str) {
-        if let Some(shown) = self.viewed_mut() {
-            shown.note = Some(note.to_owned());
-        }
-        self.render();
+    pub(super) fn set_note(&mut self, lane: usize, note: &str) {
+        self.lanes[lane].set_note(note);
     }
 
-    /// 按当前状态重画面板。
-    pub(super) fn render(&mut self) {
-        let Some(shown) = self.viewed() else {
-            self.panel.hide();
-            return;
-        };
-        let mut content = content_for(
-            shown,
-            self.config.backend.label(),
-            self.config.backend.is_local_cli(),
-        );
-        let anchor: NSRect = shown.anchor;
-        let (current, total) = self.position();
-        content.footer = format!("{} · {}", label_for(shown, current, total), content.footer);
-        if total > 1 {
-            let close = content.buttons.pop();
-            if current > 0 {
-                content
-                    .buttons
-                    .push(("‹ 上一条".to_owned(), CoachAction::Previous));
-            }
-            if current + 1 < total {
-                content
-                    .buttons
-                    .push(("下一条 ›".to_owned(), CoachAction::Next));
-            }
-            content.buttons.extend(close);
-        }
-        self.panel.show(&content, anchor);
+    /// 翻到上一条或下一条，作用于当前通道。
+    pub fn navigate(&mut self, delta: isize) {
+        let index = self.active();
+        self.lanes[index].navigate(delta);
     }
 
-    /// ⌥ + 数字对应的动作：组句时是第几个英文选项，改稿时 1 是修改版；没有对应的就是 `None`。
-    pub fn digit_action(&self, digit: usize) -> Option<CoachAction> {
-        if !self.panel.is_visible() || digit == 0 {
-            return None;
-        }
-        let shown = self.viewed()?;
-        if shown.streaming {
-            return None;
-        }
-        match shown.output.as_ref()? {
-            CoachOutput::Compose(composed)
-                if digit <= composed.options.len().min(super::action::MAX_OPTIONS) =>
-            {
-                Some(CoachAction::Replace(digit - 1))
-            }
-            CoachOutput::Edit(_) if digit == 1 => Some(CoachAction::ReplaceEdited),
-            CoachOutput::Edit(edited)
-                if (2..=1 + edited
-                    .alternatives
-                    .len()
-                    .min(super::action::MAX_OPTIONS - 1))
-                    .contains(&digit) =>
-            {
-                Some(CoachAction::ReplaceAlternative(digit - 2))
-            }
-            _ => None,
-        }
-    }
-
-    /// 有没有别的解读可翻。
+    /// 有别的解读可翻（当前通道）。
     pub fn can_navigate(&self) -> bool {
-        self.position().1 > 1
+        self.lanes[self.active()].can_navigate()
+    }
+
+    /// 关掉当前通道的面板（Esc、「关闭」）。
+    pub fn dismiss(&mut self) {
+        let index = self.active();
+        self.lanes[index].dismiss();
+    }
+
+    /// 两块面板都收起（切走输入法时）。
+    pub(super) fn dismiss_all(&mut self) {
+        for lane in &mut self.lanes {
+            lane.dismiss();
+        }
+    }
+
+    /// ⌥ + 数字对应的动作：只有组句 / 改稿通道有替换选项。
+    pub fn digit_action(&mut self, digit: usize) -> Option<CoachAction> {
+        let action = self.lanes[WRITE].digit_action(digit)?;
+        self.focus = WRITE;
+        Some(action)
     }
 
     pub fn is_showing(&self) -> bool {
-        self.shown.is_some() && self.panel.is_visible()
+        self.lanes.iter().any(|lane| lane.is_showing())
     }
-}
-
-/// 脚注开头的标签：哪种解读、第几条、原文开头，几个窗口来回看时靠它分清。
-fn label_for(shown: &Shown, current: usize, total: usize) -> String {
-    let kind = match shown.mode {
-        Mode::Decode => "解码",
-        Mode::Compose => "组句",
-        Mode::Edit => "改稿",
-        Mode::Screen => "屏幕",
-    };
-    let snippet: String = shown.source.trim().chars().take(16).collect();
-    let ellipsis = if shown.source.trim().chars().count() > 16 {
-        "…"
-    } else {
-        ""
-    };
-    if total > 1 {
-        format!("【{kind}】{}/{total} “{snippet}{ellipsis}”", current + 1)
-    } else {
-        format!("【{kind}】“{snippet}{ellipsis}”")
-    }
-}
-
-/// 一次教练在面板里该是什么样。
-fn content_for(shown: &Shown, backend: &str, slow: bool) -> PanelContent {
-    let title = match shown.mode {
-        Mode::Decode => "解码",
-        Mode::Compose => "组句",
-        Mode::Edit => "改稿",
-        Mode::Screen => "屏幕",
-    };
-    let close = ("关闭".to_owned(), CoachAction::Close);
-    let footer = shown
-        .note
-        .clone()
-        .unwrap_or_else(|| format!("{backend} · Esc 关闭"));
-    if let Some(message) = &shown.failure {
-        return PanelContent {
-            doc: Doc::failure(title, message),
-            buttons: vec![close],
-            footer,
-        };
-    }
-    let Some(output) = &shown.output else {
-        // 本机命令行后端要启动进程、逐字生成，通常 20–40 秒：说一声，免得以为卡死了
-        let footer = if slow && shown.note.is_none() {
-            format!("{backend} · 命令行后端较慢，约 20–40 秒；API 后端只要几秒")
-        } else {
-            footer
-        };
-        return PanelContent {
-            doc: Doc::thinking(title),
-            buttons: vec![close],
-            footer,
-        };
-    };
-    // 还在生成：内容没写完，不给替换 / 复制，只留关闭
-    if shown.streaming {
-        let doc = match output {
-            CoachOutput::Decode(decoded) => Doc::decode(decoded, false),
-            CoachOutput::Compose(composed) => Doc::compose(composed),
-            CoachOutput::Edit(edited) => Doc::edit(edited),
-            CoachOutput::Plain { text, .. } => Doc::plain(title, text),
-            CoachOutput::Screen(_) => Doc::default(),
-        };
-        return PanelContent {
-            doc,
-            buttons: vec![close],
-            footer: format!("{backend} · 生成中…"),
-        };
-    }
-    let can_replace = shown.target.is_some();
-    match output {
-        CoachOutput::Decode(decoded) => {
-            let mut buttons = Vec::new();
-            if !shown.revealed && !decoded.translation.is_empty() {
-                buttons.push(("显示译文".to_owned(), CoachAction::Reveal));
-            }
-            buttons.push(close);
-            PanelContent {
-                doc: Doc::decode(decoded, shown.revealed),
-                buttons,
-                footer,
-            }
-        }
-        CoachOutput::Compose(composed) => {
-            let mut buttons = Vec::new();
-            for index in 0..composed.options.len().min(super::action::MAX_OPTIONS) {
-                let title = if can_replace {
-                    format!("替换 ⌥{}", index + 1)
-                } else {
-                    format!("复制 {}", index + 1)
-                };
-                let action = if can_replace {
-                    CoachAction::Replace(index)
-                } else {
-                    CoachAction::Copy(index)
-                };
-                buttons.push((title, action));
-            }
-            if can_replace {
-                let recommended = composed
-                    .options
-                    .iter()
-                    .position(|option| option.recommended)
-                    .unwrap_or(0);
-                buttons.push(("复制推荐".to_owned(), CoachAction::Copy(recommended)));
-            }
-            buttons.push(close);
-            PanelContent {
-                doc: Doc::compose(composed),
-                buttons,
-                footer,
-            }
-        }
-        CoachOutput::Edit(edited) => {
-            let mut buttons = Vec::new();
-            if can_replace {
-                buttons.push(("替换 ⌥1".to_owned(), CoachAction::ReplaceEdited));
-                for index in 0..edited
-                    .alternatives
-                    .len()
-                    .min(super::action::MAX_OPTIONS - 1)
-                {
-                    buttons.push((
-                        format!("更地道 ⌥{}", index + 2),
-                        CoachAction::ReplaceAlternative(index),
-                    ));
-                }
-            }
-            buttons.push(("复制".to_owned(), CoachAction::CopyEdited));
-            buttons.push(close);
-            PanelContent {
-                doc: Doc::edit(edited),
-                buttons,
-                footer,
-            }
-        }
-        // 模型没按格式回：原文显示，能复制；点一下「复制」不会替换任何东西
-        CoachOutput::Plain { text, .. } => PanelContent {
-            doc: Doc::plain(title, text),
-            buttons: vec![("复制".to_owned(), CoachAction::CopyPlain), close],
-            footer: format!("{backend} · 模型没有按格式回复，直接显示原文"),
-        },
-        // 屏幕阅读有自己的请求与悬浮卡，不走这个面板
-        CoachOutput::Screen(_) => PanelContent {
-            doc: Doc::default(),
-            buttons: vec![close],
-            footer,
-        },
-    }
-}
-
-/// 失败原因转成给用户看的话：后台线程已经转好了，这里只是兜底。
-#[allow(dead_code)]
-fn describe(error: &subtext_coach::CoachError) -> String {
-    friendly(error)
 }

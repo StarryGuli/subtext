@@ -6,7 +6,8 @@ use objc2_foundation::NSRange;
 use subtext_coach::CoachOutput;
 
 use super::action::CoachAction;
-use super::{Coach, clipboard};
+use super::lane::Lane;
+use super::{Coach, WRITE, clipboard};
 use crate::imk::TextClient;
 
 /// 要在应用里做的一次替换。碰客户端，所以在借用 Host 之外执行。
@@ -46,9 +47,9 @@ impl ReplacePlan {
     }
 }
 
-impl Coach {
+impl Lane {
     /// 该动作要替换应用里的文字时，给出替换计划；不是替换动作或没有可替换的位置返回 `None`。
-    pub fn replace_plan(&self, action: CoachAction) -> Option<ReplacePlan> {
+    pub(super) fn replace_plan(&self, action: CoachAction) -> Option<ReplacePlan> {
         let shown = self.viewed().filter(|shown| !shown.streaming)?;
         let target = shown.target.as_ref()?;
         let replacement = match (action, shown.output.as_ref()?) {
@@ -70,28 +71,15 @@ impl Coach {
             replacement,
         })
     }
+}
 
-    /// 替换完成后的收尾：成功就收起面板；没动成就把英文放进剪贴板并告诉用户。
-    pub fn after_replace(&mut self, plan: &ReplacePlan, outcome: ReplaceOutcome) {
-        match outcome {
-            ReplaceOutcome::Replaced => self.dismiss(),
-            ReplaceOutcome::Changed => {
-                let count = clipboard::write(plan.replacement());
-                self.clipboard.mark_own(count);
-                self.set_note("原文已经变动，没有替换；英文已复制，⌘V 粘贴");
-            }
-        }
-    }
-
-    /// 复制某个英文选项（或修改版）到剪贴板。
-    pub fn copy(&mut self, action: CoachAction) {
-        let Some(output) = self
+impl Lane {
+    /// 某个复制动作要复制的文字。
+    pub(super) fn copy_text(&self, action: CoachAction) -> Option<String> {
+        let output = self
             .viewed()
             .filter(|shown| !shown.streaming)
-            .and_then(|shown| shown.output.as_ref())
-        else {
-            return;
-        };
+            .and_then(|shown| shown.output.as_ref())?;
         let text = match (action, output) {
             (CoachAction::Copy(index), CoachOutput::Compose(composed)) => composed
                 .options
@@ -105,11 +93,36 @@ impl Coach {
             }
             _ => None,
         };
-        let Some(text) = text.filter(|text| !text.is_empty()) else {
+        text.filter(|text| !text.is_empty())
+    }
+}
+
+impl Coach {
+    /// 该动作要替换应用里的文字时，给出替换计划（替换只发生在组句 / 改稿通道）。
+    pub fn replace_plan(&self, action: CoachAction) -> Option<ReplacePlan> {
+        self.lanes[WRITE].replace_plan(action)
+    }
+
+    /// 替换完成后的收尾：成功就收起面板；没动成就把英文放进剪贴板并告诉用户。
+    pub fn after_replace(&mut self, plan: &ReplacePlan, outcome: ReplaceOutcome) {
+        match outcome {
+            ReplaceOutcome::Replaced => self.lanes[WRITE].dismiss(),
+            ReplaceOutcome::Changed => {
+                let count = clipboard::write(plan.replacement());
+                self.clipboard.mark_own(count);
+                self.set_note(WRITE, "原文已经变动，没有替换；英文已复制，⌘V 粘贴");
+            }
+        }
+    }
+
+    /// 复制某个英文选项（或修改版、模型直接回的原文）到剪贴板。
+    pub fn copy(&mut self, action: CoachAction) {
+        let index = self.lane_of(action);
+        let Some(text) = self.lanes[index].copy_text(action) else {
             return;
         };
         let count = clipboard::write(&text);
         self.clipboard.mark_own(count);
-        self.set_note("已复制");
+        self.set_note(index, "已复制");
     }
 }

@@ -5,7 +5,7 @@ use std::time::Instant;
 use subtext_coach::screen::{Analysis, group_blocks};
 use subtext_coach::{CoachEvent, CoachOutput};
 
-use super::{Active, DECODED_LIMIT, GONE_LIMIT, RETRY_DELAY};
+use super::{Active, DECODED_LIMIT, GONE_LIMIT, MAX_FAILURES, RETRY_DELAY};
 use crate::screen::scan::{ScanJob, ScanOutcome};
 
 impl Active {
@@ -90,10 +90,33 @@ impl Active {
                     tracing::warn!("屏幕阅读翻译失败：{message}");
                     self.memory.clear_pending(&keys);
                     self.in_flight.remove(&id);
+                    self.give_up_on_repeat_failures(&keys);
                     self.last_error = Some(message);
                     self.retry_after = Instant::now() + RETRY_DELAY;
                 }
                 _ => {}
+            }
+        }
+    }
+
+    /// 这一批失败了：每块记一次，满两次的块标成「已跳过」不再发，卡片上能看到原因。
+    fn give_up_on_repeat_failures(&mut self, keys: &[String]) {
+        for key in keys {
+            let count = self.failures.entry(key.clone()).or_insert(0);
+            *count += 1;
+            if *count >= MAX_FAILURES && self.memory.analysis(key).is_none() {
+                tracing::warn!("屏幕阅读：这一块连续翻译失败，已跳过");
+                self.memory.store(
+                    key,
+                    Analysis {
+                        translation: "这一条翻译失败，已跳过".to_owned(),
+                        note: "后端连续没有给出可用的回复".to_owned(),
+                    },
+                );
+                for block in self.blocks.iter_mut().filter(|block| block.key == *key) {
+                    block.analysis = self.memory.analysis(key).cloned();
+                    block.pending = false;
+                }
             }
         }
     }

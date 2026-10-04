@@ -172,6 +172,9 @@ const RESCORE_LOOKBACK: usize = subtext_core::RESCORE_CONTEXT_CHARS;
 /// 登录 / 锁屏窗口的 bundle identifier。
 const LOGIN_WINDOW: &str = "com.apple.loginwindow";
 
+/// 键盘上 C 键的键码。
+const KEY_C: u16 = 8;
+
 /// 数字行与小键盘的键码对应的数字 1–9（ANSI 布局的物理键）。
 fn digit_key(key_code: u16) -> Option<usize> {
     Some(match key_code {
@@ -230,6 +233,21 @@ impl SubtextInputController {
             control,
             command,
         };
+        // ⌘C 连按两次：第一次照常复制（并按设置自动解码），第二次强制重新解析剪贴板；按键始终交还应用
+        if pressed
+            == (Modifiers {
+                command: true,
+                ..Modifiers::default()
+            })
+            && key == KEY_C
+            && host::with(|h| h.coach.note_copy_key()).unwrap_or(false)
+        {
+            if let Some(message) = host::coach_clipboard_now() {
+                let anchor = client.caret_rect();
+                host::with(|h| h.show_notice(&message, anchor));
+            }
+            return false;
+        }
         // 提示在显示：敲任何键先收掉，键照常处理
         host::with(|h| h.clear_notice());
         // 翻译选中文字进行中：回车 / 空格 / 1 接受，Esc 放弃，其他键放弃后照常交给应用

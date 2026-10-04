@@ -8,6 +8,7 @@ use subtext_coach::{CoachConfig, SharedCache};
 use super::active::{Active, PILL_WIDTH};
 use super::desktop::{bundle_of, mouse_cg};
 use super::monitor::ScreenMonitor;
+use super::peek::Peek;
 use super::region::RegionPicker;
 use super::target::Target;
 use super::{capture, geometry, ocr, windows};
@@ -30,6 +31,12 @@ pub struct ScreenReader {
 
     /// 教练被关掉时屏幕阅读只暂停：不截屏不发送，识别过的内容留着，重新打开教练就接着读。
     suspended: bool,
+
+    /// 用力按压触发的一次性识别（不是持续阅读）。
+    peek: Option<Peek>,
+
+    /// 一次性识别读到的鼠标下那块文字，等宿主取走交给教练。
+    peek_text: Option<String>,
 
     /// 菜单「读取鼠标所在窗口」选了之后，等到这个时间再取鼠标下的窗口（给用户时间把鼠标移过去）。
     pick_at: Option<Instant>,
@@ -60,6 +67,8 @@ impl ScreenReader {
             pill,
             active: None,
             suspended: false,
+            peek: None,
+            peek_text: None,
             pick_at: None,
             notice: None,
             picker: None,
@@ -138,8 +147,8 @@ impl ScreenReader {
         })
     }
 
-    /// 开始阅读 `target`。教练没开、没权限、没有 OCR 程序都会返回要告诉用户的话。
-    pub fn start(&mut self, target: Target) -> Result<(), String> {
+    /// 截屏权限与 OCR 程序都就绪才返回帮手程序路径；否则是要告诉用户的话。
+    fn ready(&self) -> Result<std::path::PathBuf, String> {
         if !self.config.enabled {
             return Err("请先在偏好设置里启用双语教练".to_owned());
         }
@@ -151,9 +160,12 @@ impl ScreenReader {
                     .to_owned(),
             );
         }
-        let Some(helper) = ocr::helper_path() else {
-            return Err("找不到 OCR 程序 subtext-ocr，请重新安装".to_owned());
-        };
+        ocr::helper_path().ok_or_else(|| "找不到 OCR 程序 subtext-ocr，请重新安装".to_owned())
+    }
+
+    /// 开始阅读 `target`。教练没开、没权限、没有 OCR 程序都会返回要告诉用户的话。
+    pub fn start(&mut self, target: Target) -> Result<(), String> {
+        let helper = self.ready()?;
         self.stop();
         let label = target.label();
         self.active = Some(Active::new(
@@ -180,8 +192,61 @@ impl ScreenReader {
         }
     }
 
+    /// 用力按压：读鼠标所在的窗口（读不到窗口就读鼠标周围一块），找出鼠标下那一块文字。
+    pub fn begin_peek(&mut self) {
+        if self.peek.is_some() {
+            return;
+        }
+        let helper = match self.ready() {
+            Ok(helper) => helper,
+            Err(message) => {
+                self.notice = Some(message);
+                return;
+            }
+        };
+        let (x, y) = mouse_cg();
+        let own_pid = std::process::id() as i32;
+        let target = match geometry::pick_window(&windows::list(), x, y, own_pid) {
+            Some(window) => Target::Window {
+                id: window.id,
+                owner: window.owner.clone(),
+                bundle: bundle_of(window.pid),
+                bounds: window.bounds,
+            },
+            None => Target::Region {
+                bounds: Peek::region_around(x, y),
+            },
+        };
+        self.peek = Some(Peek::start(target, helper, (x, y)));
+        self.monitor.start();
+    }
+
+    /// 取走一次性识别读到的文字。
+    pub fn take_peek_text(&mut self) -> Option<String> {
+        self.peek_text.take()
+    }
+
+    fn poll_peek(&mut self) {
+        let Some(peek) = self.peek.as_mut() else {
+            return;
+        };
+        let Some(result) = peek.poll() else {
+            return;
+        };
+        self.peek = None;
+        match result {
+            Ok(Some(text)) => self.peek_text = Some(text),
+            Ok(None) => self.notice = Some("鼠标下面没有识别到文字".to_owned()),
+            Err(message) => self.notice = Some(message),
+        }
+        if self.active.is_none() && self.pick_at.is_none() && self.picker.is_none() {
+            self.monitor.stop();
+        }
+    }
+
     /// 每 0.12 秒一次。
     pub fn tick(&mut self) {
+        self.poll_peek();
         if let Some(result) = self.region_result.take() {
             self.picker = None;
             match result {

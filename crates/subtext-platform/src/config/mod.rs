@@ -358,6 +358,10 @@ backend = "claude-cli"
 auto_decode = true
 auto_compose = true
 auto_edit = true
+# 0.6 秒内连按两次 ⌘C：强制重新解析剪贴板（忽略缓存，不管解析过没有）；第一次照常复制
+double_copy = true
+# 触控板用力按压鼠标下的英文 / 中文：不用复制，直接读屏幕上那一块去解析（要屏幕录制权限，识别在本机完成）；系统自带的「查询」手势要在触控板设置里换掉
+force_press = true
 # 解读历史存在本机（coach-history.jsonl）：再次遇到同一段文字直接显示；关掉则只在本次运行里记住
 history = true
 # 屏幕阅读时，空闲时替最新几条英文提前做完整解码（0 关闭）；会多发请求，API 后端按量计费时可调低

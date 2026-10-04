@@ -8,7 +8,7 @@ use objc2_app_kit::NSWorkspace;
 use objc2_foundation::NSRect;
 use subtext_coach::{CoachContext, CoachRequest, Mode, SharedCache, Trigger};
 
-use super::{Coach, ReplaceTarget, Shown, clipboard};
+use super::{Coach, DECODE, ReplaceTarget, Shown, clipboard, lane_for};
 use crate::imk::secure_input;
 
 /// 上屏后停顿多久，才把攒下的中文当作写完的一句。
@@ -48,7 +48,7 @@ impl Coach {
     pub fn tick(&mut self) -> Option<Probe> {
         self.process_events();
         self.expire();
-        self.service.as_ref()?;
+        self.lanes[DECODE].service.as_ref()?;
         self.refresh_source();
         if !self.source_ours {
             return None;
@@ -90,7 +90,7 @@ impl Coach {
         let Some((text, range, anchor)) = located else {
             return;
         };
-        let Some(service) = &self.service else {
+        let Some(service) = &self.lanes[lane_for(Mode::Edit)].service else {
             return;
         };
         // 同一句话已经校对过就别再弹
@@ -148,7 +148,7 @@ impl Coach {
             return;
         }
         let app = frontmost_application();
-        let Some(service) = &self.service else {
+        let Some(service) = &self.lanes[lane_for(Mode::Decode)].service else {
             return;
         };
         if let Err(skip) = service.gate().check(
@@ -198,7 +198,7 @@ impl Coach {
             return None;
         }
         let text = self.typed.ready(COMPOSE_IDLE)?.to_owned();
-        let service = self.service.as_ref()?;
+        let service = self.lanes[DECODE].service.as_ref()?;
         let app = self.last_app.clone();
         match service
             .gate()
@@ -228,7 +228,7 @@ impl Coach {
         probe: ComposeProbe,
         range: Option<objc2_foundation::NSRange>,
     ) {
-        let Some(service) = &self.service else {
+        let Some(service) = &self.lanes[lane_for(Mode::Compose)].service else {
             return;
         };
         let id = self.next_id + 1;
@@ -274,7 +274,7 @@ impl Coach {
         app: Option<String>,
         anchor: NSRect,
     ) {
-        if self.service.is_none() {
+        if !self.is_enabled() {
             return;
         }
         self.typed.note(text);
@@ -307,7 +307,7 @@ impl Coach {
         app: Option<String>,
         anchor: NSRect,
     ) -> bool {
-        let Some(service) = &self.service else {
+        let Some(gate_service) = &self.lanes[DECODE].service else {
             return false;
         };
         let (trigger, mode) = [Trigger::EnglishDraft, Trigger::ChineseCommitted]
@@ -317,13 +317,16 @@ impl Coach {
         let (Some(trigger), Some(mode)) = (trigger, mode) else {
             return false;
         };
-        if service
+        if gate_service
             .gate()
             .check(trigger, text, app.as_deref(), false)
             .is_err()
         {
             return false;
         }
+        let Some(service) = &self.lanes[lane_for(mode)].service else {
+            return false;
+        };
         self.next_id += 1;
         let id = self.next_id;
         let request = CoachRequest {
@@ -363,14 +366,19 @@ impl Coach {
 }
 
 impl Coach {
-    /// 用户要求「现在就解析剪贴板里的内容」：不管开没开自动、有没有解析过，英文解码、中文给出英文，
-    /// 并忽略缓存重新来一遍。返回要告诉用户的话（成功是 `None`）。
+    /// 用户要求「现在就解析剪贴板里的内容」。返回要告诉用户的话（成功是 `None`）。
     pub fn submit_clipboard_now(&mut self) -> Option<String> {
-        let Some(service) = &self.service else {
-            return Some("双语教练没开".to_owned());
-        };
         let Some(text) = clipboard::read_now() else {
             return Some("剪贴板里没有可解析的文字".to_owned());
+        };
+        self.submit_forced(text)
+    }
+
+    /// 现在就解析这段文字：不管开没开自动、有没有解析过，英文解码、中文给出英文，并忽略缓存重新来一遍。
+    /// 面板出现在此刻鼠标旁边。返回要告诉用户的话（成功是 `None`）。
+    pub fn submit_forced(&mut self, text: String) -> Option<String> {
+        let Some(gate_service) = &self.lanes[DECODE].service else {
+            return Some("双语教练没开".to_owned());
         };
         let text = text.trim().to_owned();
         let (trigger, mode) = [Trigger::ClipboardCopy, Trigger::ChineseCommitted]
@@ -378,16 +386,19 @@ impl Coach {
             .find_map(|trigger| trigger.mode_for(&text).map(|mode| (trigger, mode)))
             .unzip();
         let (Some(trigger), Some(mode)) = (trigger, mode) else {
-            return Some("剪贴板里的内容不是英文也不是中文句子".to_owned());
+            return Some("这段内容不是英文也不是中文句子".to_owned());
         };
         let app = frontmost_application();
-        if service
+        if gate_service
             .gate()
             .check(trigger, &text, app.as_deref(), false)
             .is_err()
         {
             return Some("这段文字不适合交给教练（太长、疑似密钥或链接代码）".to_owned());
         }
+        let Some(service) = &self.lanes[lane_for(mode)].service else {
+            return Some("双语教练没开".to_owned());
+        };
         self.next_id += 1;
         let id = self.next_id;
         let request = CoachRequest {
