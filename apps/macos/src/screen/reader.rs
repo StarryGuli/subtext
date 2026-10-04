@@ -28,6 +28,9 @@ pub struct ScreenReader {
 
     active: Option<Active>,
 
+    /// 教练被关掉时屏幕阅读只暂停：不截屏不发送，识别过的内容留着，重新打开教练就接着读。
+    suspended: bool,
+
     /// 菜单「读取鼠标所在窗口」选了之后，等到这个时间再取鼠标下的窗口（给用户时间把鼠标移过去）。
     pick_at: Option<Instant>,
 
@@ -56,6 +59,7 @@ impl ScreenReader {
             card,
             pill,
             active: None,
+            suspended: false,
             pick_at: None,
             notice: None,
             picker: None,
@@ -65,10 +69,29 @@ impl ScreenReader {
     }
 
     pub fn apply(&mut self, config: &CoachConfig, cache: SharedCache) {
+        let changed = self.config != *config;
         self.config = config.clone();
         self.cache = cache;
         if !config.enabled {
-            self.stop();
+            if self.active.is_none() {
+                self.stop();
+            } else if !self.suspended {
+                self.suspended = true;
+                self.card.hide();
+                self.pill.hide();
+                self.notice = Some("教练已关闭，屏幕阅读先暂停；重新打开教练就接着读".to_owned());
+            }
+            return;
+        }
+        let resumed = self.suspended;
+        self.suspended = false;
+        if (resumed || changed)
+            && let Some(active) = self.active.as_mut()
+        {
+            active.rebuild_service(config, self.cache.clone());
+            if resumed {
+                self.notice = Some("屏幕阅读继续".to_owned());
+            }
         }
     }
 
@@ -147,6 +170,7 @@ impl ScreenReader {
     /// 停止：丢掉识别过的屏幕文字，收起悬浮卡与状态条。
     pub fn stop(&mut self) {
         let was_reading = self.active.take().is_some();
+        self.suspended = false;
         self.pick_at = None;
         self.monitor.stop();
         self.card.hide();
@@ -182,6 +206,9 @@ impl ScreenReader {
                     self.monitor.stop();
                 }
             }
+        }
+        if self.suspended {
+            return;
         }
         let Some(active) = self.active.as_mut() else {
             return;

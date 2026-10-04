@@ -32,6 +32,7 @@ impl Host {
         self.delete_keys = config.shortcut.delete_keys();
         self.translate_keys = config.shortcut.translate_selection;
         self.coach_keys = config.shortcut.coach_selection;
+        self.coach_clipboard_keys = config.shortcut.coach_clipboard;
         self.screen_keys = config.shortcut.screen_reading;
         self.page_size = config.general.page_size();
         self.cloud_slots = config.predict.slots;

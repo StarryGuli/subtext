@@ -147,6 +147,7 @@ pub fn init(mtm: MainThreadMarker, info: &BundleInfo) -> Result<(), HostError> {
             input_log_enabled: None,
             screen_keys: KeyCombo::SCREEN_DEFAULT,
             coach_keys: KeyCombo::COACH_DEFAULT,
+            coach_clipboard_keys: KeyCombo::CLIPBOARD_DEFAULT,
             translate_keys: KeyCombo::TRANSLATE_DEFAULT,
             translation: None,
             notice: None,

@@ -28,6 +28,17 @@ impl KeyCombo {
         key: 'e',
     };
 
+    /// 现在就解析剪贴板里的内容的缺省键：⌃⌥D（Decode）。
+    pub const CLIPBOARD_DEFAULT: Self = Self {
+        modifiers: Modifiers {
+            option: true,
+            shift: false,
+            control: true,
+            command: false,
+        },
+        key: 'd',
+    };
+
     /// 开始 / 停止屏幕阅读的缺省键：⌃⌥R（Reading）。
     pub const SCREEN_DEFAULT: Self = Self {
         modifiers: Modifiers {

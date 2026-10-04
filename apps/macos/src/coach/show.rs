@@ -24,7 +24,48 @@ impl Coach {
         if shown.anchor == NSRect::ZERO {
             shown.anchor = NSRect::new(NSEvent::mouseLocation(), NSSize::new(0.0, 16.0));
         }
+        if let Some(old) = self.shown.take() {
+            self.archive(old);
+        }
+        self.view = None;
         self.shown = Some(shown);
+        self.render();
+    }
+
+    /// 面板正在看的那条：翻回去时是之前的，否则是最新的。
+    pub(super) fn viewed(&self) -> Option<&Shown> {
+        match self.view {
+            Some(index) => self.past.get(index),
+            None => self.shown.as_ref(),
+        }
+    }
+
+    fn viewed_mut(&mut self) -> Option<&mut Shown> {
+        match self.view {
+            Some(index) => self.past.get_mut(index),
+            None => self.shown.as_mut(),
+        }
+    }
+
+    /// 可翻看的总条数（含最新的那条）与当前是第几条（从 0 数）。
+    fn position(&self) -> (usize, usize) {
+        let total = self.past.len() + usize::from(self.shown.is_some());
+        let current = self.view.unwrap_or(total.saturating_sub(1));
+        (current, total)
+    }
+
+    /// 翻到上一条（`delta` 为负）或下一条；到头不动。
+    pub fn navigate(&mut self, delta: isize) {
+        let (current, total) = self.position();
+        if total < 2 {
+            return;
+        }
+        let next = current.saturating_add_signed(delta).min(total - 1);
+        self.view = if next == total - 1 && self.shown.is_some() {
+            None
+        } else {
+            Some(next)
+        };
         self.render();
     }
 
@@ -88,7 +129,7 @@ impl Coach {
 
     /// 展开解码的译文。
     pub fn reveal(&mut self) {
-        if let Some(shown) = self.shown.as_mut() {
+        if let Some(shown) = self.viewed_mut() {
             shown.revealed = true;
         }
         self.render();
@@ -96,7 +137,7 @@ impl Coach {
 
     /// 脚注里临时提示一句话。
     pub(super) fn set_note(&mut self, note: &str) {
-        if let Some(shown) = self.shown.as_mut() {
+        if let Some(shown) = self.viewed_mut() {
             shown.note = Some(note.to_owned());
         }
         self.render();
@@ -104,16 +145,32 @@ impl Coach {
 
     /// 按当前状态重画面板。
     pub(super) fn render(&mut self) {
-        let Some(shown) = &self.shown else {
+        let Some(shown) = self.viewed() else {
             self.panel.hide();
             return;
         };
-        let content = content_for(
+        let mut content = content_for(
             shown,
             self.config.backend.label(),
             self.config.backend.is_local_cli(),
         );
         let anchor: NSRect = shown.anchor;
+        let (current, total) = self.position();
+        content.footer = format!("{} · {}", label_for(shown, current, total), content.footer);
+        if total > 1 {
+            let close = content.buttons.pop();
+            if current > 0 {
+                content
+                    .buttons
+                    .push(("‹ 上一条".to_owned(), CoachAction::Previous));
+            }
+            if current + 1 < total {
+                content
+                    .buttons
+                    .push(("下一条 ›".to_owned(), CoachAction::Next));
+            }
+            content.buttons.extend(close);
+        }
         self.panel.show(&content, anchor);
     }
 
@@ -122,10 +179,11 @@ impl Coach {
         if !self.panel.is_visible() || digit == 0 {
             return None;
         }
-        if self.shown.as_ref()?.streaming {
+        let shown = self.viewed()?;
+        if shown.streaming {
             return None;
         }
-        match self.shown.as_ref()?.output.as_ref()? {
+        match shown.output.as_ref()? {
             CoachOutput::Compose(composed)
                 if digit <= composed.options.len().min(super::action::MAX_OPTIONS) =>
             {
@@ -145,8 +203,34 @@ impl Coach {
         }
     }
 
+    /// 有没有别的解读可翻。
+    pub fn can_navigate(&self) -> bool {
+        self.position().1 > 1
+    }
+
     pub fn is_showing(&self) -> bool {
         self.shown.is_some() && self.panel.is_visible()
+    }
+}
+
+/// 脚注开头的标签：哪种解读、第几条、原文开头，几个窗口来回看时靠它分清。
+fn label_for(shown: &Shown, current: usize, total: usize) -> String {
+    let kind = match shown.mode {
+        Mode::Decode => "解码",
+        Mode::Compose => "组句",
+        Mode::Edit => "改稿",
+        Mode::Screen => "屏幕",
+    };
+    let snippet: String = shown.source.trim().chars().take(16).collect();
+    let ellipsis = if shown.source.trim().chars().count() > 16 {
+        "…"
+    } else {
+        ""
+    };
+    if total > 1 {
+        format!("【{kind}】{}/{total} “{snippet}{ellipsis}”", current + 1)
+    } else {
+        format!("【{kind}】“{snippet}{ellipsis}”")
     }
 }
 

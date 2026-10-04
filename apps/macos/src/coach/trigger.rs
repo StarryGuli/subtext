@@ -6,9 +6,9 @@ use objc2::rc::Retained;
 use objc2::runtime::AnyObject;
 use objc2_app_kit::NSWorkspace;
 use objc2_foundation::NSRect;
-use subtext_coach::{CoachContext, CoachRequest, Mode, Trigger};
+use subtext_coach::{CoachContext, CoachRequest, Mode, SharedCache, Trigger};
 
-use super::{Coach, ReplaceTarget, Shown};
+use super::{Coach, ReplaceTarget, Shown, clipboard};
 use crate::imk::secure_input;
 
 /// 上屏后停顿多久，才把攒下的中文当作写完的一句。
@@ -359,5 +359,66 @@ impl Coach {
             note: None,
         });
         true
+    }
+}
+
+impl Coach {
+    /// 用户要求「现在就解析剪贴板里的内容」：不管开没开自动、有没有解析过，英文解码、中文给出英文，
+    /// 并忽略缓存重新来一遍。返回要告诉用户的话（成功是 `None`）。
+    pub fn submit_clipboard_now(&mut self) -> Option<String> {
+        let Some(service) = &self.service else {
+            return Some("双语教练没开".to_owned());
+        };
+        let Some(text) = clipboard::read_now() else {
+            return Some("剪贴板里没有可解析的文字".to_owned());
+        };
+        let text = text.trim().to_owned();
+        let (trigger, mode) = [Trigger::ClipboardCopy, Trigger::ChineseCommitted]
+            .into_iter()
+            .find_map(|trigger| trigger.mode_for(&text).map(|mode| (trigger, mode)))
+            .unzip();
+        let (Some(trigger), Some(mode)) = (trigger, mode) else {
+            return Some("剪贴板里的内容不是英文也不是中文句子".to_owned());
+        };
+        let app = frontmost_application();
+        if service
+            .gate()
+            .check(trigger, &text, app.as_deref(), false)
+            .is_err()
+        {
+            return Some("这段文字不适合交给教练（太长、疑似密钥或链接代码）".to_owned());
+        }
+        self.next_id += 1;
+        let id = self.next_id;
+        let request = CoachRequest {
+            id,
+            mode,
+            text: text.clone(),
+            context: CoachContext {
+                app,
+                before: String::new(),
+                peer_message: (mode == Mode::Compose)
+                    .then(|| self.memory.peer_message().map(str::to_owned))
+                    .flatten(),
+            },
+        };
+        self.cache.forget(SharedCache::key(&request));
+        if service.submit(request).is_err() {
+            return Some("教练线程已停止".to_owned());
+        }
+        self.begin(Shown {
+            id,
+            mode,
+            source: text,
+            output: None,
+            failure: None,
+            revealed: false,
+            streaming: false,
+            anchor: NSRect::ZERO,
+            target: None,
+            shown_at: std::time::Instant::now(),
+            note: None,
+        });
+        None
     }
 }

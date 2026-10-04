@@ -52,7 +52,10 @@ use crate::preferences::{PreferencesWindow, Setting, SettingValue, UpdateStatus}
 
 pub use click::click_candidate;
 use cloud::{CloudTestMonitor, PredictMonitor};
-pub use coach::{coach_digit, coach_escape, coach_note_commit, coach_perform, coach_tick};
+pub use coach::{
+    coach_clipboard_now, coach_digit, coach_escape, coach_navigate, coach_note_commit,
+    coach_perform, coach_tick,
+};
 use config::{ConfigWatch, TextReplacement};
 pub use dictionaries::DictionaryInfo;
 pub use init::init;
@@ -143,6 +146,9 @@ pub struct Host {
 
     /// 选中文字交给双语教练的快捷键（配置 `[shortcut] coach_selection`）。
     pub coach_keys: KeyCombo,
+
+    /// 现在就解析剪贴板的快捷键（配置 `[shortcut] coach_clipboard`）。
+    pub coach_clipboard_keys: KeyCombo,
 
     /// 翻译选中文字的快捷键（配置 `[shortcut] translate_selection`）。
     pub translate_keys: KeyCombo,

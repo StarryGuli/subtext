@@ -142,6 +142,19 @@ impl Active {
         }
     }
 
+    /// 换了后端设置或教练重新打开：换一个新的后端线程，在飞的请求作废（会重新翻译），已经翻好的译文留着。
+    pub(in crate::screen) fn rebuild_service(&mut self, config: &CoachConfig, cache: SharedCache) {
+        let pending: Vec<String> = self.in_flight.values().flatten().cloned().collect();
+        self.memory.clear_pending(&pending);
+        self.in_flight.clear();
+        self.warming.clear();
+        self.service = CoachService::start_queued(config, cache);
+        self.gate = Gate::new(config.max_chars, config.skip_apps.clone());
+        self.interval = Duration::from_millis(config.screen_interval_ms.max(500));
+        self.prewarm = config.screen_prewarm;
+        self.retry_after = Instant::now();
+    }
+
     /// 自测用：当前识别出的块与它们的译文。
     pub(in crate::screen) fn snapshot(&self) -> &[ScreenBlock] {
         &self.blocks

@@ -166,7 +166,26 @@ pub(crate) fn place_near(mtm: MainThreadMarker, size: NSSize, anchor: NSRect) ->
     };
     // 无论怎么算，最后都要落在这块屏幕里：出屏等于不显示
     let max_y = (top - size.height).max(screen.origin.y);
-    NSPoint::new(x, y.clamp(screen.origin.y, max_y))
+    snap_to_pixels(mtm, NSPoint::new(x, y.clamp(screen.origin.y, max_y)))
+}
+
+/// 把窗口原点对齐到它所在屏幕的物理像素：光标坐标常带小数，位图落在半个像素上会被重采样，看起来发虚（高分屏上尤其明显）。
+pub(crate) fn snap_to_pixels(mtm: MainThreadMarker, origin: NSPoint) -> NSPoint {
+    let scale = NSScreen::screens(mtm)
+        .iter()
+        .find(|screen| {
+            let frame = screen.frame();
+            origin.x >= frame.origin.x
+                && origin.x < frame.origin.x + frame.size.width
+                && origin.y >= frame.origin.y
+                && origin.y < frame.origin.y + frame.size.height
+        })
+        .map_or(1.0, |screen| screen.backingScaleFactor())
+        .max(1.0);
+    NSPoint::new(
+        (origin.x * scale).round() / scale,
+        (origin.y * scale).round() / scale,
+    )
 }
 
 /// 把一块 `size` 大小、左下角在 `origin` 的窗口夹进它所在的那块屏幕（可见区域）；点不在任何屏幕上就用主屏。
@@ -174,9 +193,12 @@ pub(crate) fn clamp_into_screen(mtm: MainThreadMarker, origin: NSPoint, size: NS
     let screen = screen_containing(mtm, origin).unwrap_or_else(|| main_screen_or_anywhere(mtm));
     let max_x = (screen.origin.x + screen.size.width - size.width).max(screen.origin.x);
     let max_y = (screen.origin.y + screen.size.height - size.height).max(screen.origin.y);
-    NSPoint::new(
-        origin.x.clamp(screen.origin.x, max_x),
-        origin.y.clamp(screen.origin.y, max_y),
+    snap_to_pixels(
+        mtm,
+        NSPoint::new(
+            origin.x.clamp(screen.origin.x, max_x),
+            origin.y.clamp(screen.origin.y, max_y),
+        ),
     )
 }
 

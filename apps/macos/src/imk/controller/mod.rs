@@ -256,6 +256,21 @@ impl SubtextInputController {
             host::screen_toggle();
             return true;
         }
+        // 解析剪贴板快捷键（不在组句中）：不管有没有解析过，现在就解析剪贴板里的内容
+        let clipboard_combo = host::with(|h| h.coach_clipboard_keys).unwrap_or_default();
+        if pressed == clipboard_combo.modifiers
+            && typed.as_deref().and_then(|t| t.chars().next()) == Some(clipboard_combo.key)
+            && !host::with(|h| !h.engine.composition().is_empty()).unwrap_or(false)
+        {
+            if !host::with(|h| h.coach.is_enabled()).unwrap_or(false) {
+                return false;
+            }
+            if let Some(message) = host::coach_clipboard_now() {
+                let anchor = client.caret_rect();
+                host::with(|h| h.show_notice(&message, anchor));
+            }
+            return true;
+        }
         // 教练快捷键（不在组句中）：读应用里的选区，交给双语教练
         let coach_combo = host::with(|h| h.coach_keys).unwrap_or_default();
         if pressed == coach_combo.modifiers
@@ -278,6 +293,13 @@ impl SubtextInputController {
                 option: true,
                 ..Modifiers::default()
             };
+            // ⌥[ / ⌥]：面板在显示、有多条解读时翻上一条 / 下一条
+            if pressed == option_only && (key == 33 || key == 30) {
+                let delta = if key == 33 { -1 } else { 1 };
+                if host::coach_navigate(delta) {
+                    return true;
+                }
+            }
             if pressed == option_only
                 && let Some(digit) = digit_key(key)
                 && host::coach_digit(digit)

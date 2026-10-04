@@ -18,6 +18,7 @@ mod target;
 mod trigger;
 mod typed;
 
+use std::collections::VecDeque;
 use std::time::Instant;
 
 use objc2::MainThreadMarker;
@@ -80,6 +81,9 @@ pub(super) struct ReplaceTarget {
     expected: String,
 }
 
+/// 面板上最多能翻回几条之前的解读。
+const PAST_LIMIT: usize = 10;
+
 /// 解读历史的文件名，在数据目录里。
 const HISTORY_FILE: &str = "coach-history.jsonl";
 
@@ -126,6 +130,12 @@ pub struct Coach {
 
     shown: Option<Shown>,
 
+    /// 之前看过的解读，旧的在前；面板上可以翻回去看。只收已经出完结果的，替换位置不留（应用里的文字早就变了）。
+    past: VecDeque<Shown>,
+
+    /// 面板正在看 `past` 里的第几条；`None` 是最新的那条。
+    view: Option<usize>,
+
     /// 系统当前选中的输入源是不是言外。轮询只在它为真时处理复制与上屏；
     /// 不跟 IMK 的激活回调走，那个随文本框焦点来回跳（复制网页上的文字时根本没有文本框）。
     source_ours: bool,
@@ -156,6 +166,8 @@ impl Coach {
             last_edit_text: None,
             next_id: 0,
             shown: None,
+            past: VecDeque::new(),
+            view: None,
             source_ours: false,
             source_checked: Instant::now(),
             test: None,
@@ -174,6 +186,7 @@ impl Coach {
             .then(|| CoachService::start_with_cache(config, self.cache.clone()));
         if !config.enabled {
             self.dismiss();
+            self.past.clear();
             self.typed.reset();
         }
         self.sync_monitor();
@@ -252,7 +265,23 @@ impl Coach {
     /// 关掉面板并忘掉正显示的内容。
     pub fn dismiss(&mut self) {
         self.panel.hide();
-        self.shown = None;
+        if let Some(shown) = self.shown.take() {
+            self.archive(shown);
+        }
+        self.view = None;
+    }
+
+    /// 把出完结果的一条收进「之前的解读」；没出完的（被新请求顶掉、失败）不收。
+    fn archive(&mut self, mut shown: Shown) {
+        if shown.output.is_none() || shown.failure.is_some() || shown.streaming {
+            return;
+        }
+        shown.target = None;
+        shown.note = None;
+        self.past.push_back(shown);
+        while self.past.len() > PAST_LIMIT {
+            self.past.pop_front();
+        }
     }
 
     fn sync_monitor(&mut self) {

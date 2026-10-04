@@ -74,6 +74,21 @@ impl ClipboardWatch {
     }
 }
 
+/// 现在剪贴板里的文本，不管是不是新复制的；带隐蔽标记或不是文本返回 `None`。
+pub fn read_now() -> Option<String> {
+    let pasteboard = NSPasteboard::generalPasteboard();
+    let concealed = pasteboard.types().is_some_and(|types| {
+        types
+            .iter()
+            .any(|kind| SECRET_TYPES.contains(&kind.to_string().as_str()))
+    });
+    if concealed {
+        return None;
+    }
+    // SAFETY: 只读 AppKit 导出的类型名常量
+    unsafe { pasteboard.stringForType(NSPasteboardTypeString) }.map(|text| text.to_string())
+}
+
 /// 把文本写进剪贴板，并返回写入后的 changeCount，供 [`ClipboardWatch`] 认出这是自己写的。
 pub fn write(text: &str) -> isize {
     let pasteboard = NSPasteboard::generalPasteboard();

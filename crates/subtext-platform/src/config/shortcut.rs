@@ -28,6 +28,9 @@ pub struct ShortcutConfig {
     /// 把应用里选中的文字交给双语教练：英文当草稿改稿，中文给出英文表达。
     pub coach_selection: KeyCombo,
 
+    /// 现在就解析剪贴板里的内容：英文解码、中文给出英文，忽略缓存重新来一遍，不管有没有解析过。
+    pub coach_clipboard: KeyCombo,
+
     /// 开始 / 停止屏幕阅读：没在读就读鼠标所在的窗口，在读就停。
     pub screen_reading: KeyCombo,
 
@@ -49,6 +52,7 @@ impl Default for ShortcutConfig {
             translation_second,
             translate_selection: KeyCombo::TRANSLATE_DEFAULT,
             coach_selection: KeyCombo::COACH_DEFAULT,
+            coach_clipboard: KeyCombo::CLIPBOARD_DEFAULT,
             screen_reading: KeyCombo::SCREEN_DEFAULT,
             delete_candidate: Modifiers::SHIFT,
         }

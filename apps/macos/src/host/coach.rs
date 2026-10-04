@@ -57,6 +57,12 @@ pub fn coach_perform(action: CoachAction) {
         CoachAction::Reveal => {
             with(|h| h.coach.reveal());
         }
+        CoachAction::Previous => {
+            with(|h| h.coach.navigate(-1));
+        }
+        CoachAction::Next => {
+            with(|h| h.coach.navigate(1));
+        }
         CoachAction::Copy(_) | CoachAction::CopyEdited | CoachAction::CopyPlain => {
             with(|h| h.coach.copy(action));
         }
@@ -83,6 +89,23 @@ pub fn coach_digit(digit: usize) -> bool {
     };
     coach_perform(action);
     true
+}
+
+/// ⌥[ / ⌥]：面板在显示、有多条解读时翻上一条 / 下一条。返回 `true` 表示按键已被用掉。
+pub fn coach_navigate(delta: isize) -> bool {
+    with(|h| {
+        let usable = h.coach.is_showing() && h.coach.can_navigate();
+        if usable {
+            h.coach.navigate(delta);
+        }
+        usable
+    })
+    .unwrap_or(false)
+}
+
+/// 快捷键「现在就解析剪贴板」。返回要提示用户的话（成功是 `None`）。
+pub fn coach_clipboard_now() -> Option<String> {
+    with(|h| h.coach.submit_clipboard_now()).flatten()
 }
 
 /// Esc：面板在显示时收起它。返回 `true` 表示按键已被用掉。

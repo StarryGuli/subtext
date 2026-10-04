@@ -116,6 +116,14 @@ impl SharedCache {
         inner.compact_if_needed();
     }
 
+    /// 忘掉某条：用户要求「现在重新解析」时先忘掉旧结果，请求才不会被缓存直接答掉。
+    /// 磁盘上的旧行留着，之后新结果写入会盖住它。
+    pub fn forget(&self, key: u64) {
+        let mut inner = self.lock();
+        inner.entries.remove(&key);
+        inner.order.retain(|existing| *existing != key);
+    }
+
     /// 清空内存与磁盘上的历史。
     pub fn clear(&self) {
         let mut inner = self.lock();
@@ -402,5 +410,18 @@ mod tests {
         let b = a.clone();
         a.insert(1, decoded("x"));
         assert!(b.get(1).is_some());
+    }
+
+    #[test]
+    fn forget_drops_one_entry() {
+        let cache = SharedCache::in_memory();
+        let first = SharedCache::key(&request(Mode::Decode, "hello there", None));
+        let second = SharedCache::key(&request(Mode::Decode, "other text", None));
+        cache.insert(first, decoded("a"));
+        cache.insert(second, decoded("b"));
+        cache.forget(first);
+        assert!(cache.get(first).is_none());
+        assert!(cache.get(second).is_some());
+        assert_eq!(cache.len(), 1);
     }
 }
