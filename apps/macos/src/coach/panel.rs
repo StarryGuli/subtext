@@ -2,6 +2,8 @@
 //!
 //! 与候选窗口同级，但可以点按钮、选中文字复制；点按钮不会让面板成为键窗口，应用里的光标不丢。
 
+use std::cell::Cell;
+
 use objc2::rc::Retained;
 use objc2::{MainThreadMarker, sel};
 use objc2_app_kit::{
@@ -60,6 +62,12 @@ pub struct CoachPanel {
     /// 面板宽度。教练面板 440，屏幕阅读的悬浮卡与状态条窄一些。
     width: f64,
 
+    /// 上次由我们摆放的原点；面板当前原点和它不同，就是用户拖动过。
+    placed: Cell<Option<NSPoint>>,
+
+    /// 用户拖过：之后重画（流式更新、新结果）只保持左上角不动，不再跟着光标重新摆。
+    pinned: Cell<bool>,
+
     mtm: MainThreadMarker,
 }
 
@@ -82,6 +90,8 @@ impl CoachPanel {
             frame_box,
             target: CoachTarget::new(mtm),
             width,
+            placed: Cell::new(None),
+            pinned: Cell::new(false),
             mtm,
         }
     }
@@ -124,14 +134,35 @@ impl CoachPanel {
     }
 
     pub fn hide(&self) {
+        self.pinned.set(false);
+        self.placed.set(None);
         self.panel.orderOut(None);
     }
 
     /// 摆内容并显示在 `anchor`（屏幕坐标的矩形）附近。
     pub fn show(&mut self, content: &PanelContent, anchor: NSRect) {
         let size = self.layout(content);
-        self.panel
-            .setFrame_display(NSRect::new(place_near(self.mtm, size, anchor), size), true);
+        let current = self.panel.frame();
+        let dragged = self.panel.isVisible()
+            && self.placed.get().is_some_and(|placed| {
+                (placed.x - current.origin.x).abs() > 0.5
+                    || (placed.y - current.origin.y).abs() > 0.5
+            });
+        if dragged {
+            self.pinned.set(true);
+        }
+        let origin = if self.pinned.get() && self.panel.isVisible() {
+            let top = current.origin.y + current.size.height;
+            clamp_into_screen(
+                self.mtm,
+                NSPoint::new(current.origin.x, top - size.height),
+                size,
+            )
+        } else {
+            place_near(self.mtm, size, anchor)
+        };
+        self.placed.set(Some(origin));
+        self.panel.setFrame_display(NSRect::new(origin, size), true);
         self.panel.orderFrontRegardless();
     }
 
@@ -174,7 +205,8 @@ impl CoachPanel {
 
         let mut y = height - PAD - text_height;
         let label = NSTextField::labelWithAttributedString(&text, self.mtm);
-        label.setSelectable(true);
+        // 不可选：可选文字会吃掉鼠标按下，面板就拖不动了；要复制走「复制」按钮
+        label.setSelectable(false);
         if scrolls {
             // 内容比上限高：放进滚动区，滚轮可滚，滚动条自动隐藏
             label.setFrame(NSRect::new(
@@ -260,6 +292,7 @@ fn build_panel(mtm: MainThreadMarker, content: &NSBox) -> Retained<NSPanel> {
     panel.setHasShadow(true);
     panel.setBecomesKeyOnlyIfNeeded(true);
     panel.setHidesOnDeactivate(false);
+    panel.setMovableByWindowBackground(true);
     panel.setCollectionBehavior(
         NSWindowCollectionBehavior::CanJoinAllSpaces
             | NSWindowCollectionBehavior::FullScreenAuxiliary

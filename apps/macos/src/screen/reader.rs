@@ -122,8 +122,9 @@ impl ScreenReader {
         }
         if !capture::has_permission() {
             capture::request_permission();
+            tracing::warn!("屏幕录制权限检查未通过（CGPreflightScreenCaptureAccess=false）");
             return Err(
-                "屏幕阅读需要「屏幕录制」权限：请在 系统设置 → 隐私与安全性 → 屏幕录制 里允许 Subtext，授权后重新开始（可能需要先注销再登录）"
+                "屏幕阅读需要「屏幕录制」权限：请在 系统设置 → 隐私与安全性 → 屏幕录制 里允许 Subtext，授权后重新开始。已经打开还提示：重新安装后旧授权会失效，把开关关掉再打开，或在终端运行 tccutil reset ScreenCapture app.subtext.inputmethod 后重新授权，再注销登录一次"
                     .to_owned(),
             );
         }

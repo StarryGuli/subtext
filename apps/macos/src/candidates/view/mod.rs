@@ -117,6 +117,12 @@ define_class!(
             }
         }
 
+        /// 窗口挪到另一块屏幕（Retina 与非 Retina 混用的双屏）时倍数会变：重画一次，位图按新倍数重出，否则副屏上是糊的。
+        #[unsafe(method(viewDidChangeBackingProperties))]
+        fn view_did_change_backing_properties(&self) {
+            self.setNeedsDisplay(true);
+        }
+
         #[unsafe(method(acceptsFirstMouse:))]
         fn accepts_first_mouse(&self, _event: Option<&NSEvent>) -> bool {
             true
