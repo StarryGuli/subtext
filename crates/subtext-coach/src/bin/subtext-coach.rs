@@ -232,6 +232,9 @@ fn print_output(output: &CoachOutput) {
                 println!("\n  ⚠ {trap}");
             }
         }
+        CoachOutput::Plain { text, .. } => {
+            println!("【原文】（模型没有按格式回复）\n{text}");
+        }
         CoachOutput::Screen(screened) => {
             println!("【屏幕阅读】");
             for item in &screened.items {

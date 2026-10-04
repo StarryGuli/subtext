@@ -435,6 +435,14 @@ impl Host {
             (Setting::CoachAutoEdit, SettingValue::Bool(on)) => {
                 self.settings.set_bool("coach", "auto_edit", on);
             }
+            (Setting::CoachHistory, SettingValue::Bool(on)) => {
+                self.settings.set_bool("coach", "history", on);
+            }
+            (Setting::CoachClearHistory, _) => {
+                self.coach.clear_history();
+                self.preferences.set_status("已清除解读历史");
+                return;
+            }
             (Setting::CoachBackend, SettingValue::Index(index)) => {
                 if let Some(kind) = subtext_coach::BackendKind::ALL.get(index) {
                     self.settings.set_value("coach", "backend", kind.key());

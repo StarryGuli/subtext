@@ -24,7 +24,9 @@ use objc2::MainThreadMarker;
 use objc2::rc::Retained;
 use objc2::runtime::AnyObject;
 use objc2_foundation::{NSRange, NSRect};
-use subtext_coach::{CoachConfig, CoachOutput, CoachService, ConversationMemory, Mode};
+use subtext_coach::{
+    CoachConfig, CoachOutput, CoachService, ConversationMemory, Mode, SharedCache,
+};
 
 pub use action::CoachAction;
 pub use doc::Doc;
@@ -78,12 +80,21 @@ pub(super) struct ReplaceTarget {
     expected: String,
 }
 
+/// 解读历史的文件名，在数据目录里。
+const HISTORY_FILE: &str = "coach-history.jsonl";
+
 pub struct Coach {
     /// 当前套用的配置。
     config: CoachConfig,
 
     /// 开着才有。配置变了整个换掉，旧线程自己退出。
     service: Option<CoachService>,
+
+    /// 解读历史：解码、屏幕阅读预解码共用；换后端、开关教练重建服务时它不丢，`history` 开着时还落盘。
+    cache: SharedCache,
+
+    /// 现在的 `cache` 是不是按「落盘」建的。
+    history_on: bool,
 
     panel: CoachPanel,
 
@@ -131,6 +142,8 @@ impl Coach {
         Self {
             config: CoachConfig::default(),
             service: None,
+            cache: SharedCache::in_memory(),
+            history_on: false,
             panel: CoachPanel::new(mtm),
             monitor: CoachMonitor::new(mtm),
             clipboard: ClipboardWatch::new(),
@@ -151,11 +164,14 @@ impl Coach {
 
     /// 套用配置：开关或后端设置变了才重建服务（重建会起新线程、丢缓存）。
     pub fn apply(&mut self, config: &CoachConfig) {
+        self.sync_cache(config.history);
         if *config == self.config && (self.service.is_some() == config.enabled) {
             return;
         }
         self.config = config.clone();
-        self.service = config.enabled.then(|| CoachService::start(config));
+        self.service = config
+            .enabled
+            .then(|| CoachService::start_with_cache(config, self.cache.clone()));
         if !config.enabled {
             self.dismiss();
             self.typed.reset();
@@ -166,6 +182,33 @@ impl Coach {
             backend = config.backend.key(),
             "双语教练配置已套用"
         );
+    }
+
+    /// 解读历史的共享缓存：屏幕阅读也用它，复制同一段文字时才会命中预解码的结果。
+    pub fn cache(&self) -> SharedCache {
+        self.cache.clone()
+    }
+
+    /// 清除解读历史（内存与磁盘）。
+    pub fn clear_history(&self) {
+        self.cache.clear();
+    }
+
+    /// `history` 开关变了就换一份缓存：开着落盘到数据目录，关着只放内存并删掉磁盘上的文件。
+    fn sync_cache(&mut self, history: bool) {
+        if history == self.history_on {
+            return;
+        }
+        self.history_on = history;
+        let path = crate::app::paths::user_data_dir().map(|dir| dir.join(HISTORY_FILE));
+        self.cache = match (history, path) {
+            (true, Some(path)) => SharedCache::persistent(path),
+            (false, Some(path)) => {
+                let _ = std::fs::remove_file(path);
+                SharedCache::in_memory()
+            }
+            (_, None) => SharedCache::in_memory(),
+        };
     }
 
     /// 某个文本框把输入法激活了：此刻当前输入源一定是言外。此前复制的内容不追溯。

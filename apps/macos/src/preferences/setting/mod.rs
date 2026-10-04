@@ -116,6 +116,12 @@ pub enum Setting {
     /// `[coach] auto_edit`。
     CoachAutoEdit,
 
+    /// `[coach] history`。
+    CoachHistory,
+
+    /// 清空解读历史（按钮）。
+    CoachClearHistory,
+
     /// `[coach] backend`，弹出菜单，值是 `BackendKind::ALL` 的下标。
     CoachBackend,
 
@@ -276,6 +282,8 @@ impl Setting {
             Self::CoachAutoCompose => 62,
             Self::CoachBackend => 63,
             Self::CoachAutoEdit => 69,
+            Self::CoachHistory => 70,
+            Self::CoachClearHistory => 71,
             Self::CoachModel => 64,
             Self::CoachPath => 65,
             Self::CoachBaseUrl => 66,
@@ -353,6 +361,8 @@ impl Setting {
             62 => Self::CoachAutoCompose,
             63 => Self::CoachBackend,
             69 => Self::CoachAutoEdit,
+            70 => Self::CoachHistory,
+            71 => Self::CoachClearHistory,
             64 => Self::CoachModel,
             65 => Self::CoachPath,
             66 => Self::CoachBaseUrl,
@@ -407,6 +417,8 @@ mod tests {
             Setting::CoachAutoDecode,
             Setting::CoachAutoCompose,
             Setting::CoachAutoEdit,
+            Setting::CoachHistory,
+            Setting::CoachClearHistory,
             Setting::CoachBackend,
             Setting::CoachModel,
             Setting::CoachPath,

@@ -88,6 +88,13 @@ pub struct CoachConfig {
     /// 屏幕阅读两次截屏之间隔多久（毫秒）。OCR 本身要几百毫秒，太密了耗电。
     pub screen_interval_ms: u64,
 
+    /// 把解读历史存在本机（`coach-history.jsonl`，只有你自己能读）：重启输入法、切换后端之后，
+    /// 重新复制同一段文字不用再解码一遍。关掉就只放内存。
+    pub history: bool,
+
+    /// 屏幕阅读时，对最新的这么多条英文消息提前做完整解码（语气、潜台词、要点），鼠标停久一点就直接弹出；0 为不预解码。
+    pub screen_prewarm: usize,
+
     /// 打完一句英文就自动校对：中文意思、改错、更地道的说法。
     pub auto_edit: bool,
 
@@ -144,6 +151,8 @@ impl Default for CoachConfig {
             auto_decode: true,
             auto_compose: true,
             auto_edit: true,
+            history: true,
+            screen_prewarm: 3,
             screen_interval_ms: 1500,
             claude_path: String::new(),
             claude_model: "haiku".to_owned(),

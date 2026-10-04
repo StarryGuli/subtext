@@ -25,4 +25,6 @@ pub use output::{
     Fix, ScreenItem, Screened, Tone,
 };
 pub use request::{CoachContext, CoachRequest};
-pub use service::{CoachEvent, CoachService, ConnectionReport, friendly, test_connection};
+pub use service::{
+    CoachEvent, CoachService, ConnectionReport, SharedCache, friendly, test_connection,
+};

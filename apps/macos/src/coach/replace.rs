@@ -101,6 +101,9 @@ impl Coach {
             (CoachAction::CopyEdited, CoachOutput::Edit(edited)) => {
                 Some(edited.corrected.trim().to_owned())
             }
+            (CoachAction::CopyPlain, CoachOutput::Plain { text, .. }) => {
+                Some(text.trim().to_owned())
+            }
             _ => None,
         };
         let Some(text) = text.filter(|text| !text.is_empty()) else {

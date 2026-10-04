@@ -355,6 +355,10 @@ backend = "claude-cli"
 auto_decode = true
 auto_compose = true
 auto_edit = true
+# 解读历史存在本机（coach-history.jsonl）：再次遇到同一段文字直接显示；关掉则只在本次运行里记住
+history = true
+# 屏幕阅读时，空闲时替最新几条英文提前做完整解码（0 关闭）；会多发请求，API 后端按量计费时可调低
+screen_prewarm = 3
 # 本机命令行后端：留空则自动查找；模型缺省用快的 haiku
 claude_path = ""
 claude_model = "haiku"

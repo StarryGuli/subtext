@@ -253,6 +253,14 @@ impl Doc {
         doc
     }
 
+    /// 模型没按格式回、直接说了一段话：原文显示，选得中、复制得了。
+    pub fn plain(title: &str, text: &str) -> Self {
+        let mut doc = Self::default();
+        doc.push(false, vec![(Style::Title, title.to_owned())]);
+        doc.push(false, vec![(Style::Body, text.trim().to_owned())]);
+        doc
+    }
+
     /// 屏幕阅读悬浮卡：译文最醒目，下面一行弱一档的提示。
     pub fn screen_card(translation: &str, note: &str) -> Self {
         let mut doc = Self::default();

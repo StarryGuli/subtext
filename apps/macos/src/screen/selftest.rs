@@ -8,10 +8,10 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
-use subtext_coach::CoachConfig;
 use subtext_coach::screen::Rect;
+use subtext_coach::{CoachConfig, SharedCache};
 
-use super::reader::Active;
+use super::active::Active;
 use super::{ocr, target::Target};
 
 /// 假 claude：读 stdin，对每个「N. 」开头的编号行回一条 `译N`，按 stream-json 的格式。
@@ -55,13 +55,13 @@ fn execute(image: &std::path::Path) -> i32 {
     let target = Target::Region {
         bounds: Rect::new(0.0, 0.0, 440.0, 560.0),
     };
-    let mut active = Active::new(target, helper, &config);
+    let mut active = Active::new(target, helper, &config, SharedCache::in_memory());
     active.set_fake_image(image.to_path_buf());
 
     let started = Instant::now();
     let mut done = false;
     while started.elapsed() < Duration::from_secs(25) {
-        active.drive_once();
+        active.drive();
         let blocks = active.snapshot();
         let english = blocks
             .iter()
@@ -78,7 +78,11 @@ fn execute(image: &std::path::Path) -> i32 {
         std::thread::sleep(Duration::from_millis(100));
     }
     let _ = std::fs::remove_file(&script);
-    println!("识别出 {} 块：", active.snapshot().len());
+    println!(
+        "识别出 {} 块，预解码 {} 块：",
+        active.snapshot().len(),
+        active.decoded_count()
+    );
     for block in active.snapshot() {
         let text: String = block.text.chars().take(48).collect();
         match &block.analysis {

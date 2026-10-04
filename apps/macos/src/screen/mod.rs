@@ -2,7 +2,9 @@
 //!
 //! 截屏、OCR、窗口列表、悬浮卡在这里（平台相关）；块合并、去重记忆、提示词、后端在 `subtext-coach`。
 
+mod active;
 pub mod capture;
+mod desktop;
 pub mod geometry;
 mod monitor;
 pub mod ocr;

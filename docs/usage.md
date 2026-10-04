@@ -114,6 +114,8 @@ Subtext 的拼音输入法部分沿用青简的内核：整句输入、简拼、
 | `timeout_ms` | `90000` | 命令行后端要启动进程，给得比较宽 |
 | `max_chars` | `1500` | 超过不发 |
 | `screen_interval_ms` | `1500` | 屏幕阅读两次截屏的间隔（毫秒），最低 500 |
+| `screen_prewarm` | `3` | 屏幕阅读空闲时替最新几条英文提前做完整解码；0 关闭 |
+| `history` | `true` | 解读历史存在本机 `coach-history.jsonl`，再遇到同一段文字直接显示；关掉则只在本次运行里记住 |
 | `skip_apps` | 1Password、Bitwarden、钥匙串等 | bundle identifier 列表 |
 | `profile` | 通用描述 | 学习者画像，写进给模型的说明 |
 | `[shortcut] coach_selection` | `control+option+e` | 选中文字交给教练 |

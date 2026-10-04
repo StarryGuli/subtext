@@ -24,6 +24,8 @@ pub struct CoachPage {
 
     auto_edit: Retained<NSButton>,
 
+    history: Retained<NSButton>,
+
     backend: Retained<NSPopUpButton>,
 
     /// 模型：随后端变，显示当前后端那一项。
@@ -65,6 +67,16 @@ impl CoachPage {
             layout,
             mtm,
             "开启后，复制的英文和上屏的中文会发给下面选的后端。密码框、密码管理器、疑似密钥或长文本不会发送。出结果后按 ⌥1 / ⌥2 / ⌥3 用对应的英文替换刚打的文字，Esc 关闭。打完英文停一下，会给出中文意思（核对有没有打错、听错）、改错和更地道的说法。",
+        );
+        let history = checkbox(mtm, "保存解读历史", Setting::CoachHistory, target);
+        row_checkbox(layout, &history);
+        let clear = button(mtm, "清除历史", Setting::CoachClearHistory, target);
+        layout.place(&clear, PAGE_PADDING, 100.0, ROW_HEIGHT + 4.0);
+        layout.next_row(ROW_HEIGHT + 4.0);
+        note(
+            layout,
+            mtm,
+            "解读过的英文与结果存在本机（配置目录的 coach-history.jsonl，仅自己可读），再次复制同一段文字或屏幕阅读遇到同一句时直接显示，不重新请求。关掉后只在本次运行里记住，已存的文件会删除。",
         );
         let backends: Vec<String> = BackendKind::ALL
             .iter()
@@ -109,6 +121,7 @@ impl CoachPage {
             auto_decode,
             auto_compose,
             auto_edit,
+            history,
             backend,
             model,
             path,
@@ -125,6 +138,7 @@ impl CoachPage {
         set_checked(&self.auto_decode, coach.auto_decode);
         set_checked(&self.auto_compose, coach.auto_compose);
         set_checked(&self.auto_edit, coach.auto_edit);
+        set_checked(&self.history, coach.history);
         for control in [&self.auto_decode, &self.auto_compose, &self.auto_edit] {
             control.setEnabled(coach.enabled);
         }

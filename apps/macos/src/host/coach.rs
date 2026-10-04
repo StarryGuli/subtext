@@ -57,7 +57,7 @@ pub fn coach_perform(action: CoachAction) {
         CoachAction::Reveal => {
             with(|h| h.coach.reveal());
         }
-        CoachAction::Copy(_) | CoachAction::CopyEdited => {
+        CoachAction::Copy(_) | CoachAction::CopyEdited | CoachAction::CopyPlain => {
             with(|h| h.coach.copy(action));
         }
         CoachAction::Replace(_)

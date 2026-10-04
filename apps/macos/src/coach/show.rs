@@ -189,6 +189,7 @@ fn content_for(shown: &Shown, backend: &str, slow: bool) -> PanelContent {
             CoachOutput::Decode(decoded) => Doc::decode(decoded, false),
             CoachOutput::Compose(composed) => Doc::compose(composed),
             CoachOutput::Edit(edited) => Doc::edit(edited),
+            CoachOutput::Plain { text, .. } => Doc::plain(title, text),
             CoachOutput::Screen(_) => Doc::default(),
         };
         return PanelContent {
@@ -264,6 +265,12 @@ fn content_for(shown: &Shown, backend: &str, slow: bool) -> PanelContent {
                 footer,
             }
         }
+        // 模型没按格式回：原文显示，能复制；点一下「复制」不会替换任何东西
+        CoachOutput::Plain { text, .. } => PanelContent {
+            doc: Doc::plain(title, text),
+            buttons: vec![("复制".to_owned(), CoachAction::CopyPlain), close],
+            footer: format!("{backend} · 模型没有按格式回复，直接显示原文"),
+        },
         // 屏幕阅读有自己的请求与悬浮卡，不走这个面板
         CoachOutput::Screen(_) => PanelContent {
             doc: Doc::default(),

@@ -3,7 +3,7 @@
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::Instant;
 
-use super::cache::ResultCache;
+use super::cache::SharedCache;
 use super::event::CoachEvent;
 use crate::backend::Backend;
 use crate::{CoachError, CoachOutput, CoachRequest, prompt};
@@ -20,7 +20,11 @@ pub struct Worker {
 
     profile: String,
 
-    cache: ResultCache,
+    cache: SharedCache,
+
+    /// 积压的请求只留最新一个（输入时的解码 / 组句：用户已经往下写了，前面的答案没人看）。
+    /// 屏幕阅读要的是每一条都有结果，不能丢。
+    latest_only: bool,
 }
 
 impl Worker {
@@ -29,20 +33,27 @@ impl Worker {
         events: Sender<CoachEvent>,
         backend: Box<dyn Backend>,
         profile: String,
+        cache: SharedCache,
+        latest_only: bool,
     ) -> Self {
         Self {
             requests,
             events,
             backend,
             profile,
-            cache: ResultCache::default(),
+            cache,
+            latest_only,
         }
     }
 
     /// 阻塞运行，发送端全部关闭后返回。
     pub fn run(mut self) {
         while let Ok(first) = self.requests.recv() {
-            let request = self.latest(first);
+            let request = if self.latest_only {
+                self.latest(first)
+            } else {
+                first
+            };
             if !self.handle(&request) {
                 return;
             }
@@ -59,12 +70,12 @@ impl Worker {
 
     /// 处理一个请求；界面那头没了返回 `false`。
     fn handle(&mut self, request: &CoachRequest) -> bool {
-        let key = ResultCache::key(request);
+        let key = SharedCache::key(request);
         if let Some(output) = self.cache.get(key) {
             tracing::debug!(id = request.id, "教练命中缓存");
             return self.send(CoachEvent::Finished {
                 id: request.id,
-                output: output.clone(),
+                output,
                 cached: true,
             });
         }
@@ -84,7 +95,10 @@ impl Worker {
                     backend = %self.backend.describe(),
                     "教练完成"
                 );
-                self.cache.insert(key, output.clone());
+                // 纯文本兜底的不进缓存：下次说不定就按格式回了
+                if !matches!(output, CoachOutput::Plain { .. }) {
+                    self.cache.insert(key, output.clone());
+                }
                 self.send(CoachEvent::Finished {
                     id: request.id,
                     output,

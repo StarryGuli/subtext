@@ -41,7 +41,7 @@ impl Coach {
     pub fn restart(&mut self, config: &CoachConfig) {
         self.service = config
             .enabled
-            .then(|| subtext_coach::CoachService::start(config));
+            .then(|| subtext_coach::CoachService::start_with_cache(config, self.cache.clone()));
         self.sync_monitor();
     }
 }

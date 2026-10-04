@@ -113,6 +113,11 @@ fn content(output: &CoachOutput, reveal: bool, replace: bool) -> PanelContent {
             buttons: vec![("复制".to_owned(), CoachAction::CopyEdited), close],
             footer,
         },
+        CoachOutput::Plain { mode, text } => PanelContent {
+            doc: Doc::plain(&format!("{mode:?}"), text),
+            buttons: vec![("复制".to_owned(), CoachAction::CopyPlain), close],
+            footer,
+        },
         CoachOutput::Screen(screened) => PanelContent {
             doc: screened.items.first().map_or_else(Doc::default, |item| {
                 Doc::screen_card(&item.translation, &item.note)
