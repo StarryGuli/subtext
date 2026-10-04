@@ -111,8 +111,12 @@ pub struct Coach {
 
     shown: Option<Shown>,
 
-    /// 输入法正处于激活状态（轮询只在激活期间跑）。
-    active: bool,
+    /// 系统当前选中的输入源是不是言外。轮询只在它为真时处理复制与上屏；
+    /// 不跟 IMK 的激活回调走，那个随文本框焦点来回跳（复制网页上的文字时根本没有文本框）。
+    source_ours: bool,
+
+    /// 上次问系统当前输入源的时间，一秒问一次。
+    source_checked: Instant,
 
     /// 进行中的「测试连接」，结果是给设置页底部状态行的一句话。
     test: Option<std::sync::mpsc::Receiver<String>>,
@@ -135,7 +139,8 @@ impl Coach {
             last_edit_text: None,
             next_id: 0,
             shown: None,
-            active: false,
+            source_ours: false,
+            source_checked: Instant::now(),
             test: None,
         }
     }
@@ -159,19 +164,37 @@ impl Coach {
         );
     }
 
-    /// 输入法被切到前台：开始盯剪贴板与上屏停顿。此前复制的内容不追溯。
+    /// 某个文本框把输入法激活了：此刻当前输入源一定是言外。此前复制的内容不追溯。
     pub fn activate(&mut self) {
-        self.active = true;
-        self.clipboard.reset();
-        self.sync_monitor();
+        if !self.source_ours {
+            self.clipboard.reset();
+        }
+        self.source_ours = true;
+        self.source_checked = Instant::now();
     }
 
-    /// 输入法被切走：停止轮询，收起面板，丢掉没说完的一句。
+    /// 某个文本框失焦：只丢掉没说完的那一句。面板与轮询不动，焦点来回跳不该让正在读的结果消失。
     pub fn deactivate(&mut self) {
-        self.active = false;
         self.typed.reset();
-        self.dismiss();
-        self.sync_monitor();
+        self.english_dirty = None;
+    }
+
+    /// 问系统当前输入源是不是言外（一秒一次）。切走就收起面板、丢掉没写完的内容，切回来从当前剪贴板重新算起。
+    pub(super) fn refresh_source(&mut self) {
+        if self.source_checked.elapsed() < std::time::Duration::from_secs(1) {
+            return;
+        }
+        self.source_checked = Instant::now();
+        let ours = crate::app::input_source::current_is_ours();
+        if ours && !self.source_ours {
+            self.clipboard.reset();
+        }
+        if !ours && self.source_ours {
+            self.typed.reset();
+            self.english_dirty = None;
+            self.dismiss();
+        }
+        self.source_ours = ours;
     }
 
     /// 教练是否开着。
@@ -186,7 +209,8 @@ impl Coach {
     }
 
     fn sync_monitor(&mut self) {
-        if self.active && (self.service.is_some() || self.test.is_some()) {
+        // 轮询在教练开着（或正在测试连接）时一直跑；是不是该处理由每次轮询里问系统当前输入源决定
+        if self.service.is_some() || self.test.is_some() {
             self.monitor.start();
         } else {
             self.monitor.stop();

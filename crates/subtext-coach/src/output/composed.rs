@@ -54,9 +54,11 @@ impl Composed {
     }
 
     pub fn is_empty(&self) -> bool {
+        // 输入无法处理时模型只写 context（原因）、options 为空：那也是一条有内容的回复，面板照样显示
         self.options
             .iter()
             .all(|option| option.text.trim().is_empty())
+            && self.context.trim().is_empty()
     }
 }
 

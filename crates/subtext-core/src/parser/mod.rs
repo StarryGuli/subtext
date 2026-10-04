@@ -15,16 +15,37 @@ pub use error::ParseError;
 pub use segmentation::{Segmentation, Syllable};
 pub use syllable::{INITIALS, MAX_SYLLABLE_LEN, SYLLABLES};
 
+use std::cell::Cell;
 use syllable::initial_lengths;
-use trie::SYLLABLE_TRIE;
+
+use trie::{FUZZY_SYLLABLE_TRIE, SYLLABLE_TRIE, SyllableTrie};
+
+thread_local! {
+    /// 当前线程的引擎是否开着 s / z / c 相关的模糊音：开着就把 sua / suang 这类平舌写法也当作音节。
+    /// 引擎与它的查询都在同一个线程（输入法壳是主线程），所以用线程内标志而不是改每个调用点的签名。
+    static FUZZY_SPELLINGS: Cell<bool> = const { Cell::new(false) };
+}
+
+/// 由 `Engine::set_fuzzy` 设置：开着 z/zh、c/ch、s/sh 任一条时为真。
+pub fn set_fuzzy_spellings(on: bool) {
+    FUZZY_SPELLINGS.with(|flag| flag.set(on));
+}
+
+fn active_trie() -> &'static SyllableTrie {
+    if FUZZY_SPELLINGS.with(Cell::get) {
+        &FUZZY_SYLLABLE_TRIE
+    } else {
+        &SYLLABLE_TRIE
+    }
+}
 
 pub fn is_syllable(s: &str) -> bool {
-    SYLLABLE_TRIE.contains(s)
+    active_trie().contains(s)
 }
 
 /// `s` 是否为某个合法音节的**真**前缀（不包含它自己就是完整音节的情况）。
 pub fn is_syllable_prefix(s: &str) -> bool {
-    SYLLABLE_TRIE.is_proper_prefix(s)
+    active_trie().is_proper_prefix(s)
 }
 
 /// `text` 能否切成每个音节都完整的拼音。只回答是否，不产生切分、不分配音节：
@@ -40,7 +61,7 @@ pub fn is_fully_segmentable(text: &str) -> bool {
         if !reachable[start] {
             continue;
         }
-        for len in SYLLABLE_TRIE.matches(&text[start..]).lengths() {
+        for len in active_trie().matches(&text[start..]).lengths() {
             reachable[start + len] = true;
         }
     }
@@ -127,7 +148,7 @@ fn segment_chunk(chunk: &str, allow_partial: bool) -> Vec<Segmentation> {
         }
         prune(&mut best[start]);
         let rest = &chunk[start..];
-        let matches = SYLLABLE_TRIE.matches(rest);
+        let matches = active_trie().matches(rest);
         // (长度, 是否完整音节)
         let mut tokens: Vec<(usize, bool)> = matches.lengths().map(|len| (len, true)).collect();
         for len in initial_lengths(rest) {
@@ -168,6 +189,21 @@ fn segment_chunk(chunk: &str, allow_partial: bool) -> Vec<Segmentation> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn flat_tongue_spellings_are_syllables_only_while_fuzzy_is_on() {
+        set_fuzzy_spellings(false);
+        assert!(!is_syllable("suang"));
+        let off = segment("suangyu").unwrap();
+        assert_ne!(off[0].syllables[0].text, "suang");
+
+        set_fuzzy_spellings(true);
+        assert!(is_syllable("suang") && is_syllable("zua") && is_syllable("cuai"));
+        let on = segment("suangyu").unwrap();
+        assert_eq!(on[0].syllables[0].text, "suang");
+        assert_eq!(on[0].syllables[1].text, "yu");
+        set_fuzzy_spellings(false);
+    }
+
     use super::*;
 
     fn joined(input: &str) -> Vec<String> {

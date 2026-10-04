@@ -39,6 +39,9 @@ pub struct BitmapPainter {
     /// 最近一帧的尺寸（点）。
     size: NSSize,
 
+    /// 最近一帧各候选格的位置（点，原点在内容区左上角），鼠标点击按它找是哪一行。
+    hits: Vec<subtext_render::Hit>,
+
     /// 用户选的候选窗字体（空为系统字体），重建字体库时要用。
     font: String,
 
@@ -84,6 +87,7 @@ impl BitmapPainter {
             tracing::warn!("没找到完整的 PingFang，汉字先用兜底字体，稍后会重新查找");
         }
         Some(Self {
+            hits: Vec::new(),
             font: font.to_owned(),
             fonts_complete,
             last_font_check: std::time::Instant::now(),
@@ -115,6 +119,19 @@ impl BitmapPainter {
         self.scale = scale;
         self.repaint();
         self.size
+    }
+
+    /// 点击位置（点，原点在内容区左上角）落在哪个候选格里；没点在候选上返回 `None`。
+    pub fn row_at(&self, x: f64, y: f64) -> Option<usize> {
+        self.hits
+            .iter()
+            .find(|hit| {
+                x >= f64::from(hit.x)
+                    && x < f64::from(hit.x + hit.width)
+                    && y >= f64::from(hit.y)
+                    && y < f64::from(hit.y + hit.height)
+            })
+            .map(|hit| hit.row)
     }
 
     /// 外观或倍数变了就重画一遍再贴。
@@ -188,6 +205,7 @@ impl BitmapPainter {
             };
         let (width, height) = rendered.content_size_points();
         self.size = NSSize::new(f64::from(width), f64::from(height));
+        self.hits.clone_from(&rendered.hits);
         self.image = to_image(&rendered.pixmap, self.size);
         tracing::debug!(elapsed = ?started.elapsed(), width, height, "候选窗位图已画");
     }

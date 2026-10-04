@@ -1,9 +1,19 @@
 use std::sync::LazyLock;
 
-use super::syllable::{MAX_SYLLABLE_LEN, SYLLABLES};
+use super::syllable::{FUZZY_ONLY_SYLLABLES, MAX_SYLLABLE_LEN, SYLLABLES};
 
 /// 全局音节 trie，首次使用时从 [`SYLLABLES`] 构建。
 pub static SYLLABLE_TRIE: LazyLock<SyllableTrie> = LazyLock::new(|| SyllableTrie::build(SYLLABLES));
+
+/// 模糊音开着时用的音节 trie：在 [`SYLLABLE_TRIE`] 之上多收 [`FUZZY_ONLY_SYLLABLES`]。
+pub static FUZZY_SYLLABLE_TRIE: LazyLock<SyllableTrie> = LazyLock::new(|| {
+    let all: Vec<&str> = SYLLABLES
+        .iter()
+        .chain(FUZZY_ONLY_SYLLABLES)
+        .copied()
+        .collect();
+    SyllableTrie::build(&all)
+});
 
 /// trie 节点。子节点按字母 a–z 索引，0 表示无子节点（根节点永远是 0 号，不会被引用为子节点）。
 #[derive(Debug, Clone)]

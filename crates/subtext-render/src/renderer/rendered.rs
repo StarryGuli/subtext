@@ -2,6 +2,20 @@
 
 use tiny_skia::Pixmap;
 
+/// 一个可点击的候选格：第几行（对应 `Frame::rows` 的下标）与它在内容区里的矩形，单位是点，原点在内容区左上角。
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Hit {
+    pub row: usize,
+
+    pub x: f32,
+
+    pub y: f32,
+
+    pub width: f32,
+
+    pub height: f32,
+}
+
 pub struct Rendered {
     /// 预乘 RGBA 位图，含阴影边。
     pub pixmap: Pixmap,
@@ -18,6 +32,9 @@ pub struct Rendered {
 
     /// 渲染用的倍数，壳把像素换回点用。
     pub scale: f32,
+
+    /// 每个候选格的位置，壳按鼠标点击的位置找是哪一格。
+    pub hits: Vec<Hit>,
 }
 
 impl Rendered {

@@ -91,6 +91,13 @@ impl Renderer {
                 let style = m.annotation_style(m.tone_color(*tone));
                 x += self.draw_text(canvas, segment, &style, x, top + small_offset);
             }
+            self.hits.push((
+                i,
+                left + m.padding() / 2.0,
+                y,
+                content_width - m.padding(),
+                columns.row_height,
+            ));
             y += columns.row_height;
         }
         if let Some(footer) = frame.footer.as_deref() {

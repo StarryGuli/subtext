@@ -6,7 +6,7 @@ use objc2::rc::Retained;
 use objc2::{MainThreadMarker, sel};
 use objc2_app_kit::{
     NSAppearanceCustomization, NSAttributedStringNSStringDrawingDeprecated, NSBackingStoreType,
-    NSBorderType, NSBox, NSBoxType, NSButton, NSColor, NSControlSize, NSFont, NSPanel,
+    NSBorderType, NSBox, NSBoxType, NSButton, NSColor, NSControlSize, NSEvent, NSFont, NSPanel,
     NSScrollView, NSStringDrawingOptions, NSTextField, NSView, NSWindowCollectionBehavior,
     NSWindowLevel, NSWindowStyleMask,
 };
@@ -80,6 +80,16 @@ impl CoachPanel {
 
     pub fn is_visible(&self) -> bool {
         self.panel.isVisible()
+    }
+
+    /// 鼠标是否在面板上。
+    pub fn contains_mouse(&self) -> bool {
+        let frame = self.panel.frame();
+        let mouse = NSEvent::mouseLocation();
+        mouse.x >= frame.origin.x
+            && mouse.x < frame.origin.x + frame.size.width
+            && mouse.y >= frame.origin.y
+            && mouse.y < frame.origin.y + frame.size.height
     }
 
     /// 强制浅色 / 深色外观；预览与截图用。

@@ -48,7 +48,9 @@ impl Coach {
     pub fn tick(&mut self) -> Option<Probe> {
         self.process_events();
         self.expire();
-        if self.service.is_none() || !self.active {
+        self.service.as_ref()?;
+        self.refresh_source();
+        if !self.source_ours {
             return None;
         }
         // 密码框：连缓冲里的中文也丢掉，更不读剪贴板
@@ -280,14 +282,6 @@ impl Coach {
         self.last_client = unsafe { Retained::retain(std::ptr::from_ref(client).cast_mut()) };
         self.last_app = app;
         self.last_anchor = anchor;
-        // 用户在继续写：正显示的组句 / 自动改稿面板已经过时，收起
-        if self
-            .shown
-            .as_ref()
-            .is_some_and(|shown| shown.mode == Mode::Compose || shown.mode == Mode::Edit)
-        {
-            self.dismiss();
-        }
     }
 }
 

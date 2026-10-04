@@ -80,9 +80,9 @@
 
 | 后端 | 需要什么 | 适合谁 |
 |---|---|---|
-| **本机 Claude Code** | 终端里装好并登录过 `claude` | 有 Claude 订阅，不想另付 API 费用 |
+| **本机 Claude Code** | 终端里装好并登录过 `claude` | 有 Claude 订阅，不想另付 API 费用。一次约 20–40 秒 |
 | **本机 Codex** | 终端里装好并登录过 `codex` | 有 Codex 订阅（目前未在真机上验证，见下） |
-| **OpenAI 兼容接口** | 接口地址 + 模型 + 密钥（DeepSeek、OpenRouter、自建服务都行） | 想要便宜、低延迟 |
+| **OpenAI 兼容接口** | 接口地址 + 模型 + 密钥（DeepSeek、OpenRouter、自建服务都行） | 想要便宜、几秒出结果 |
 | **Anthropic API** | Anthropic 密钥 | 要最好的质量，按量计费 |
 
 > **登录**：命令行后端用的是终端里的登录，和 Claude 桌面 App 的登录是两套凭据。第一次用先在终端运行 `claude auth login`（Codex 是 `codex login`）；偏好设置里点「测试连接」能确认通不通。

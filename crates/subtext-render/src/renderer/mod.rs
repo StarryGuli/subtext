@@ -22,7 +22,7 @@ use crate::shadow::Shadow;
 use crate::text::{TextPainter, TextSize, TextStyle};
 use crate::theme::{FontSpec, Theme};
 
-pub use rendered::Rendered;
+pub use rendered::{Hit, Rendered};
 pub use status::{RenderedStatus, StatusCell};
 
 /// preedit 光标的宽度（点）。
@@ -52,6 +52,9 @@ const MIN_VERTICAL_WIDTH: f32 = 200.0;
 pub struct Renderer {
     /// 文字测绘。
     text: TextPainter,
+
+    /// 当前这一帧里各候选格的位置（像素，含阴影边），画完交给 [`Rendered::hits`]。
+    hits: Vec<(usize, f32, f32, f32, f32)>,
 }
 
 /// 一次渲染期间的上下文：主题按倍数换算后的像素值。
@@ -126,7 +129,10 @@ impl Renderer {
     pub fn new(library: FontLibrary) -> Self {
         let mut text = TextPainter::new(library);
         text.set_optical_size(Some(OPTICAL_SIZE));
-        Self { text }
+        Self {
+            text,
+            hits: Vec::new(),
+        }
     }
 
     /// 画一帧。`scale` 是点 → 像素的倍数（Retina 为 2）；带 `shadow` 时位图四周留出阴影的边。
@@ -159,6 +165,7 @@ impl Renderer {
             radius,
             theme.colors.background,
         );
+        self.hits.clear();
         let mut y = margin + metrics.padding();
         y += self.draw_top_line(&mut canvas, frame, &metrics, margin, y);
         match layout {
@@ -179,6 +186,16 @@ impl Renderer {
             content_width: content_width.ceil() as u32,
             content_height: content_height.ceil() as u32,
             scale,
+            hits: std::mem::take(&mut self.hits)
+                .into_iter()
+                .map(|(row, x, y, width, height)| Hit {
+                    row,
+                    x: (x - margin) / scale,
+                    y: (y - margin) / scale,
+                    width: width / scale,
+                    height: height / scale,
+                })
+                .collect(),
         })
     }
 

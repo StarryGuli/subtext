@@ -182,7 +182,8 @@ fn build_panel(mtm: MainThreadMarker, view: &CandidateView) -> Retained<NSPanel>
     panel.setBackgroundColor(Some(&NSColor::clearColor()));
     panel.setHasShadow(true);
     panel.setBecomesKeyOnlyIfNeeded(true);
-    panel.setIgnoresMouseEvents(true);
+    // 候选可以用鼠标点：不吃鼠标的话点下去只会落到下面的应用
+    panel.setIgnoresMouseEvents(false);
     // NSPanel 缺省在应用失活时自动隐藏；输入法进程从来不是前台应用，不能靠这个
     panel.setHidesOnDeactivate(false);
     panel.setCollectionBehavior(collection_behavior());

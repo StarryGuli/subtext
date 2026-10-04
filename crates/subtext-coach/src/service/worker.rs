@@ -128,6 +128,12 @@ pub fn friendly(error: &CoachError) -> String {
         } => "密钥被拒绝（401/403），请检查密钥与接口地址。".to_owned(),
         CoachError::Api { status: 429, .. } => "请求太频繁或额度用完了（429）。".to_owned(),
         CoachError::Api { status, .. } => format!("接口返回错误 {status}。详情见日志。"),
+        CoachError::BadReply(reply)
+            if reply.chars().count() >= 4 && !reply.contains(['{', '}']) =>
+        {
+            // 模型没按格式回，而是直接说了句话（多半是嫌输入太零碎）：原话给用户看
+            format!("教练说：{}", reply.trim())
+        }
         CoachError::EmptyReply | CoachError::BadReply(_) => {
             "模型这次没有给出可用的回复，可以再试一次。".to_owned()
         }

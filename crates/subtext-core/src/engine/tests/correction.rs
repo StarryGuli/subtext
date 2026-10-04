@@ -334,3 +334,24 @@ fn fuzzy_rules_add_homophones_behind_exact_hits() {
     assert_eq!(all[0], "开发");
     assert_eq!(all.iter().filter(|t| *t == "开发").count(), 1);
 }
+
+/// 敲不出翘舌的人把「双语」敲成 suangyu：suang 不是合法拼音，但开着 s/sh 时要当作 shuang 查。
+#[test]
+fn flat_tongue_spellings_find_retroflex_words_when_fuzzy_is_on() {
+    let dictionary = Dictionary::parse("双语\tshuang yu\t500000\n双\tshuang\t300000\n").unwrap();
+    let mut engine = Engine::new(dictionary);
+    engine.set_input("suangyu");
+    assert!(!texts_of(&engine).contains(&"双语".to_owned()));
+
+    engine.set_fuzzy(FuzzyRules {
+        s_sh: true,
+        ..FuzzyRules::default()
+    });
+    engine.set_input("suangyu");
+    assert_eq!(texts_of(&engine)[0], "双语");
+
+    // 关掉之后同一个引擎回到原样，不能把开关留在线程里
+    engine.set_fuzzy(FuzzyRules::default());
+    engine.set_input("suangyu");
+    assert!(!texts_of(&engine).contains(&"双语".to_owned()));
+}

@@ -5,7 +5,9 @@ use std::ffi::c_void;
 use std::path::Path;
 use std::ptr::NonNull;
 
-use objc2_core_foundation::{CFArray, CFBoolean, CFDictionary, CFRetained, CFString, CFURL};
+use objc2_core_foundation::{
+    CFArray, CFBoolean, CFDictionary, CFRetained, CFString, CFType, CFURL,
+};
 use objc2_foundation::{NSArray, NSBundle, NSDictionary, NSString};
 
 /// TIS 的输入源句柄（不透明）。
@@ -25,6 +27,9 @@ unsafe extern "C" {
         properties: *const c_void,
         include_all_installed: u8,
     ) -> *mut CFArray;
+
+    /// 当前键盘输入源；Create 规则，非空时归调用方释放。
+    fn TISCopyCurrentKeyboardInputSource() -> *mut TISInputSource;
 
     /// 把输入源加进用户的输入法菜单。
     fn TISEnableInputSource(source: *const TISInputSource) -> i32;
@@ -54,6 +59,24 @@ pub fn register_main_bundle() -> Result<bool, String> {
     }
     let source_id = enabled_source_id(&bundle);
     register_and_enable(Path::new(&path), &source_id)
+}
+
+/// 系统当前选中的输入源是不是言外（ID 以 `app.subtext.inputmethod` 开头）。
+/// IMK 的激活 / 失活回调跟着文本框焦点走，不能用来判断「用户现在用的是不是言外」，要直接问系统。
+pub fn current_is_ours() -> bool {
+    // SAFETY: Create 规则返回的句柄非空时归本函数，读完立刻释放；属性值是 CFString，归系统，只读不释放。
+    unsafe {
+        let Some(source) = NonNull::new(TISCopyCurrentKeyboardInputSource()) else {
+            return false;
+        };
+        let value = TISGetInputSourceProperty(source.as_ptr(), kTISPropertyInputSourceID);
+        let ours = value
+            .cast::<CFString>()
+            .as_ref()
+            .is_some_and(|id| id.to_string().starts_with("app.subtext.inputmethod"));
+        drop(CFRetained::from_raw(source.cast::<CFType>()));
+        ours
+    }
 }
 
 /// 要启用的输入源 ID：有输入模式就是第一个可见模式，否则是顶层 `TISInputSourceID`。

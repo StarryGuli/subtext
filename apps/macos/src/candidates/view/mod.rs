@@ -12,7 +12,7 @@ use objc2::runtime::AnyObject;
 use objc2::{DefinedClass, MainThreadMarker, MainThreadOnly, define_class, msg_send};
 use objc2_app_kit::{
     NSAppearanceCustomization, NSAppearanceNameAqua, NSAppearanceNameDarkAqua,
-    NSAttributedStringNSStringDrawing, NSBezierPath, NSColor, NSFont, NSFontAttributeName,
+    NSAttributedStringNSStringDrawing, NSBezierPath, NSColor, NSEvent, NSFont, NSFontAttributeName,
     NSForegroundColorAttributeName, NSStrikethroughStyleAttributeName, NSView,
 };
 use objc2_foundation::{
@@ -98,6 +98,27 @@ define_class!(
         /// 用左上角为原点的坐标系，行从上往下画。
         #[unsafe(method(isFlipped))]
         fn is_flipped(&self) -> bool {
+            true
+        }
+
+        /// 点一下候选就上屏它。面板不抢焦点，所以第一下点击也要认。
+        #[unsafe(method(mouseDown:))]
+        fn mouse_down(&self, event: &NSEvent) {
+            let point = self.convertPoint_fromView(event.locationInWindow(), None);
+            // 先把行号取出来再放开借用：上屏会重画候选窗，要再借 bitmap
+            let row = self
+                .ivars()
+                .bitmap
+                .borrow()
+                .as_ref()
+                .and_then(|bitmap| bitmap.row_at(point.x, point.y));
+            if let Some(row) = row {
+                crate::host::click_candidate(row);
+            }
+        }
+
+        #[unsafe(method(acceptsFirstMouse:))]
+        fn accepts_first_mouse(&self, _event: Option<&NSEvent>) -> bool {
             true
         }
 

@@ -51,6 +51,8 @@ impl ClaudeCli {
             .args(["--tools", ""])
             .args(["--disable-slash-commands", "--no-session-persistence"])
             .args(["--setting-sources", "project"])
+            // 教练要快不要深思：命令行本身启动就要几秒，推理强度压到最低
+            .args(["--effort", "low"])
             .env("PATH", binary::search_path())
             .current_dir(std::env::temp_dir());
         if !self.model.trim().is_empty() {
@@ -130,6 +132,7 @@ mod tests {
         assert!(reply.contains("stdin=secret clipboard text"));
         assert!(reply.contains("--tools"));
         assert!(reply.contains("--setting-sources project"));
+        assert!(reply.contains("--effort low"));
         assert!(reply.contains("--system-prompt SYSTEM RULES"));
         assert!(reply.contains("--model haiku"));
         assert!(

@@ -41,6 +41,12 @@ pub const SYLLABLES: &[&str] = &[
 /// 音节最长 6 个字母（zhuang / chuang / shuang）。
 pub const MAX_SYLLABLE_LEN: usize = 6;
 
+/// 模糊音开着时才认的「平舌版」音节：shua / shuai / shuang（zh、ch 同理）对应的 sua / suai / suang 并不是合法拼音，
+/// 但敲不出翘舌的人就是这样敲「双语」「装」「窗」的。这些音节自己查不到词，靠模糊音换回翘舌写法才有结果。
+pub const FUZZY_ONLY_SYLLABLES: &[&str] = &[
+    "cua", "cuai", "cuang", "sua", "suai", "suang", "zua", "zuai", "zuang",
+];
+
 /// 简拼允许单独出现的声母。`y` / `w` 按拼音书写习惯也算。
 pub const INITIALS: &[&str] = &[
     "b", "p", "m", "f", "d", "t", "n", "l", "g", "k", "h", "j", "q", "x", "zh", "ch", "sh", "r",

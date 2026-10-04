@@ -212,7 +212,8 @@ mod tests {
         let Some(CoachEvent::Failed { message, .. }) = events.last() else {
             panic!("expected failure");
         };
-        assert!(message.contains("再试"));
+        // 模型没按格式回、直接说了句话：把原话给用户看，而不是一句笼统的「再试一次」
+        assert!(message.contains("sorry I cannot help"));
         let _ = CoachOutput::Decode(Default::default());
     }
 }

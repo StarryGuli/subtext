@@ -2,7 +2,8 @@
 
 use std::time::{Duration, Instant};
 
-use objc2_foundation::NSRect;
+use objc2_app_kit::NSEvent;
+use objc2_foundation::{NSRect, NSSize};
 use subtext_coach::{CoachEvent, CoachOutput, Mode, friendly};
 
 use super::action::CoachAction;
@@ -11,14 +12,18 @@ use super::panel::PanelContent;
 use super::{Coach, Shown};
 
 /// 解码结果留多久：读英文、想一想要时间。
-const DECODE_TTL: Duration = Duration::from_secs(120);
+const DECODE_TTL: Duration = Duration::from_secs(600);
 
 /// 组句结果留多久：用户多半很快就继续写了。
-const COMPOSE_TTL: Duration = Duration::from_secs(45);
+const COMPOSE_TTL: Duration = Duration::from_secs(120);
 
 impl Coach {
     /// 开始新的一次：先显示「思考中」，结果到了再换。
-    pub(super) fn begin(&mut self, shown: Shown) {
+    pub(super) fn begin(&mut self, mut shown: Shown) {
+        // 没有光标位置的（复制触发的解码）固定在此刻的鼠标位置：后面每次重画都用它，面板不会跟着鼠标跑
+        if shown.anchor == NSRect::ZERO {
+            shown.anchor = NSRect::new(NSEvent::mouseLocation(), NSSize::new(0.0, 16.0));
+        }
         self.shown = Some(shown);
         self.render();
     }
@@ -55,8 +60,14 @@ impl Coach {
         }
     }
 
-    /// 到时间了就收起面板。
+    /// 到时间了就收起面板；鼠标停在面板上（正在读、正要点按钮）时重新计时。
     pub(super) fn expire(&mut self) {
+        if self.panel.is_visible()
+            && self.panel.contains_mouse()
+            && let Some(shown) = self.shown.as_mut()
+        {
+            shown.shown_at = Instant::now();
+        }
         let expired = self.shown.as_ref().is_some_and(|shown| {
             let ttl = match shown.mode {
                 Mode::Compose => COMPOSE_TTL,
@@ -91,7 +102,11 @@ impl Coach {
             self.panel.hide();
             return;
         };
-        let content = content_for(shown, self.config.backend.label());
+        let content = content_for(
+            shown,
+            self.config.backend.label(),
+            self.config.backend.is_local_cli(),
+        );
         let anchor: NSRect = shown.anchor;
         self.panel.show(&content, anchor);
     }
@@ -127,7 +142,7 @@ impl Coach {
 }
 
 /// 一次教练在面板里该是什么样。
-fn content_for(shown: &Shown, backend: &str) -> PanelContent {
+fn content_for(shown: &Shown, backend: &str, slow: bool) -> PanelContent {
     let title = match shown.mode {
         Mode::Decode => "解码",
         Mode::Compose => "组句",
@@ -146,6 +161,12 @@ fn content_for(shown: &Shown, backend: &str) -> PanelContent {
         };
     }
     let Some(output) = &shown.output else {
+        // 本机命令行后端要启动进程、逐字生成，通常 20–40 秒：说一声，免得以为卡死了
+        let footer = if slow && shown.note.is_none() {
+            format!("{backend} · 命令行后端较慢，约 20–40 秒；API 后端只要几秒")
+        } else {
+            footer
+        };
         return PanelContent {
             doc: Doc::thinking(title),
             buttons: vec![close],

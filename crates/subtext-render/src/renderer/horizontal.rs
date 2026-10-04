@@ -114,6 +114,10 @@ impl Renderer {
                 top,
                 text_height,
             );
+            // 点击区按候选之间的间隔均分：连续、互不重叠（不用高亮的外扩矩形，那个会和邻居重叠）
+            let gap = m.column_gap();
+            self.hits
+                .push((i, x - gap / 2.0, y, item_width + gap, row_height));
             x += item_width + m.column_gap();
         }
         if let Some(footer) = frame.footer.as_deref() {

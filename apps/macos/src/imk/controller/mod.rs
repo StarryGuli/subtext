@@ -57,6 +57,10 @@ define_class!(
         fn handle_event(&self, event: Option<&NSEvent>, client: Option<&AnyObject>) -> bool {
             match (event, client) {
                 (Some(event), Some(client)) => {
+                    // 记下当前控制器，鼠标点候选时靠它找到客户端
+                    // SAFETY: self 是活着的控制器，retain 之后宿主自己持有一份引用
+                    let this = unsafe { Retained::retain(std::ptr::from_ref(self).cast_mut()) };
+                    host::with(|h| h.controller = this);
                     let client = TextClient::new(client);
                     // panic 拦下后把缓冲区原样上屏，这个按键交还给应用
                     catch_panic("handleEvent", || self.dispatch_event(event, client))
@@ -185,6 +189,19 @@ fn digit_key(key_code: u16) -> Option<usize> {
 }
 
 impl SubtextInputController {
+    /// 鼠标点了第 `index` 个候选：与按数字键选词走同一条路径。
+    pub fn commit_clicked(&self, index: usize) {
+        // SAFETY: `client` 是 IMKInputController 的标准方法，返回当前会话的客户端代理
+        let client: Option<Retained<AnyObject>> = unsafe { msg_send![self, client] };
+        let Some(client) = client else {
+            return;
+        };
+        let client = TextClient::new(&client);
+        if catch_panic("点选候选", || self.commit_index(index, client)).is_none() {
+            recover_from_panic(Some(client));
+        }
+    }
+
     /// 登录 / 锁屏窗口：输入源菜单里没有言外，loginwindow 却照样激活它，按键一律交还系统。
     ///
     /// TODO(#190): 临时防护。现象是开机登录界面打不进模式键（u / i），推断为按键进了言外的组句；

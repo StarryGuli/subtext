@@ -81,7 +81,7 @@ impl CoachPage {
         note(
             layout,
             mtm,
-            "本机 Claude Code / Codex 走你自己的订阅额度，不需要密钥，要先在终端里登录过；API 后端按量计费。",
+            "本机 Claude Code / Codex 走你自己的订阅额度，不需要密钥，要先在终端里登录过，但启动进程加逐字生成，一次通常要 20–40 秒；想几秒出结果请用 API 后端（比如 DeepSeek），按量计费。",
         );
         let model = text_field(mtm, Setting::CoachModel, target);
         row_control(layout, mtm, "模型", &model);

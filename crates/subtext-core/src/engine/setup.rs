@@ -237,6 +237,7 @@ impl Engine {
             self.forget_span_cache();
         }
         self.fuzzy = rules;
+        parser::set_fuzzy_spellings(rules.z_zh || rules.c_ch || rules.s_sh);
     }
 
     pub fn fuzzy(&self) -> FuzzyRules {
