@@ -35,6 +35,9 @@ pub struct PreferencesWindow {
     /// 窗口。
     panel: Retained<PreferencesPanel>,
 
+    /// 标签视图，菜单要能直接跳到某一页。
+    tabs: Retained<NSTabView>,
+
     /// 「通用」页。
     general: GeneralPage,
 
@@ -205,6 +208,7 @@ impl PreferencesWindow {
             usage,
             about,
             status,
+            tabs,
             _target: target,
         }
     }
@@ -233,6 +237,17 @@ impl PreferencesWindow {
 
     /// 打开（或带到最前）。
     pub fn show(&self) {
+        self.panel.present();
+    }
+
+    /// 打开并切到标题为 `label` 的那一页；没有这一页就停在当前页。
+    pub fn show_page(&self, label: &str) {
+        for (index, item) in self.tabs.tabViewItems().iter().enumerate() {
+            if item.label().to_string() == label {
+                self.tabs.selectTabViewItemAtIndex(index as isize);
+                break;
+            }
+        }
         self.panel.present();
     }
 

@@ -100,6 +100,15 @@ impl FontLibrary {
         })
     }
 
+    /// 是否装进了完整的 PingFang：它是首选汉字字体，没有时汉字走 Hiragino 兜底，系统晚些时候补好字体资产后值得重新加载。
+    pub fn has_pingfang(&self) -> bool {
+        self.db.faces().any(|face| {
+            face.families
+                .iter()
+                .any(|(name, _)| name.eq_ignore_ascii_case("PingFang SC"))
+        })
+    }
+
     /// 已加载的字族名，按加载顺序去重。
     pub fn families(&self) -> Vec<String> {
         let mut names: Vec<String> = Vec::new();

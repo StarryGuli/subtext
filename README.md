@@ -31,7 +31,7 @@
 <tr>
 <td width="33%"><b>① 复制英文 → 解码</b><br>别人发来一段英文，复制它，面板自动出现：情境、俚语与缩写、语气、潜台词。<b>译文默认折叠</b>，让你先自己猜。</td>
 <td width="33%"><b>② 打中文 → 给出英文</b><br>打完一句中文停一下，给出可直接发送的英文，按场合选随意 / 中性 / 正式，并说明为什么这样说。按 <kbd>⌥1</kbd> 直接替换刚打的中文。</td>
-<td width="33%"><b>③ 选中文字 → 改稿</b><br>选中自己写的英文，按 <kbd>⌃⌥E</kbd>：修正版在前，逐条说明；刻意的随意写法（全小写、<code>u</code>）不当成错。</td>
+<td width="33%"><b>③ 打英文 → 校对</b><br>打完一句英文停一下：<b>中文意思</b>（核对有没有打错、听错）、修正版、更地道的说法，<kbd>⌥1</kbd> / <kbd>⌥2</kbd> 直接替换。刻意的随意写法（全小写、<code>u</code>）不当成错。选中文字按 <kbd>⌃⌥E</kbd> 也行。</td>
 </tr>
 </table>
 
@@ -74,7 +74,7 @@
 2. 点「测试连接」，确认通了。
 3. 勾上「启用双语教练」。也可以直接在输入法菜单里点「双语教练」开关。
 
-之后：复制英文自动解码；打完中文停一下自动出英文；选中文字按 <kbd>⌃⌥E</kbd> 交给教练。教练只在言外是当前输入法时工作。
+之后：复制英文自动解码；打完中文停一下自动出英文；打完英文停一下自动校对；选中文字按 <kbd>⌃⌥E</kbd> 交给教练。三个自动触发可以分别关掉。教练只在言外是当前输入法时工作。
 
 ## 选一个后端
 
@@ -84,6 +84,8 @@
 | **本机 Codex** | 终端里装好并登录过 `codex` | 有 Codex 订阅（目前未在真机上验证，见下） |
 | **OpenAI 兼容接口** | 接口地址 + 模型 + 密钥（DeepSeek、OpenRouter、自建服务都行） | 想要便宜、低延迟 |
 | **Anthropic API** | Anthropic 密钥 | 要最好的质量，按量计费 |
+
+> **登录**：命令行后端用的是终端里的登录，和 Claude 桌面 App 的登录是两套凭据。第一次用先在终端运行 `claude auth login`（Codex 是 `codex login`）；偏好设置里点「测试连接」能确认通不通。
 
 > **Codex 后端的说明**：按 `codex exec` 的文档接入，单元测试用假命令覆盖了调用方式，但作者的机器上没有装 Codex，没有真实跑通过。遇到问题请开 Issue。
 
@@ -108,6 +110,7 @@ enabled = true
 backend = "claude-cli"          # claude-cli | codex-cli | openai | anthropic
 auto_decode = true
 auto_compose = true
+auto_edit = true
 claude_model = "haiku"
 openai_base_url = "https://api.deepseek.com"
 openai_model = "deepseek-v4-flash"

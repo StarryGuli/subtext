@@ -19,6 +19,9 @@ pub enum CoachAction {
 
     /// 复制修改后的版本。
     CopyEdited,
+
+    /// 用改稿给出的第 n 个更地道的说法替换原文（从 0 数）。
+    ReplaceAlternative(usize),
 }
 
 /// 选项最多这么多个，tag 编码依赖它。
@@ -31,6 +34,7 @@ impl CoachAction {
             Self::Reveal => 2,
             Self::ReplaceEdited => 3,
             Self::CopyEdited => 4,
+            Self::ReplaceAlternative(index) => 40 + index.min(MAX_OPTIONS - 1) as isize,
             Self::Replace(index) => 10 + index.min(MAX_OPTIONS - 1) as isize,
             Self::Copy(index) => 20 + index.min(MAX_OPTIONS - 1) as isize,
         }
@@ -47,6 +51,7 @@ impl CoachAction {
             2 => Some(Self::Reveal),
             3 => Some(Self::ReplaceEdited),
             4 => Some(Self::CopyEdited),
+            40..=49 => index(40).map(Self::ReplaceAlternative),
             10..=19 => index(10).map(Self::Replace),
             20..=29 => index(20).map(Self::Copy),
             _ => None,
@@ -68,6 +73,7 @@ mod tests {
             CoachAction::Replace(0),
             CoachAction::Replace(2),
             CoachAction::Copy(1),
+            CoachAction::ReplaceAlternative(1),
         ];
         for action in all {
             assert_eq!(CoachAction::from_tag(action.tag()), Some(action));

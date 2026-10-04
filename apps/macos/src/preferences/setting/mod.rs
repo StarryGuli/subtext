@@ -113,6 +113,9 @@ pub enum Setting {
     /// `[coach] auto_compose`。
     CoachAutoCompose,
 
+    /// `[coach] auto_edit`。
+    CoachAutoEdit,
+
     /// `[coach] backend`，弹出菜单，值是 `BackendKind::ALL` 的下标。
     CoachBackend,
 
@@ -272,6 +275,7 @@ impl Setting {
             Self::CoachAutoDecode => 61,
             Self::CoachAutoCompose => 62,
             Self::CoachBackend => 63,
+            Self::CoachAutoEdit => 69,
             Self::CoachModel => 64,
             Self::CoachPath => 65,
             Self::CoachBaseUrl => 66,
@@ -348,6 +352,7 @@ impl Setting {
             61 => Self::CoachAutoDecode,
             62 => Self::CoachAutoCompose,
             63 => Self::CoachBackend,
+            69 => Self::CoachAutoEdit,
             64 => Self::CoachModel,
             65 => Self::CoachPath,
             66 => Self::CoachBaseUrl,
@@ -401,6 +406,7 @@ mod tests {
             Setting::CoachEnabled,
             Setting::CoachAutoDecode,
             Setting::CoachAutoCompose,
+            Setting::CoachAutoEdit,
             Setting::CoachBackend,
             Setting::CoachModel,
             Setting::CoachPath,

@@ -134,7 +134,14 @@ pub fn friendly(error: &CoachError) -> String {
         CoachError::CommandFailed {
             command, stderr, ..
         } if needs_login(stderr) => {
-            format!("{command} 还没登录或登录过期了。请在终端里运行一次 {command} 完成登录，再试。")
+            let login = if command == "claude" {
+                "claude auth login"
+            } else {
+                "codex login"
+            };
+            format!(
+                "命令行 {command} 没有登录或登录过期了（桌面 App 里的登录和命令行是两套）。请在终端运行：{login}，授权后再试。"
+            )
         }
         CoachError::CommandFailed { command, .. } => {
             format!("{command} 运行失败，可能额度用完了。详情见日志。")

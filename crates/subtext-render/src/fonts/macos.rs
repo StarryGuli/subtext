@@ -34,7 +34,11 @@ pub(super) fn emoji_fonts() -> Vec<PathBuf> {
     ))]
 }
 
-/// PingFang.ttc 在系统资产目录里，目录名带哈希，要扫一层找出来；找不到退回 FontServices 里的 UI 版。
+/// PingFang.ttc 在系统资产目录里，目录名带哈希，要扫一层找出来。
+///
+/// 不能退回 FontServices 里的 `PingFangUI.ttc`：它是系统界面用的精简版，字族名是 `.PingFang UI Text SC`，
+/// 渲染器画不出它的汉字轮廓，只会留一片空白（2026-10-04 真机复现：系统刚好在输入法启动时更新字体资产，
+/// 找不到完整版，候选词整列消失）。找不到完整版就让后面的 Hiragino 兜底，并由调用方稍后重找。
 fn pingfang_paths() -> Vec<PathBuf> {
     let mut found = Vec::new();
     if let Ok(assets) = std::fs::read_dir("/System/Library/AssetsV2") {
@@ -57,8 +61,5 @@ fn pingfang_paths() -> Vec<PathBuf> {
             }
         }
     }
-    found.push(PathBuf::from(
-        "/System/Library/PrivateFrameworks/FontServices.framework/Versions/A/Resources/Reserved/PingFangUI.ttc",
-    ));
     found
 }

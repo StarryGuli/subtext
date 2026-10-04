@@ -85,6 +85,9 @@ pub struct CoachConfig {
     /// 上屏了一句中文就自动给出英文表达。
     pub auto_compose: bool,
 
+    /// 打完一句英文就自动校对：中文意思、改错、更地道的说法。
+    pub auto_edit: bool,
+
     /// `claude` 可执行文件的路径；留空则自动查找。
     pub claude_path: String,
 
@@ -137,6 +140,7 @@ impl Default for CoachConfig {
             backend: BackendKind::ClaudeCli,
             auto_decode: true,
             auto_compose: true,
+            auto_edit: true,
             claude_path: String::new(),
             claude_model: "haiku".to_owned(),
             codex_path: String::new(),

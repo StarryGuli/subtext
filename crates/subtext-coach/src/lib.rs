@@ -20,7 +20,8 @@ pub use error::CoachError;
 pub use memory::{ConversationMemory, PEER_TTL};
 pub use mode::{Mode, Trigger};
 pub use output::{
-    CoachOutput, ComposeOption, ComposePoint, Composed, DecodePoint, Decoded, Edited, Fix, Tone,
+    Alternative, CoachOutput, ComposeOption, ComposePoint, Composed, DecodePoint, Decoded, Edited,
+    Fix, Tone,
 };
 pub use request::{CoachContext, CoachRequest};
 pub use service::{CoachEvent, CoachService, ConnectionReport, friendly, test_connection};

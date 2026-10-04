@@ -133,6 +133,15 @@ impl<'a> TextClient<'a> {
         bundle.map(|b| b.to_string()).filter(|b| !b.is_empty())
     }
 
+    /// 第 `index` 个字符所在行在屏幕坐标系里的矩形；没有 marked text 时用它取光标位置。
+    pub fn caret_rect_at(&self, index: usize) -> NSRect {
+        let mut rect = NSRect::ZERO;
+        unsafe {
+            let _: Option<Retained<NSDictionary>> = msg_send![self.object, attributesForCharacterIndex: index, lineHeightRectangle: &mut rect];
+        }
+        rect
+    }
+
     /// 光标（marked text 起点）所在行在屏幕坐标系里的矩形，用来定位候选窗口。
     /// 应用不支持时返回零矩形，窗口就会落在屏幕左下角，至少看得见。
     pub fn caret_rect(&self) -> NSRect {

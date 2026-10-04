@@ -108,6 +108,15 @@ impl Coach {
                 Some(CoachAction::Replace(digit - 1))
             }
             CoachOutput::Edit(_) if digit == 1 => Some(CoachAction::ReplaceEdited),
+            CoachOutput::Edit(edited)
+                if (2..=1 + edited
+                    .alternatives
+                    .len()
+                    .min(super::action::MAX_OPTIONS - 1))
+                    .contains(&digit) =>
+            {
+                Some(CoachAction::ReplaceAlternative(digit - 2))
+            }
             _ => None,
         }
     }
@@ -191,6 +200,16 @@ fn content_for(shown: &Shown, backend: &str) -> PanelContent {
             let mut buttons = Vec::new();
             if can_replace {
                 buttons.push(("替换 ⌥1".to_owned(), CoachAction::ReplaceEdited));
+                for index in 0..edited
+                    .alternatives
+                    .len()
+                    .min(super::action::MAX_OPTIONS - 1)
+                {
+                    buttons.push((
+                        format!("更地道 ⌥{}", index + 2),
+                        CoachAction::ReplaceAlternative(index),
+                    ));
+                }
             }
             buttons.push(("复制".to_owned(), CoachAction::CopyEdited));
             buttons.push(close);

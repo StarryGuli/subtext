@@ -25,9 +25,27 @@ pub struct ComposeProbe {
     pub anchor: NSRect,
 }
 
+/// 打完一句英文停顿够久了：要去应用里读出光标前那一句（碰客户端，必须在借用 Host 之外做）。
+pub struct EnglishProbe {
+    pub client: Retained<AnyObject>,
+
+    pub app: Option<String>,
+}
+
+/// 轮询交给调用方的活。
+pub enum Probe {
+    Compose(ComposeProbe),
+
+    English(EnglishProbe),
+}
+
+/// 打完英文后停顿多久，才把光标前那一句当作写完了。
+const ENGLISH_IDLE: Duration = Duration::from_millis(1800);
+
 impl Coach {
-    /// 每 0.3 秒一次。返回的探测任务由调用方在 Host 借用之外完成，再调 [`Self::submit_compose`]。
-    pub fn tick(&mut self) -> Option<ComposeProbe> {
+    /// 每 0.3 秒一次。返回的探测任务由调用方在 Host 借用之外完成，再回调
+    /// [`Self::submit_compose`] / [`Self::submit_english`]。
+    pub fn tick(&mut self) -> Option<Probe> {
         self.process_events();
         self.expire();
         if self.service.is_none() || !self.active {
@@ -41,6 +59,81 @@ impl Coach {
         }
         self.poll_clipboard();
         self.compose_candidate()
+            .map(Probe::Compose)
+            .or_else(|| self.english_candidate().map(Probe::English))
+    }
+
+    /// 打完英文停顿够久了：交给调用方去读光标前那一句。
+    fn english_candidate(&mut self) -> Option<EnglishProbe> {
+        if !self.config.auto_edit {
+            return None;
+        }
+        let since = self.english_dirty?;
+        if since.elapsed() < ENGLISH_IDLE {
+            return None;
+        }
+        self.english_dirty = None;
+        Some(EnglishProbe {
+            client: self.last_client.clone()?,
+            app: self.last_app.clone(),
+        })
+    }
+
+    /// 调用方读到了光标前那一句（`None` 表示读不到或不是一句话）：过闸门，通过就发出改稿请求，面板跟着光标出现。
+    pub fn submit_english(
+        &mut self,
+        probe: EnglishProbe,
+        located: Option<(String, objc2_foundation::NSRange, NSRect)>,
+    ) {
+        let Some((text, range, anchor)) = located else {
+            return;
+        };
+        let Some(service) = &self.service else {
+            return;
+        };
+        // 同一句话已经校对过就别再弹
+        if self.last_edit_text.as_deref() == Some(text.as_str()) {
+            return;
+        }
+        if service
+            .gate()
+            .check(Trigger::EnglishDraft, &text, probe.app.as_deref(), false)
+            .is_err()
+        {
+            return;
+        }
+        let id = self.next_id + 1;
+        let request = CoachRequest {
+            id,
+            mode: Mode::Edit,
+            text: text.clone(),
+            context: CoachContext {
+                app: probe.app,
+                before: String::new(),
+                peer_message: self.memory.peer_message().map(str::to_owned),
+            },
+        };
+        if service.submit(request).is_err() {
+            return;
+        }
+        self.next_id = id;
+        self.last_edit_text = Some(text.clone());
+        self.begin(Shown {
+            id,
+            mode: Mode::Edit,
+            source: text.clone(),
+            output: None,
+            failure: None,
+            revealed: false,
+            anchor,
+            target: Some(ReplaceTarget {
+                client: probe.client,
+                range,
+                expected: text,
+            }),
+            shown_at: std::time::Instant::now(),
+            note: None,
+        });
     }
 
     /// 剪贴板里有新复制：过闸门，通过就解码。
@@ -180,14 +273,18 @@ impl Coach {
             return;
         }
         self.typed.note(text);
+        if text.chars().any(|c| c.is_ascii_alphabetic()) {
+            self.english_dirty = Some(std::time::Instant::now());
+        }
         // SAFETY: client 是 IMK 传进来的有效对象，retain 之后自己持有一份引用
         self.last_client = unsafe { Retained::retain(std::ptr::from_ref(client).cast_mut()) };
         self.last_app = app;
         self.last_anchor = anchor;
+        // 用户在继续写：正显示的组句 / 自动改稿面板已经过时，收起
         if self
             .shown
             .as_ref()
-            .is_some_and(|shown| shown.mode == Mode::Compose)
+            .is_some_and(|shown| shown.mode == Mode::Compose || shown.mode == Mode::Edit)
         {
             self.dismiss();
         }

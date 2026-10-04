@@ -13,6 +13,9 @@ pub enum MenuAction {
     /// 开关双语教练（写 `[coach] enabled`）。
     ToggleCoach,
 
+    /// 打开偏好设置并跳到「模糊音」页：菜单里勾一项就收起，要连着改多条在设置里改。
+    OpenFuzzySettings,
+
     /// 开关一条模糊音规则，值是 [`FuzzyRules::NAMES`] 的下标。
     ToggleFuzzy(usize),
 
@@ -34,6 +37,7 @@ impl MenuAction {
             Self::OpenLogs => 3,
             Self::OpenDownload => 4,
             Self::ToggleCoach => 5,
+            Self::OpenFuzzySettings => 6,
             Self::ToggleFuzzy(index) => FUZZY_TAG_BASE + index as NSInteger,
         }
     }
@@ -45,6 +49,7 @@ impl MenuAction {
             3 => Self::OpenLogs,
             4 => Self::OpenDownload,
             5 => Self::ToggleCoach,
+            6 => Self::OpenFuzzySettings,
             _ => {
                 let index = usize::try_from(tag.checked_sub(FUZZY_TAG_BASE)?).ok()?;
                 (index < FuzzyRules::NAMES.len()).then_some(Self::ToggleFuzzy(index))?
@@ -65,6 +70,7 @@ mod tests {
             MenuAction::OpenLogs,
             MenuAction::OpenDownload,
             MenuAction::ToggleCoach,
+            MenuAction::OpenFuzzySettings,
             MenuAction::ToggleFuzzy(0),
             MenuAction::ToggleFuzzy(FuzzyRules::NAMES.len() - 1),
         ];

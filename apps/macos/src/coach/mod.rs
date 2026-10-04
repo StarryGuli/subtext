@@ -12,6 +12,7 @@ mod monitor;
 mod panel;
 mod preview;
 mod replace;
+pub(crate) mod sentence;
 mod show;
 mod target;
 mod trigger;
@@ -27,7 +28,7 @@ use subtext_coach::{CoachConfig, CoachOutput, CoachService, ConversationMemory, 
 
 pub use action::CoachAction;
 pub use preview::run_if_requested as run_preview_if_requested;
-pub use trigger::ComposeProbe;
+pub use trigger::{ComposeProbe, EnglishProbe, Probe};
 
 use clipboard::ClipboardWatch;
 use monitor::CoachMonitor;
@@ -100,6 +101,12 @@ pub struct Coach {
 
     last_app: Option<String>,
 
+    /// 最近一次上屏英文的时间；停顿够久就去校对光标前那一句。
+    english_dirty: Option<Instant>,
+
+    /// 最近一次自动校对的那句话，同一句不重复弹。
+    last_edit_text: Option<String>,
+
     next_id: u64,
 
     shown: Option<Shown>,
@@ -124,6 +131,8 @@ impl Coach {
             last_anchor: NSRect::ZERO,
             last_client: None,
             last_app: None,
+            english_dirty: None,
+            last_edit_text: None,
             next_id: 0,
             shown: None,
             active: false,

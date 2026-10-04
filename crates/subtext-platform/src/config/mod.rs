@@ -348,9 +348,10 @@ sentence = true
 enabled = false
 # 后端：claude-cli 本机 Claude Code / codex-cli 本机 Codex / openai 自填的 OpenAI 兼容接口 / anthropic Anthropic API
 backend = "claude-cli"
-# 复制英文自动解码、上屏中文自动给英文
+# 复制英文自动解码、上屏中文自动给英文、打完英文自动校对（中文意思 + 改错 + 更地道的说法）
 auto_decode = true
 auto_compose = true
+auto_edit = true
 # 本机命令行后端：留空则自动查找；模型缺省用快的 haiku
 claude_path = ""
 claude_model = "haiku"

@@ -1,10 +1,12 @@
 //! 教练输出：三种模式各一个结构，从模型回复里容错解析出来。
 
+mod alternative;
 mod composed;
 mod decoded;
 mod edited;
 mod json;
 
+pub use alternative::Alternative;
 pub use composed::{ComposeOption, ComposePoint, Composed};
 pub use decoded::{DecodePoint, Decoded, Tone};
 pub use edited::{Edited, Fix};

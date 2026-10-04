@@ -22,6 +22,8 @@ pub struct CoachPage {
 
     auto_compose: Retained<NSButton>,
 
+    auto_edit: Retained<NSButton>,
+
     backend: Retained<NSPopUpButton>,
 
     /// 模型：随后端变，显示当前后端那一项。
@@ -57,10 +59,12 @@ impl CoachPage {
             target,
         );
         row_checkbox(layout, &auto_compose);
+        let auto_edit = checkbox(mtm, "打完英文自动校对", Setting::CoachAutoEdit, target);
+        row_checkbox(layout, &auto_edit);
         note(
             layout,
             mtm,
-            "开启后，复制的英文和上屏的中文会发给下面选的后端。密码框、密码管理器、疑似密钥或长文本不会发送。出结果后按 ⌥1 / ⌥2 / ⌥3 用对应的英文替换刚打的中文，Esc 关闭。",
+            "开启后，复制的英文和上屏的中文会发给下面选的后端。密码框、密码管理器、疑似密钥或长文本不会发送。出结果后按 ⌥1 / ⌥2 / ⌥3 用对应的英文替换刚打的文字，Esc 关闭。打完英文停一下，会给出中文意思（核对有没有打错、听错）、改错和更地道的说法。",
         );
         let backends: Vec<String> = BackendKind::ALL
             .iter()
@@ -104,6 +108,7 @@ impl CoachPage {
             enabled,
             auto_decode,
             auto_compose,
+            auto_edit,
             backend,
             model,
             path,
@@ -119,7 +124,8 @@ impl CoachPage {
         set_checked(&self.enabled, coach.enabled);
         set_checked(&self.auto_decode, coach.auto_decode);
         set_checked(&self.auto_compose, coach.auto_compose);
-        for control in [&self.auto_decode, &self.auto_compose] {
+        set_checked(&self.auto_edit, coach.auto_edit);
+        for control in [&self.auto_decode, &self.auto_compose, &self.auto_edit] {
             control.setEnabled(coach.enabled);
         }
         select(

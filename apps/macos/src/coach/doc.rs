@@ -211,6 +211,15 @@ impl Doc {
             false,
             vec![(Style::Phrase, edited.corrected.trim().to_owned())],
         );
+        if !edited.translation.is_empty() {
+            doc.push(
+                false,
+                vec![
+                    (Style::Dim, "意思　".to_owned()),
+                    (Style::Body, edited.translation.clone()),
+                ],
+            );
+        }
         for fix in &edited.fixes {
             doc.push(
                 true,
@@ -221,6 +230,16 @@ impl Doc {
                 ],
             );
             doc.push(false, vec![(Style::Dim, fix.why.clone())]);
+        }
+        for alternative in &edited.alternatives {
+            doc.push(
+                true,
+                vec![
+                    (Style::Orange, "更地道  ".to_owned()),
+                    (Style::Phrase, alternative.text.trim().to_owned()),
+                ],
+            );
+            doc.push(false, vec![(Style::Dim, alternative.why.clone())]);
         }
         for kept in &edited.kept {
             doc.push(true, vec![(Style::Teal, format!("✓ {kept}"))]);
@@ -312,7 +331,7 @@ fn fix_label(kind: &str) -> &'static str {
 
 #[cfg(test)]
 mod tests {
-    use subtext_coach::{ComposeOption, DecodePoint, Fix, Tone};
+    use subtext_coach::{Alternative, ComposeOption, DecodePoint, Fix, Tone};
 
     use super::*;
 
@@ -404,9 +423,16 @@ mod tests {
                 why: "对教授要写全".into(),
             }],
             kept: vec!["ngl 很自然".to_owned()],
+            translation: "你能帮我看看接线吗？".to_owned(),
+            alternatives: vec![Alternative {
+                text: "Could you take a look at my wiring?".to_owned(),
+                why: "更像求助时的口吻".to_owned(),
+            }],
             pattern: String::new(),
         };
         let text = Doc::edit(&edited).plain_text();
         assert!(text.contains("u → you") && text.contains("语气") && text.contains("✓ ngl 很自然"));
+        assert!(text.contains("意思　你能帮我看看接线吗？"));
+        assert!(text.contains("更地道  Could you take a look at my wiring?"));
     }
 }

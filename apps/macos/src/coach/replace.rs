@@ -58,6 +58,9 @@ impl Coach {
             (CoachAction::ReplaceEdited, CoachOutput::Edit(edited)) => {
                 edited.corrected.trim().to_owned()
             }
+            (CoachAction::ReplaceAlternative(index), CoachOutput::Edit(edited)) => {
+                edited.alternatives.get(index)?.text.trim().to_owned()
+            }
             _ => return None,
         };
         (!replacement.is_empty()).then(|| ReplacePlan {

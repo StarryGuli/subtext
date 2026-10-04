@@ -74,6 +74,7 @@ impl SubtextInputController {
                 }
                 if c.is_ascii_alphabetic() {
                     client.insert_text(&letter.to_string());
+                    host::coach_note_commit(&letter.to_string(), client);
                     host::with(|h| h.engine.note_passthrough(letter));
                     return true;
                 }

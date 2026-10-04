@@ -73,6 +73,9 @@ impl Host {
                     self.apply_config(false);
                 }
             }
+            MenuAction::OpenFuzzySettings => {
+                self.preferences.show_page("模糊音");
+            }
             MenuAction::OpenPreferences => {
                 self.preferences.sync_usage(
                     &self.engine.usage_summary(),
@@ -408,6 +411,9 @@ impl Host {
             }
             (Setting::CoachAutoCompose, SettingValue::Bool(on)) => {
                 self.settings.set_bool("coach", "auto_compose", on);
+            }
+            (Setting::CoachAutoEdit, SettingValue::Bool(on)) => {
+                self.settings.set_bool("coach", "auto_edit", on);
             }
             (Setting::CoachBackend, SettingValue::Index(index)) => {
                 if let Some(kind) = subtext_coach::BackendKind::ALL.get(index) {

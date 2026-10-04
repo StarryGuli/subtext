@@ -1,10 +1,15 @@
 {
   "corrected": "ngl i dont really get why the motor driver keeps resetting, can u check my wiring?",
+  "translation": "说实话，我真不明白为什么电机驱动器老是复位，你能帮我看看接线吗？",
   "fixes": [
     {"from": "keep", "to": "keeps", "kind": "grammar",
      "why": "主语 the motor driver 是单数，第三人称单数的动词要加 -s"},
     {"from": "u", "to": "you", "kind": "register",
      "why": "在 Discord 里 u 很正常，我没动；但发给教授或招生办一律写全 you"}
+  ],
+  "alternatives": [
+    {"text": "ngl i'm stuck on why the motor driver keeps resetting, mind taking a look at my wiring?",
+     "why": "「stuck on」比「don't get」更像求助；「mind taking a look」比「can u check」更客气，但依然随意"}
   ],
   "kept": ["ngl 开头很自然：先坦白自己不懂，再请对方帮忙，是技术社区求助的标准姿势", "全小写、不加标点是聊天里的正常写法，没有改"],
   "pattern": "第三人称单数动词漏 -s，是中文母语者最常见的一类"

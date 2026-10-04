@@ -38,7 +38,19 @@ pub struct BitmapPainter {
 
     /// 最近一帧的尺寸（点）。
     size: NSSize,
+
+    /// 用户选的候选窗字体（空为系统字体），重建字体库时要用。
+    font: String,
+
+    /// 字体库里已有完整的 PingFang。没有的话汉字走兜底字体，要隔一阵重找一次。
+    fonts_complete: bool,
+
+    /// 上次重找字体的时间。
+    last_font_check: std::time::Instant,
 }
+
+/// 没找到完整 PingFang 时，最多隔这么久重找一次（系统在后台下载 / 更新字体资产，几分钟内会补好）。
+const FONT_RECHECK_INTERVAL: std::time::Duration = std::time::Duration::from_secs(10);
 
 impl BitmapPainter {
     /// `font` 是用户选的字族名，空为系统字体；没装就回到系统字体。字体库加载失败返回 `None`，调用方退回旧路径。
@@ -61,12 +73,20 @@ impl BitmapPainter {
                 return None;
             }
         };
+        let fonts_complete = library.has_pingfang();
         tracing::info!(
             elapsed = ?started.elapsed(),
             font = library.ui_family(),
+            fonts_complete,
             "候选窗使用位图渲染器"
         );
+        if !fonts_complete {
+            tracing::warn!("没找到完整的 PingFang，汉字先用兜底字体，稍后会重新查找");
+        }
         Some(Self {
+            font: font.to_owned(),
+            fonts_complete,
+            last_font_check: std::time::Instant::now(),
             renderer: Renderer::new(library),
             image: None,
             frame: subtext_render::Frame::default(),
@@ -85,6 +105,7 @@ impl BitmapPainter {
         dark: bool,
         scale: f32,
     ) -> NSSize {
+        self.recheck_fonts();
         self.frame = convert::frame(frame);
         self.layout = match layout {
             LayoutMode::Vertical => Layout::Vertical,
@@ -117,6 +138,32 @@ impl BitmapPainter {
                 true,
                 None,
             );
+        }
+    }
+
+    /// 启动时没找到完整 PingFang 的话，隔一阵重找；找到了就重建字体库，之后的帧用它画。
+    fn recheck_fonts(&mut self) {
+        if self.fonts_complete || self.last_font_check.elapsed() < FONT_RECHECK_INTERVAL {
+            return;
+        }
+        self.last_font_check = std::time::Instant::now();
+        let library = if self.font.is_empty() {
+            FontLibrary::system("zh-CN")
+        } else {
+            let ui_font = UiFont {
+                family: self.font.clone(),
+                files: font_files::family_files(&self.font),
+            };
+            FontLibrary::with_ui_font("zh-CN", &ui_font)
+        };
+        match library {
+            Ok(library) if library.has_pingfang() => {
+                self.renderer = Renderer::new(library);
+                self.fonts_complete = true;
+                tracing::info!("找到了完整的 PingFang，字体库已重建");
+            }
+            Ok(_) => tracing::debug!("仍没有完整的 PingFang"),
+            Err(error) => tracing::warn!(%error, "重新加载字体库失败"),
         }
     }
 

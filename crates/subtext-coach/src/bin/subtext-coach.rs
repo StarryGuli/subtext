@@ -225,6 +225,12 @@ fn print_output(output: &CoachOutput) {
         }
         CoachOutput::Edit(edited) => {
             println!("【改稿】{}", edited.corrected);
+            if !edited.translation.is_empty() {
+                println!("  意思：{}", edited.translation);
+            }
+            for alternative in &edited.alternatives {
+                println!("\n  更地道：{}\n    {}", alternative.text, alternative.why);
+            }
             for fix in &edited.fixes {
                 println!(
                     "\n  {} → {}  [{}]\n    {}",

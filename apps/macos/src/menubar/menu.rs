@@ -46,6 +46,14 @@ impl InputMenu {
 
         let fuzzy_menu = NSMenu::new(mtm);
         fuzzy_menu.setAutoenablesItems(false);
+        // 系统输入法菜单点一项就收起，要连着改几条很麻烦：第一项直接带到设置里的「模糊音」页
+        fuzzy_menu.addItem(&action_item(
+            mtm,
+            "在设置里改…",
+            Some(MenuAction::OpenFuzzySettings),
+            &target,
+        ));
+        fuzzy_menu.addItem(&NSMenuItem::separatorItem(mtm));
         let fuzzy: Vec<_> = FuzzyRules::NAMES
             .iter()
             .enumerate()
