@@ -89,8 +89,13 @@ impl Host {
         }
     }
 
-    /// 改 `[dictionaries] domains`（随包领域词库）：`on` 为真加进列表，否则去掉。
+    /// 改 `[dictionaries] domains`（随包领域词库）：`on` 为真加进列表，否则去掉；缺省就开的那本改 `disabled`。
     pub fn set_domain_enabled(&mut self, stem: &str, on: bool) {
+        // 缺省就开的（modern）开关记在 disabled 里
+        if DictionariesConfig::is_always_on(stem) {
+            self.set_dictionary_enabled(stem, on);
+            return;
+        }
         let domains = self.settings.config().dictionaries.domains.clone();
         if let Some(domains) = toggle_membership(domains, stem, on) {
             self.settings.set_value(

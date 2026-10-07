@@ -92,6 +92,9 @@ if [[ -f data/generated/dict.tsv || -f data/generated/dict.qj ]]; then
     mkdir -p "$APP/Contents/Resources/dicts"
     cp data/generated/dicts/*.qj "$APP/Contents/Resources/dicts/"
   fi
+  # 补充词库（现代生活与网络词，基础词库没收的）：TSV 直接随包，缺省就开
+  mkdir -p "$APP/Contents/Resources/dicts"
+  cp assets/lexicon/dicts/modern.tsv "$APP/Contents/Resources/dicts/"
   [[ -f data/generated/lm.qj ]] && cp data/generated/lm.qj "$APP/Contents/Resources/"
   # 含章·知微（字级 Transformer）：三件套与单文件放 data/models/hanzhang-zhiwei/。
   model_dir="${SUBTEXT_MODEL_DIR:-data/models/hanzhang-zhiwei}"

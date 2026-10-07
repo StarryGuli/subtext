@@ -18,6 +18,9 @@ pub struct DictionariesConfig {
 /// 缺省打开的随包领域词库：成语四字全拼几乎不歧义，收益稳；其余按需打开。
 pub const DEFAULT_DOMAINS: [&str; 1] = ["idioms"];
 
+/// 随包词库里始终默认打开的：基础词库补缺的现代词（筋膜枪、内卷这类），不该要用户去勾；要关走 `disabled`。
+pub const ALWAYS_ON_DOMAINS: [&str; 1] = ["modern"];
+
 impl Default for DictionariesConfig {
     fn default() -> Self {
         Self {
@@ -35,6 +38,32 @@ impl DictionariesConfig {
 
     /// 随包领域词库是否启用。
     pub fn is_domain_enabled(&self, stem: &str) -> bool {
+        if Self::is_always_on(stem) {
+            return self.is_enabled(stem);
+        }
         self.domains.iter().any(|d| d == stem)
+    }
+
+    /// 这本随包词库是不是缺省就开（开关记在 `disabled` 而不是 `domains`）。
+    pub fn is_always_on(stem: &str) -> bool {
+        ALWAYS_ON_DOMAINS.contains(&stem)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn modern_is_on_unless_disabled_and_other_domains_follow_the_list() {
+        let mut config = DictionariesConfig {
+            domains: vec!["idioms".to_owned()],
+            disabled: Vec::new(),
+        };
+        assert!(config.is_domain_enabled("modern"));
+        assert!(config.is_domain_enabled("idioms"));
+        assert!(!config.is_domain_enabled("medicine"));
+        config.disabled.push("modern".to_owned());
+        assert!(!config.is_domain_enabled("modern"));
     }
 }
