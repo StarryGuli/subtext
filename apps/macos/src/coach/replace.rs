@@ -6,6 +6,7 @@ use objc2_foundation::NSRange;
 use subtext_coach::CoachOutput;
 
 use super::action::CoachAction;
+use super::doc::Doc;
 use super::lane::Lane;
 use super::{Coach, WRITE, clipboard};
 use crate::imk::TextClient;
@@ -91,6 +92,16 @@ impl Lane {
             (CoachAction::CopyPlain, CoachOutput::Plain { text, .. }) => {
                 Some(text.trim().to_owned())
             }
+            (CoachAction::CopyAll, CoachOutput::Decode(decoded)) => {
+                Some(Doc::decode(decoded, true).plain_text())
+            }
+            (CoachAction::CopyAll, CoachOutput::Compose(composed)) => {
+                Some(Doc::compose(composed).plain_text())
+            }
+            (CoachAction::CopyAll, CoachOutput::Edit(edited)) => {
+                Some(Doc::edit(edited).plain_text())
+            }
+            (CoachAction::CopyAll, CoachOutput::Plain { text, .. }) => Some(text.trim().to_owned()),
             _ => None,
         };
         text.filter(|text| !text.is_empty())

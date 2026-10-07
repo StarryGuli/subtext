@@ -125,7 +125,7 @@ impl Lane {
                 Mode::Compose => COMPOSE_TTL,
                 _ => DECODE_TTL,
             };
-            shown.output.is_some() && shown.shown_at.elapsed() > ttl
+            (shown.output.is_some() || shown.failure.is_some()) && shown.shown_at.elapsed() > ttl
         });
         if expired {
             self.dismiss();

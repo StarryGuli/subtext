@@ -26,6 +26,9 @@ pub enum CoachAction {
     /// 用改稿给出的第 n 个更地道的说法替换原文（从 0 数）。
     ReplaceAlternative(usize),
 
+    /// 复制这块面板的全文（含译文）。
+    CopyAll,
+
     /// 看上一条解读。
     Previous,
 
@@ -44,6 +47,7 @@ impl CoachAction {
             Self::ReplaceEdited => 3,
             Self::CopyEdited => 4,
             Self::CopyPlain => 5,
+            Self::CopyAll => 8,
             Self::Previous => 6,
             Self::Next => 7,
             Self::ReplaceAlternative(index) => 40 + index.min(MAX_OPTIONS - 1) as isize,
@@ -64,6 +68,7 @@ impl CoachAction {
             3 => Some(Self::ReplaceEdited),
             4 => Some(Self::CopyEdited),
             5 => Some(Self::CopyPlain),
+            8 => Some(Self::CopyAll),
             6 => Some(Self::Previous),
             7 => Some(Self::Next),
             40..=49 => index(40).map(Self::ReplaceAlternative),
@@ -86,6 +91,7 @@ mod tests {
             CoachAction::ReplaceEdited,
             CoachAction::CopyEdited,
             CoachAction::CopyPlain,
+            CoachAction::CopyAll,
             CoachAction::Previous,
             CoachAction::Next,
             CoachAction::Replace(0),

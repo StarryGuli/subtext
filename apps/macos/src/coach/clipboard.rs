@@ -18,6 +18,9 @@ pub struct Copied {
 
     /// 带了隐蔽 / 瞬时标记。
     pub concealed: bool,
+
+    /// 短时间内连着复制了同一段文字（连按两次 ⌘C）：用户在要求重新来一遍。
+    pub repeat: bool,
 }
 
 pub struct ClipboardWatch {
@@ -26,7 +29,13 @@ pub struct ClipboardWatch {
 
     /// 自己写入剪贴板后的 changeCount，不当成用户复制。
     own: Option<isize>,
+
+    /// 上一次复制的文字与时间，认连按两次。
+    last: Option<(String, std::time::Instant)>,
 }
+
+/// 两次复制间隔不超过这么久、文字相同，算连按。
+const REPEAT_WINDOW: std::time::Duration = std::time::Duration::from_millis(1200);
 
 impl ClipboardWatch {
     /// 以当前剪贴板为起点：启动前已经复制的内容不处理。
@@ -34,6 +43,7 @@ impl ClipboardWatch {
         Self {
             seen: NSPasteboard::generalPasteboard().changeCount(),
             own: None,
+            last: None,
         }
     }
 
@@ -49,6 +59,8 @@ impl ClipboardWatch {
         if count == self.seen {
             return None;
         }
+        // 一次轮询间隔里复制了两次以上，changeCount 会一下跳好几格
+        let jumped = count - self.seen >= 2;
         self.seen = count;
         if self.own == Some(count) {
             return None;
@@ -63,13 +75,20 @@ impl ClipboardWatch {
             return Some(Copied {
                 text: String::new(),
                 concealed: true,
+                repeat: false,
             });
         }
         // SAFETY: 只读 AppKit 导出的类型名常量
         let text = unsafe { pasteboard.stringForType(NSPasteboardTypeString) }?.to_string();
+        let again = self
+            .last
+            .as_ref()
+            .is_some_and(|(previous, at)| *previous == text && at.elapsed() < REPEAT_WINDOW);
+        self.last = Some((text.clone(), std::time::Instant::now()));
         Some(Copied {
             text,
             concealed: false,
+            repeat: jumped || again,
         })
     }
 }

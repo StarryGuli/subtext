@@ -29,6 +29,9 @@ pub const WIDTH: f64 = 440.0;
 /// 内边距。
 const PAD: f64 = 14.0;
 
+/// 上沿多留一条：可选文字吃掉鼠标按下，拖面板要有一块空白抓。
+const TOP_PAD: f64 = 22.0;
+
 /// 按钮行高度与按钮之间的间隙。
 const BUTTON_HEIGHT: f64 = 22.0;
 const BUTTON_GAP: f64 = 8.0;
@@ -186,7 +189,7 @@ impl CoachPanel {
         let has_buttons = !content.buttons.is_empty();
         let has_footer = !content.footer.is_empty();
         let footer_height = if has_footer { 14.0 } else { 0.0 };
-        let mut height = PAD * 2.0 + text_height;
+        let mut height = PAD + TOP_PAD + text_height;
         if has_buttons {
             height += SECTION_GAP + BUTTON_HEIGHT;
         }
@@ -203,10 +206,10 @@ impl CoachPanel {
         self.frame_box
             .setFrame(NSRect::new(NSPoint::ZERO, NSSize::new(self.width, height)));
 
-        let mut y = height - PAD - text_height;
+        let mut y = height - TOP_PAD - text_height;
         let label = NSTextField::labelWithAttributedString(&text, self.mtm);
-        // 不可选：可选文字会吃掉鼠标按下，面板就拖不动了；要复制走「复制」按钮
-        label.setSelectable(false);
+        // 文字可选可复制；选文字的鼠标按下归文字框，拖面板要抓上沿那条留白和四周的边
+        label.setSelectable(true);
         if scrolls {
             // 内容比上限高：放进滚动区，滚轮可滚，滚动条自动隐藏
             label.setFrame(NSRect::new(

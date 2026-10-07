@@ -9,11 +9,10 @@ pub fn screen_tick() {
     let notice = with(|h| {
         h.screen.tick();
         // 用力按压读到的文字：交给教练现在就解析
-        let forced = h
-            .screen
-            .take_peek_text()
-            .and_then(|text| h.coach.submit_forced(text));
-        forced.or_else(|| h.screen.take_notice())
+        if let Some(text) = h.screen.take_peek_text() {
+            h.coach.submit_forced(text);
+        }
+        h.screen.take_notice()
     })
     .flatten();
     if let Some(text) = notice {

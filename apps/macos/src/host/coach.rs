@@ -8,6 +8,16 @@ use crate::imk::TextClient;
 
 /// 轮询定时器每 0.3 秒来一次。
 pub fn coach_tick() {
+    // 全局热键只在言外是当前输入法时注册，切走就注销
+    if let Some((active, clipboard, screen)) = with(|h| {
+        (
+            h.coach.hotkeys_wanted(),
+            h.coach_clipboard_keys,
+            h.screen_keys,
+        )
+    }) {
+        crate::hotkeys::sync(active, clipboard, screen);
+    }
     // 触控板用力按压：开始读鼠标下的文字（读完在屏幕阅读的定时回调里交给教练）
     if with(|h| h.coach.take_press()).unwrap_or(false) {
         with(|h| h.screen.begin_peek());
@@ -67,7 +77,10 @@ pub fn coach_perform(action: CoachAction) {
         CoachAction::Next => {
             with(|h| h.coach.navigate(1));
         }
-        CoachAction::Copy(_) | CoachAction::CopyEdited | CoachAction::CopyPlain => {
+        CoachAction::Copy(_)
+        | CoachAction::CopyEdited
+        | CoachAction::CopyPlain
+        | CoachAction::CopyAll => {
             with(|h| h.coach.copy(action));
         }
         CoachAction::Replace(_)
@@ -107,9 +120,9 @@ pub fn coach_navigate(delta: isize) -> bool {
     .unwrap_or(false)
 }
 
-/// 快捷键「现在就解析剪贴板」。返回要提示用户的话（成功是 `None`）。
-pub fn coach_clipboard_now() -> Option<String> {
-    with(|h| h.coach.submit_clipboard_now()).flatten()
+/// 快捷键「现在就解析剪贴板」：失败原因也直接显示在面板里。
+pub fn coach_clipboard_now() {
+    with(|h| h.coach.submit_clipboard_now());
 }
 
 /// Esc：面板在显示时收起它。返回 `true` 表示按键已被用掉。

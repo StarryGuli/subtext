@@ -42,6 +42,11 @@ impl Host {
         self.apps = config.apps.clone();
         self.coach.apply(&config.coach);
         self.screen.apply(&config.coach, self.coach.cache());
+        crate::hotkeys::sync(
+            self.coach.hotkeys_wanted(),
+            self.coach_clipboard_keys,
+            self.screen_keys,
+        );
         self.window.set_theme(config.general.theme);
         self.window.set_layout(config.general.layout);
         if self.layout != config.general.layout

@@ -88,9 +88,6 @@ pub(super) struct ReplaceTarget {
 /// 面板上最多能翻回几条之前的解读。
 const PAST_LIMIT: usize = 10;
 
-/// 两次 ⌘C 间隔不超过这么久算连按。
-const DOUBLE_COPY_WINDOW: std::time::Duration = std::time::Duration::from_millis(600);
-
 /// 通道编号：解码；组句与改稿。
 const DECODE: usize = 0;
 const WRITE: usize = 1;
@@ -148,9 +145,6 @@ pub struct Coach {
 
     next_id: u64,
 
-    /// 上一次按 ⌘C 的时间：很快再按一次就是「强制重新解析」。
-    last_copy_key: Option<Instant>,
-
     /// 系统当前选中的输入源是不是言外。轮询只在它为真时处理复制与上屏；
     /// 不跟 IMK 的激活回调走，那个随文本框焦点来回跳（复制网页上的文字时根本没有文本框）。
     source_ours: bool,
@@ -184,7 +178,6 @@ impl Coach {
             english_dirty: None,
             last_edit_text: None,
             next_id: 0,
-            last_copy_key: None,
             source_ours: false,
             source_checked: Instant::now(),
             test: None,
@@ -284,16 +277,9 @@ impl Coach {
         self.source_ours = ours;
     }
 
-    /// 按了 ⌘C。很快（0.6 秒内）连按第二次且教练开着、`double_copy` 没关，返回 `true`：该强制重新解析剪贴板。
-    pub fn note_copy_key(&mut self) -> bool {
-        let now = Instant::now();
-        let double = self.config.double_copy
-            && self.is_enabled()
-            && self
-                .last_copy_key
-                .is_some_and(|last| now.duration_since(last) < DOUBLE_COPY_WINDOW);
-        self.last_copy_key = if double { None } else { Some(now) };
-        double
+    /// 全局热键该不该注册：教练开着、言外是当前输入法。
+    pub fn hotkeys_wanted(&self) -> bool {
+        self.is_enabled() && self.source_ours
     }
 
     /// 教练是否开着。

@@ -83,6 +83,7 @@ pub(super) fn content_for(shown: &Shown, backend: &str, slow: bool) -> PanelCont
             if !shown.revealed && !decoded.translation.is_empty() {
                 buttons.push(("显示译文".to_owned(), CoachAction::Reveal));
             }
+            buttons.push(("复制全文".to_owned(), CoachAction::CopyAll));
             buttons.push(close);
             PanelContent {
                 doc: Doc::decode(decoded, shown.revealed),

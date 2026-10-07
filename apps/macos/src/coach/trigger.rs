@@ -144,6 +144,11 @@ impl Coach {
         let Some(copied) = self.clipboard.poll() else {
             return;
         };
+        // 连按两次 ⌘C：强制重新解析（不看 auto_decode，也不看缓存）；隐蔽内容不处理
+        if copied.repeat && self.config.double_copy && !copied.concealed {
+            self.submit_forced(copied.text);
+            return;
+        }
         if !self.config.auto_decode {
             return;
         }
@@ -366,19 +371,19 @@ impl Coach {
 }
 
 impl Coach {
-    /// 用户要求「现在就解析剪贴板里的内容」。返回要告诉用户的话（成功是 `None`）。
-    pub fn submit_clipboard_now(&mut self) -> Option<String> {
-        let Some(text) = clipboard::read_now() else {
-            return Some("剪贴板里没有可解析的文字".to_owned());
-        };
-        self.submit_forced(text)
+    /// 用户要求「现在就解析剪贴板里的内容」。
+    pub fn submit_clipboard_now(&mut self) {
+        match clipboard::read_now() {
+            Some(text) => self.submit_forced(text),
+            None => self.show_message("剪贴板里没有可解析的文字（空的，或是密码管理器复制的）"),
+        }
     }
 
     /// 现在就解析这段文字：不管开没开自动、有没有解析过，英文解码、中文给出英文，并忽略缓存重新来一遍。
-    /// 面板出现在此刻鼠标旁边。返回要告诉用户的话（成功是 `None`）。
-    pub fn submit_forced(&mut self, text: String) -> Option<String> {
+    /// 面板出现在此刻鼠标旁边；不能解析时把原因直接写在面板里，不让用户对着空屏幕猜。
+    pub fn submit_forced(&mut self, text: String) {
         let Some(gate_service) = &self.lanes[DECODE].service else {
-            return Some("双语教练没开".to_owned());
+            return self.show_message("双语教练没开");
         };
         let text = text.trim().to_owned();
         let (trigger, mode) = [Trigger::ClipboardCopy, Trigger::ChineseCommitted]
@@ -386,18 +391,22 @@ impl Coach {
             .find_map(|trigger| trigger.mode_for(&text).map(|mode| (trigger, mode)))
             .unzip();
         let (Some(trigger), Some(mode)) = (trigger, mode) else {
-            return Some("这段内容不是英文也不是中文句子".to_owned());
+            tracing::info!(
+                chars = text.chars().count(),
+                "强制解析：不是英文也不是中文句子"
+            );
+            return self.show_message("这段内容不是英文，也不是中文句子，没有解析");
         };
         let app = frontmost_application();
-        if gate_service
+        if let Err(skip) = gate_service
             .gate()
             .check(trigger, &text, app.as_deref(), false)
-            .is_err()
         {
-            return Some("这段文字不适合交给教练（太长、疑似密钥或链接代码）".to_owned());
+            tracing::info!(?skip, "强制解析：闸门没放行");
+            return self.show_message(&format!("这段文字不适合交给教练（{}）", skip_reason(&skip)));
         }
         let Some(service) = &self.lanes[lane_for(mode)].service else {
-            return Some("双语教练没开".to_owned());
+            return self.show_message("双语教练没开");
         };
         self.next_id += 1;
         let id = self.next_id;
@@ -415,8 +424,9 @@ impl Coach {
         };
         self.cache.forget(SharedCache::key(&request));
         if service.submit(request).is_err() {
-            return Some("教练线程已停止".to_owned());
+            return self.show_message("教练线程已停止，请在偏好设置里重新打开双语教练");
         }
+        tracing::info!(?mode, chars = text.chars().count(), "强制解析已发出");
         self.begin(Shown {
             id,
             mode,
@@ -430,6 +440,36 @@ impl Coach {
             shown_at: std::time::Instant::now(),
             note: None,
         });
-        None
+    }
+
+    /// 在解码面板里显示一句话（解析不了的原因）。
+    fn show_message(&mut self, message: &str) {
+        self.begin(Shown {
+            id: 0,
+            mode: Mode::Decode,
+            source: String::new(),
+            output: None,
+            failure: Some(message.to_owned()),
+            revealed: false,
+            streaming: false,
+            anchor: NSRect::ZERO,
+            target: None,
+            shown_at: std::time::Instant::now(),
+            note: None,
+        });
+    }
+}
+
+/// 闸门拦下的原因，给用户看的话。
+fn skip_reason(skip: &subtext_coach::gate::Skip) -> &'static str {
+    use subtext_coach::gate::Skip;
+    match skip {
+        Skip::Empty => "空的",
+        Skip::TooShort => "太短",
+        Skip::TooLong => "太长",
+        Skip::NotTheRightLanguage => "语言不对",
+        Skip::MachineText => "像链接或代码",
+        Skip::LooksLikeSecret | Skip::Concealed => "疑似密钥或隐蔽内容",
+        Skip::SkippedApp => "当前应用在跳过名单里",
     }
 }

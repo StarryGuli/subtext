@@ -64,8 +64,7 @@ impl Doc {
         }
     }
 
-    /// 全文纯文本，测试用。
-    #[cfg(test)]
+    /// 全文纯文本：测试与「复制全文」用。
     pub fn plain_text(&self) -> String {
         self.lines
             .iter()

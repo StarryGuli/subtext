@@ -10,6 +10,7 @@ mod candidates;
 mod coach;
 mod error;
 mod host;
+mod hotkeys;
 mod imk;
 mod menubar;
 mod preferences;
