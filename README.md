@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/StarryGuli/subtext/releases/latest"><img src="https://img.shields.io/github/v/release/StarryGuli/subtext?label=release&color=2F5240" alt="release"></a>
+  <a href="https://github.com/StarryGuli/subtext/releases"><img src="https://img.shields.io/github/v/release/StarryGuli/subtext?include_prereleases&label=release&color=2F5240" alt="release"></a>
   <img src="https://img.shields.io/badge/macOS-13%2B-2F5240" alt="macOS 13+">
   <img src="https://img.shields.io/badge/Apple%20Silicon-arm64-2F5240" alt="Apple Silicon">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-2F5240" alt="license"></a>
@@ -68,7 +68,7 @@
 
 要求：macOS 13 或更新，Apple Silicon（M 系列）。
 
-1. 从 [Releases](https://github.com/StarryGuli/subtext/releases/latest) 下载 `subtext-*-macos-arm64.pkg`，核对 `SHA256SUMS`。
+1. 从 [Releases](https://github.com/StarryGuli/subtext/releases) 下载最新的 `subtext-*-macos-arm64.pkg`，核对 `SHA256SUMS`。目前都是预发布版（pre-release），功能在快速迭代，真机验证还不充分，遇到问题请开 Issue。
 2. 双击安装（需要管理员密码）。安装包使用 ad-hoc 签名，**第一次打开要在「系统设置 → 隐私与安全性」里点「仍要打开」**。
 3. 安装完成后输入法会自动加进系统输入源。点菜单栏的输入法图标，选「言外」。列表里没有就注销再登录一次。
 
