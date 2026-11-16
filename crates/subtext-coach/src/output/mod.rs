@@ -10,7 +10,7 @@ mod screened;
 
 pub use alternative::Alternative;
 pub use composed::{ComposeOption, ComposePoint, Composed};
-pub use decoded::{DecodePoint, Decoded, Tone};
+pub use decoded::{DecodeLine, DecodePoint, Decoded, Tone};
 pub use edited::{Edited, Fix};
 pub use screened::{ScreenItem, Screened};
 

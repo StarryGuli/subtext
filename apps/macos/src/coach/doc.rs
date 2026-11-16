@@ -88,6 +88,19 @@ impl Doc {
                 (Style::Body, decoded.situation.clone()),
             ],
         );
+        for (index, line) in decoded.lines.iter().enumerate() {
+            doc.push(
+                index == 0 || index % 3 == 0,
+                vec![
+                    (Style::Dim, format!("{}  ", index + 1)),
+                    (Style::Phrase, line.en.clone()),
+                ],
+            );
+            doc.push(false, vec![(Style::Body, line.zh.clone())]);
+            if !line.note.is_empty() {
+                doc.push(false, vec![(Style::Orange, line.note.clone())]);
+            }
+        }
         for point in &decoded.points {
             let tag_style = match point.kind.as_str() {
                 "slang" | "abbr" => Style::Orange,
@@ -136,12 +149,6 @@ impl Doc {
             doc.push(
                 false,
                 vec![(Style::Dim, format!("对照：{}", tone.contrast))],
-            );
-        }
-        if !decoded.question.is_empty() {
-            doc.push(
-                true,
-                vec![(Style::Dim, format!("想一想：{}", decoded.question))],
             );
         }
         if reveal && !decoded.translation.is_empty() {
@@ -353,7 +360,7 @@ fn fix_label(kind: &str) -> &'static str {
 
 #[cfg(test)]
 mod tests {
-    use subtext_coach::{Alternative, ComposeOption, DecodePoint, Fix, Tone};
+    use subtext_coach::{Alternative, ComposeOption, DecodeLine, DecodePoint, Fix, Tone};
 
     use super::*;
 
@@ -374,7 +381,11 @@ mod tests {
                 contrast: String::new(),
             },
             translation: "嘿，不着急。".to_owned(),
-            question: "他多久要回复？".to_owned(),
+            lines: vec![DecodeLine {
+                en: "no rush at all".to_owned(),
+                zh: "一点也不急".to_owned(),
+                note: "软化的催促".to_owned(),
+            }],
         }
     }
 
@@ -388,6 +399,13 @@ mod tests {
                 .plain_text()
                 .contains("嘿，不着急")
         );
+    }
+
+    #[test]
+    fn lines_are_listed_in_order_with_their_notes() {
+        let text = Doc::decode(&decoded(), false).plain_text();
+        assert!(text.contains("no rush at all") && text.contains("一点也不急"));
+        assert!(text.contains("软化的催促"));
     }
 
     #[test]

@@ -197,6 +197,12 @@ fn print_output(output: &CoachOutput) {
     match output {
         CoachOutput::Decode(decoded) => {
             println!("【解码】{}", decoded.situation);
+            for (index, line) in decoded.lines.iter().enumerate() {
+                println!("\n  {}. {}\n     {}", index + 1, line.en, line.zh);
+                if !line.note.is_empty() {
+                    println!("     * {}", line.note);
+                }
+            }
             for point in &decoded.points {
                 println!("\n  {}  [{}]", point.phrase, point.kind);
                 println!("    字面：{}", point.literal);
@@ -211,10 +217,9 @@ fn print_output(output: &CoachOutput) {
             if !decoded.tone.contrast.is_empty() {
                 println!("  对照：{}", decoded.tone.contrast);
             }
-            if !decoded.question.is_empty() {
-                println!("\n  想一想：{}", decoded.question);
+            if !decoded.translation.is_empty() {
+                println!("\n  整体：{}", decoded.translation);
             }
-            println!("\n  译文（先自己猜）：{}", decoded.translation);
         }
         CoachOutput::Compose(composed) => {
             println!("【组句】{}", composed.context);

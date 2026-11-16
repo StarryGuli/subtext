@@ -21,8 +21,8 @@ pub use error::CoachError;
 pub use memory::{ConversationMemory, PEER_TTL};
 pub use mode::{Mode, Trigger};
 pub use output::{
-    Alternative, CoachOutput, ComposeOption, ComposePoint, Composed, DecodePoint, Decoded, Edited,
-    Fix, ScreenItem, Screened, Tone,
+    Alternative, CoachOutput, ComposeOption, ComposePoint, Composed, DecodeLine, DecodePoint,
+    Decoded, Edited, Fix, ScreenItem, Screened, Tone,
 };
 pub use request::{CoachContext, CoachRequest};
 pub use service::{
