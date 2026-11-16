@@ -1,6 +1,5 @@
-# macOS runner 上跑 fmt / clippy / 全 workspace 测试。输入法壳依赖 objc2，只能在 macOS 上编。
+# macOS runner 上跑 fmt / clippy / 全 workspace 测试。应用依赖 objc2，只能在 macOS 上编。
 # actions 钉到 commit（注释里是对应的标签），Dependabot 每周提 PR 更新；cargo 全加 --locked。
-# 产品数据（词库、语言模型）不进仓库，测试不依赖它们。
 name: ci
 
 on:

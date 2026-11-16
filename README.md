@@ -1,174 +1,59 @@
 <p align="center">
-  <img src="assets/brand/banner.svg" alt="Subtext 言外：双语输入法，读得懂潜台词，写得出地道话" width="100%">
+  <img src="assets/brand/banner.svg" alt="Subtext 言外：英文教练，读得懂潜台词，写得出地道话" width="100%">
 </p>
 
-<p align="center">
-  <a href="https://github.com/StarryGuli/subtext/releases"><img src="https://img.shields.io/github/v/release/StarryGuli/subtext?include_prereleases&label=release&color=2F5240" alt="release"></a>
-  <img src="https://img.shields.io/badge/macOS-13%2B-2F5240" alt="macOS 13+">
-  <img src="https://img.shields.io/badge/Apple%20Silicon-arm64-2F5240" alt="Apple Silicon">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-2F5240" alt="license"></a>
-</p>
+**Subtext（言外）是一个住在菜单栏里的英文教练。** 贴一段英文，它逐句帮你读懂，连同没说出口的语气；
+打几句中文（或中英混着），它给你能直接发出去的地道英文；贴你自己写的英文，它帮你检查。
 
-<p align="center">
-  <a href="#安装">安装</a> ·
-  <a href="#三个场景">三个场景</a> ·
-  <a href="#选一个后端">后端</a> ·
-  <a href="#隐私">隐私</a> ·
-  <a href="docs/usage.md">使用说明</a> ·
-  <a href="#from-source-english">English</a>
-</p>
+它想解决的不只是「这句话什么意思」，还有**语气和潜台词**：美式职场英语习惯把硬话说软
+（`we may want to revisit this` 往往就是不行），中文的客套话直译成英文又会显得没自信。这些词典里查不到。
 
-**Subtext（言外）是一款带 AI 教练的中英双语输入法。** 平时它就是一个好用的拼音输入法，候选旁有译词；
-一旦你复制了一段英文，或者打完了一句中文，教练就会出现，帮你读懂对方没说出口的意思，也帮你写出母语者会这样说的英文。
+> **状态**：预发布，只有 macOS。拼音输入法功能已在 0.4 移除，言外现在只做英文教练（旧版见 `v0.3.6` 标签）。
 
-它想解决的不是「这句话什么意思」，而是更难的两件事：**语气和潜台词**。
-美式职场英语习惯把硬话说软（`we may want to revisit this` 往往就是不行），而中文的客套话直译成英文又会显得没自信。
-这些词典里查不到，Subtext 专门讲这个。
+## 三种模式（手动选，不猜）
 
-## 三个场景
+| 模式 | 你贴什么 | 你得到什么 |
+|---|---|---|
+| **读** | 收到的英文 | **逐句**中文意思，每句里的缩写、俚语（lmk、tmr、rlly、u、j）就地解释；最后一句话讲语气与潜台词 |
+| **写** | 中文，或中英混写 | 一到两个可直接发送的英文，说明为什么这样说、哪里直译会出错；已经写好的英文原样保留 |
+| **改** | 你自己写的英文（打字或语音输入的） | 修正版、中文意思（核对是不是你想说的）、哪里改了为什么、更地道的说法 |
 
-<table>
-<tr>
-<td width="33%"><b>① 复制英文 → 解码</b><br>别人发来一段英文，复制它，面板自动出现：情境、俚语与缩写、语气、潜台词。<b>译文默认折叠</b>，让你先自己猜。</td>
-<td width="33%"><b>② 打中文 → 给出英文</b><br>打完一句中文停一下，给出可直接发送的英文，按场合选随意 / 中性 / 正式，并说明为什么这样说。按 <kbd>⌥1</kbd> 直接替换刚打的中文。</td>
-<td width="33%"><b>③ 打英文 → 校对</b><br>打完一句英文停一下：<b>中文意思</b>（核对有没有打错、听错）、修正版、更地道的说法，<kbd>⌥1</kbd> / <kbd>⌥2</kbd> 直接替换。刻意的随意写法（全小写、<code>u</code>）不当成错。选中文字按 <kbd>⌃⌥E</kbd> 也行。</td>
-</tr>
-</table>
+## 用法
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/decode-dark.png">
-    <img src="assets/screenshots/decode-light.png" alt="解码面板" width="400">
-  </picture>
-  &nbsp;
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/compose-dark.png">
-    <img src="assets/screenshots/compose-light.png" alt="组句面板" width="400">
-  </picture>
-</p>
+1. 启动后菜单栏出现「言」，按 **⌃⌥Space** 打开窗口（也可点菜单栏图标）。
+2. 剪贴板里有新内容会自动带进输入框，并按语言选个起始模式；不对就自己点上方的 读 / 写 / 改。
+3. **⌘↵** 解析，结果边生成边显示；「复制结果」复制可直接发送的那段（写 / 改给英文，读给逐句译文）。
 
-<p align="center"><sub>示例内容。面板是不抢焦点的浮窗，应用里的光标不会丢；Esc 关闭。</sub></p>
+读完一条后接着在「写」里回复，教练会按对方刚发来的那条消息的语气接（30 分钟内有效）。
 
-### ④ 屏幕阅读：不用来回复制
-
-对着微信、Discord、网页里一大段英文，不用一句句复制。按 <kbd>⌃⌥R</kbd>（或输入法菜单 → 屏幕阅读），Subtext 就**持续读取鼠标所在的那个窗口**（也可以框选一块区域）：屏幕上出现新的英文，自动在后台翻译；**鼠标停在哪句上，就在旁边弹出那句的译文与语气提示**，因为早就翻译好了，所以是瞬间出现。再按一次 <kbd>⌃⌥R</kbd> 停止。
-
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/screen-card-dark.png">
-    <img src="assets/screenshots/screen-card-light.png" alt="屏幕阅读悬浮卡" width="360">
-  </picture>
-</p>
-
-识别（OCR）用系统自带的 Vision，**完全在本机完成**；只有识别出的英文消息才会发给你选的后端。窗口右上角会一直有一个「● 屏幕阅读中」的小标记。首次使用需要在系统设置里给 Subtext 开「屏幕录制」权限。详见 [使用说明](docs/usage.md#屏幕阅读)。
-
-教练会结合上下文决定语气：当前应用（邮件偏正式，聊天偏随意、可以缩写）、你最近解码过的那条对方消息、你最近打的字。
-
-## 安装
-
-要求：macOS 13 或更新，Apple Silicon（M 系列）。
-
-1. 从 [Releases](https://github.com/StarryGuli/subtext/releases) 下载最新的 `subtext-*-macos-arm64.pkg`，核对 `SHA256SUMS`。目前都是预发布版（pre-release），功能在快速迭代，真机验证还不充分，遇到问题请开 Issue。
-2. 双击安装（需要管理员密码）。安装包使用 ad-hoc 签名，**第一次打开要在「系统设置 → 隐私与安全性」里点「仍要打开」**。
-3. 安装完成后输入法会自动加进系统输入源。点菜单栏的输入法图标，选「言外」。列表里没有就注销再登录一次。
-
-卸载：
+## 安装与构建
 
 ```bash
-/Library/Input\ Methods/Subtext.app/Contents/Resources/uninstall.sh          # 保留学习数据与配置
-/Library/Input\ Methods/Subtext.app/Contents/Resources/uninstall.sh --purge  # 连数据、配置、日志一起删
+apps/coach/scripts/bundle.sh        # 生成 target/app/Subtext.app
 ```
 
-## 开始用教练
-
-教练**默认关闭**。输入法菜单 → 偏好设置 → **双语教练**：
-
-1. 选一个后端（见下表），本机命令行后端不需要密钥，API 后端填密钥后按回车保存。
-2. 点「测试连接」，确认通了。
-3. 勾上「启用双语教练」。也可以直接在输入法菜单里点「双语教练」开关。
-
-之后：复制英文自动解码；打完中文停一下自动出英文；打完英文停一下自动校对；选中文字按 <kbd>⌃⌥E</kbd> 交给教练；按 <kbd>⌃⌥R</kbd> 开始屏幕阅读。前三个自动触发可以分别关掉。教练只在言外是当前输入法时工作。
+需要 Rust（版本见 `rust-toolchain.toml`）与 macOS 12+。默认 ad-hoc 签名，首次打开要在「系统设置 → 隐私与安全性」里放行。
 
 ## 选一个后端
 
-| 后端 | 需要什么 | 适合谁 |
+在 `~/Library/Application Support/Subtext/config.toml` 的 `[coach]` 里选，缺省是本机 Claude Code：
+
+| 后端 | `backend` | 说明 |
 |---|---|---|
-| **本机 Claude Code** | 终端里装好并登录过 `claude` | 有 Claude 订阅，不想另付 API 费用。一次约 20–40 秒 |
-| **本机 Codex** | 终端里装好并登录过 `codex` | 有 Codex 订阅（目前未在真机上验证，见下） |
-| **OpenAI 兼容接口** | 接口地址 + 模型 + 密钥（DeepSeek、OpenRouter、自建服务都行） | 想要便宜、几秒出结果 |
-| **Anthropic API** | Anthropic 密钥 | 要最好的质量，按量计费 |
+| 本机 Claude Code | `claude-cli` | 调本机 `claude -p`，走你自己的订阅，不需要密钥 |
+| 本机 Codex | `codex-cli` | 同上 |
+| OpenAI 兼容接口 | `openai` | 自填地址与模型 |
+| Anthropic API | `anthropic` | 自填密钥 |
 
-> **登录**：命令行后端用的是终端里的登录，和 Claude 桌面 App 的登录是两套凭据。第一次用先在终端运行 `claude auth login`（Codex 是 `codex login`）；偏好设置里点「测试连接」能确认通不通。
-
-> **Codex 后端的说明**：按 `codex exec` 的文档接入，单元测试用假命令覆盖了调用方式，但作者的机器上没有装 Codex，没有真实跑通过。遇到问题请开 Issue。
-
-命令行后端的调用会限定只读项目级配置、关闭所有工具、不留会话，你本机的插件钩子和全局记忆不会混进教练的回复。
+密钥放在同目录的 `.env`（如 `ANTHROPIC_API_KEY=...`），不要写进 `config.toml`。详见 [使用说明](docs/usage.md)。
 
 ## 隐私
 
-- **默认什么都不发。** 拼音转换、词库、学习、候选译词全部在本机完成，教练关着时没有任何网络请求。
-- 开启教练后，**复制的英文与上屏的中文会发往你选的后端**，云端后端首次启用前请确认你接受这一点。
-- **屏幕阅读**只在你按下开始之后才工作，窗口右上角一直有「● 屏幕阅读中」的标记；截图在识别完立刻删除，不留在磁盘上；解读结果的历史存在本机（`coach-history.jsonl`，仅自己可读，偏好设置里可关闭或清除）；OCR 在本机完成，**只有识别出的英文消息**会发给后端，汉字为主的界面文字、链接、代码、验证码、疑似密钥都不会发。
-- 以下内容**绝不发送**：密码框（Secure Input）、密码管理器标记的隐蔽剪贴板内容、疑似密钥 / 口令 / 卡号的文本、链接与代码、超过长度上限的文本、你在 `skip_apps` 里列出的应用（缺省包含 1Password、Bitwarden、钥匙串）。
-- 复制的文本被当作**待处理的数据**，不是指令：里面写着「忽略之前的指令」也不会生效。
-- 密钥只存在这台电脑上（配置目录的 `.env`），不进配置文件，不进日志。
-- 检查更新每天向 GitHub Releases 读一次版本列表，请求不带任何标识，可以在偏好设置里关掉。
+- 只有你点了「解析」的那段文字会发给你选的后端，没有任何自动读取剪贴板或屏幕后发送的行为。
+- 发送前过**闸门**：空文本、超长、疑似密钥或密码、链接与代码一律不发。
+- 本机命令行后端的数据只经过你自己的账号；使用 API 后端时文字会发往你填的接口。
+- 不收集任何使用数据，不联网检查更新。
 
-## 配置
+## 许可
 
-配置文件在 `~/Library/Application Support/Subtext/config.toml`，改了自动生效。教练的部分：
-
-```toml
-[coach]
-enabled = true
-backend = "claude-cli"          # claude-cli | codex-cli | openai | anthropic
-auto_decode = true
-auto_compose = true
-auto_edit = true
-claude_model = "haiku"
-openai_base_url = "https://api.deepseek.com"
-openai_model = "deepseek-v4-flash"
-skip_apps = ["com.1password.1password"]
-# profile = "…"                  # 学习者画像：写得越贴近你，教练越对症
-
-[shortcut]
-coach_selection = "control+option+e"
-```
-
-完整说明见 [docs/usage.md](docs/usage.md)。
-
-## From source (English)
-
-Subtext is a bilingual (Chinese–English) pinyin input method for macOS with an AI coach built in.
-Copy an English message and it decodes the tone and subtext; type a Chinese sentence and it writes the English a native speaker would use.
-Backends: local Claude Code CLI, local Codex CLI, any OpenAI-compatible API, or the Anthropic API. Off by default; nothing leaves your machine until you enable it.
-
-```bash
-# Rust 1.96 via rustup, Xcode command line tools, ~10 GB free disk
-git clone https://github.com/StarryGuli/subtext && cd subtext
-# product data (dictionaries, language model; ~140 MB) from the upstream data release:
-gh release download data-v3 -R qingjian-team/qingjian -D data/dl && tar -xzf data/dl/qingjian-data.tar.gz -C data && mv data/data/* data/ && rmdir data/data
-apps/macos/scripts/bundle.sh --pkg      # -> target/pkg/subtext-<version>-macos-arm64.pkg
-cargo test --workspace
-```
-
-The coach core (`crates/subtext-coach`) is platform-independent and has its own CLI:
-`cargo run -p subtext-coach -- "hey, no rush but did you get a chance to look at that PR?"`.
-
-## 构建与贡献
-
-```bash
-cargo test --workspace && cargo clippy --workspace --all-targets -- -D warnings
-cargo run -p subtext-coach -- "要解码或翻译的文字"      # 直接试教练，不经过输入法
-cargo run -p subtext-cli -- zhongwen                    # 试输入法内核
-```
-
-架构与约定见 [docs/design/architecture.md](docs/design/architecture.md)、[docs/design/coach.md](docs/design/coach.md) 与 [CONTRIBUTING.md](CONTRIBUTING.md)。
-
-## 致谢与许可
-
-Subtext 的输入法内核（拼音转换、词库、整句模型、候选窗口）基于开源项目 [青简 Qingjian](https://github.com/qingjian-team/qingjian) 二次开发，感谢他们。
-这是独立的衍生项目，不并回上游；移除了 Windows / Linux 外壳，更换了名称与图标，加入了双语教练与 GitHub Releases 更新检查。
-
-代码采用 [GPL-3.0-or-later](LICENSE)。青简的项目名称与 logo 不包含在代码授权内，本项目不使用。
-随包数据有各自的来源与许可，见 [数据来源清单](docs/design/landscape.md) 与应用内「关于」页。
+GPL-3.0-or-later，见 [LICENSE](LICENSE)。

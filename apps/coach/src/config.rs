@@ -19,6 +19,10 @@ pub fn data_dir() -> Option<PathBuf> {
 
 /// 读配置；文件不存在用缺省，写坏了也用缺省并记一条日志，窗口总得能打开。
 pub fn load() -> CoachConfig {
+    // 从访达或登录项启动的应用拿不到 shell 里的环境变量：密钥放在数据目录的 `.env` 里
+    if let Some(dir) = data_dir() {
+        let _ = dotenvy::from_path(dir.join(".env"));
+    }
     let mut config = data_dir()
         .map(|dir| dir.join("config.toml"))
         .and_then(|path| std::fs::read_to_string(path).ok())

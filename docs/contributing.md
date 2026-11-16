@@ -5,17 +5,13 @@
 
 ## 架构约束（不要违反）
 
-- **Core 与平台层严格解耦。** `subtext-core` 及其兄弟 crate（含 `subtext-coach`）必须平台无关：词库、拼音解析、候选生成、排序、学习、翻译、
-  教练的闸门 / 提示词 / 后端全部属于它们。平台层（IMK 壳）只做两件事：把系统事件翻译成 Core 的输入，把结果画出来。
-  **壳里不允许出现排序逻辑、词库访问、提示词、网络请求。** 壳里与教练有关的只有：触发（剪贴板轮询、上屏停顿）、面板、替换应用里的文字。
-- **输入优先于一切附加功能。** 任何为学习或教练增加的延迟、弹窗、UI 干扰都是设计错误。教练的请求在后台线程里发，
-  主线程只往通道里丢请求、取事件；Core 必须能在教练 / 译文没就绪时先返回候选。
+- **`subtext-coach` 平台无关。** 闸门、提示词、后端、后台服务、输出解析都在这里，不依赖 AppKit。应用层（`apps/coach`）只做两件事：
+  把用户的操作变成请求，把结果画出来。**应用层不允许出现提示词、网络请求。**
+- **界面不阻塞。** 请求在后台线程里发，主线程只往通道里丢请求、取事件。
 - **外发必须过闸门。** 凡是会把用户的文字发往后端的路径，一律先过 `subtext_coach::gate::Gate`；新增触发源要补闸门测试。
   闸门宁可多拦：漏拦的代价远大于误拦。
-- **一个候选词只显示一种辅助语言。** 译文是候选词的 annotation（可选、单条），不是并列的第二套候选系统。
-- **碰应用客户端的步骤放在借用 `Host` 之外。** IMK 在等应用回话时会跑 run loop，重入回调会在 `host::with` 里借用失败；
-  见 `host/mod.rs` 里 `with` 的说明与 `host/coach.rs` 的做法。
-- **显示面自绘、控件面原生。** 候选窗、拼音行由渲染器出位图；偏好设置、菜单用 AppKit 原生控件；教练面板是原生 NSPanel + 富文本。
+- **只在用户亲手提交时发请求。** 不做自动读取剪贴板或屏幕后发送。
+- **显示面自绘、控件面原生。** 结果区用 `Doc` → `NSAttributedString` 排版，控件用 AppKit 原生。
 
 ## 代码组织
 
@@ -35,21 +31,20 @@
 ## 依赖与配置
 
 - 依赖用 `cargo add` 加，共用包提到根 `[workspace.dependencies]`；错误用 `thiserror` 不用 `anyhow`；日志用 `tracing` 门面。
-- 快捷键一律进 `[shortcut]` 可配置，不写死键码。
-- 密钥只进 `.env`，不进 `config.toml`，不进日志（`subtext_platform::logs::secrets::register` 登记后日志会掩码）。
+- 密钥只进数据目录的 `.env`，不进 `config.toml`，不进日志。
 
 ## 版本号
 
-- `crates/*` 用 `version.workspace = true`；`apps/macos` 是独立发布的产品，写死自己的 `version`。
+- `crates/*` 用 `version.workspace = true`；`apps/coach` 是独立发布的产品，写死自己的 `version`。
 - 发版之间带 `-dev`，打包脚本再接 git 短哈希；发版提交去掉 `-dev` 打标签 `v<版本>`，标签后再改成下一个 `-dev`。
-- 改了 `apps/macos/Cargo.toml` 的版本后用 `cargo metadata --offline` 同步 `Cargo.lock`，否则 `bundle.sh` 的 `--locked` 会报错。
+- 改了 `apps/coach/Cargo.toml` 的版本后用 `cargo metadata --offline` 同步 `Cargo.lock`，否则 `bundle.sh` 的 `--locked` 会报错。
 
 ## 提交信息
 
 [Conventional Commits](https://www.conventionalcommits.org/zh-hans/)：第一行 `<类型>(<范围>): <说明>`，类型与范围英文小写，说明用中文。
 
 - 类型：`feat` / `fix` / `docs` / `refactor` / `perf` / `test` / `build` / `ci` / `chore` / `style` / `revert`。
-- 范围：crate 或壳的名字——`core` `platform` `render` `dictionary` `translate` `learning` `predict` `coach` `lm` `neural` `format` `update` `cli` `macos` `tools` `docs` `ci` `deps` `brand` `release`。
+- 范围：crate 或应用的名字——`coach` `app` `tools` `docs` `ci` `deps` `brand` `release`。
 - 正文写「为什么」与取舍，一行一条；不加 AI 署名。
 
 ## 提交前检查
@@ -61,11 +56,11 @@ cargo test --workspace
 ```
 
 `.githooks/` 里有对应的钩子，`git config core.hooksPath .githooks` 启用一次。
-排序 / 整句 / 纠错的改动先跑 `apps/cli` 再合；教练提示词的改动用 `subtext-coach --print-prompt` 看实际发出去的内容，用真实模型的回复文件配 `--from-reply` 验证解析。
+教练提示词的改动用 `subtext-coach --print-prompt` 看实际发出去的内容，用真实模型的回复文件配 `--from-reply` 验证解析；界面改动用 `subtext --snapshot <模式> <回复.json> <输入文字> <输出.png>` 出图看（不要屏幕录制权限）。
 
 ## 发版
 
-1. 改 `apps/macos/Cargo.toml` 去掉 `-dev`，同步 `Cargo.lock`，更新 `CHANGELOG.md`。
-2. `apps/macos/scripts/bundle.sh --pkg` 出 `target/pkg/subtext-<版本>-macos-<arch>.pkg`（需要 `data/generated/` 里的产品数据，见 README）。
-3. 打标签 `v<版本>`，在 GitHub 上建 Release，附上 pkg 与 `SHA256SUMS`。有 Developer ID 证书时设 `SUBTEXT_SIGN_IDENTITY` /
-   `SUBTEXT_INSTALLER_IDENTITY` / `SUBTEXT_NOTARY_PROFILE` 再打包（见 `apps/macos/README.md`）；没有就是 ad-hoc 签名，Release 说明里要写清楚首次打开的步骤。
+1. 改 `apps/coach/Cargo.toml` 去掉 `-dev`，同步 `Cargo.lock`，更新 `CHANGELOG.md`。
+2. `apps/coach/scripts/bundle.sh` 出 `target/app/Subtext.app`，压成 zip。
+3. 打标签 `v<版本>`，在 GitHub 上建 Release，附上 zip 与 `SHA256SUMS`。有 Developer ID 证书时设 `SUBTEXT_SIGN_IDENTITY` 再打包；
+   没有就是 ad-hoc 签名，Release 说明里要写清楚首次打开的步骤。
