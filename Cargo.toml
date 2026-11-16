@@ -13,7 +13,7 @@ members = [
     "crates/subtext-render",
     "crates/subtext-update",
     "crates/subtext-coach",
-    "apps/cli", "apps/macos", "tools/dict-convert", "tools/gloss-gen",
+    "apps/cli", "apps/macos", "apps/coach", "tools/dict-convert", "tools/gloss-gen",
 ]
 
 [workspace.package]

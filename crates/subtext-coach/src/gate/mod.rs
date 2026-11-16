@@ -70,6 +70,25 @@ impl Gate {
             && !secrets::contains_secret(text)
     }
 
+    /// 用户在窗口里亲手选了模式、亲手提交的文字：不再猜语言与长度（读一个词、写半句都合法），
+    /// 只拦空文本、超长、疑似密钥与链接 / 代码。
+    pub fn check_manual(&self, text: &str) -> Result<(), Skip> {
+        let text = text.trim();
+        if text.is_empty() {
+            return Err(Skip::Empty);
+        }
+        if text.chars().count() > self.max_chars {
+            return Err(Skip::TooLong);
+        }
+        if language::looks_like_machine_text(text) {
+            return Err(Skip::MachineText);
+        }
+        if secrets::contains_secret(text) {
+            return Err(Skip::LooksLikeSecret);
+        }
+        Ok(())
+    }
+
     /// 能发返回 `Ok(())`。`concealed` 是剪贴板上带的「隐蔽 / 瞬时」标记（密码管理器会打）。
     pub fn check(
         &self,
@@ -127,6 +146,17 @@ mod tests {
     }
 
     const PR: &str = "hey, no rush at all but did you get a chance to look at that PR?";
+
+    #[test]
+    fn manual_submit_skips_language_and_length_but_not_secrets() {
+        assert_eq!(gate().check_manual("def"), Ok(()));
+        assert_eq!(gate().check_manual("我想说 I'm swamped"), Ok(()));
+        assert_eq!(gate().check_manual("  "), Err(Skip::Empty));
+        assert_eq!(
+            gate().check_manual("key sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123456789"),
+            Err(Skip::LooksLikeSecret)
+        );
+    }
 
     #[test]
     fn ordinary_english_copy_passes() {
